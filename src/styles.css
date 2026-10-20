@@ -207,8 +207,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .site-nav .nav-mobile-cta { display: none; }
 
 
-/* Scroll-driven camera path with the original 2D illustrated car only.
-   No 3D car body, undercarriage, wheels or visible support geometry. */
+/* One continuous vector illustration, generated at every scroll position.
+   No crossfading two cars, no mesh chassis, no WebGL, no image loading. */
 .hero-scroll { position: relative; height: 305svh; background: #040507; }
 .hero-sticky {
   position: sticky;
@@ -225,8 +225,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(0,0,0,.40),transparent 26%,transparent 74%,rgba(0,0,0,.40)),
-    linear-gradient(180deg,rgba(0,0,0,.26),transparent 27%,transparent 77%,rgba(0,0,0,.53));
+  background: linear-gradient(90deg, rgba(0,0,0,.40), transparent 26%, transparent 74%, rgba(0,0,0,.40)),
+    linear-gradient(180deg, rgba(0,0,0,.26), transparent 27%, transparent 77%, rgba(0,0,0,.53));
 }
 .hero-sticky::after {
   content: "";
@@ -236,44 +236,23 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   opacity: .18;
   pointer-events: none;
   mix-blend-mode: soft-light;
-  background: repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 5px);
+  background: repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 5px);
 }
-.hero-3d-host {
+.hero-morph-scene {
   position: absolute;
   inset: 0;
   z-index: 2;
   overflow: hidden;
   pointer-events: none;
   opacity: var(--three-opacity,1);
-  background: radial-gradient(ellipse at 50% 45%, rgba(45,46,53,.22),transparent 65%);
+  background: #040507;
 }
-.hero-3d-canvas { display: block; width: 100%; height: 100%; }
-.hero-3d-fallback {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 50% 50%,#191c22,#07080b 71%);
-}
-.hero-3d-fallback .hero-moving-car {
-  position: absolute;
-  width: clamp(250px,32vw,430px);
-  aspect-ratio: 400/760;
-  left: 50%;
-  top: 49%;
-  opacity: .65;
-  transform: translate3d(-50%,-50%,0) scale(.75);
-  pointer-events: none;
-}
-.hero-3d-fallback .hero-car-svg { display: block; width: 100%; height: 100%; filter: drop-shadow(0 16px 24px #000); }
-.hero-3d-fallback .hero-vehicle-lights { opacity: var(--headlight-opacity,0); }
-.hero-3d-fallback .hero-car-floor-glow, .hero-3d-fallback .hero-car-speed-pulse { display: none; }
-.hero-3d-host[data-state="ready"] .hero-3d-fallback { display: none; }
-.hero-3d-fallback-note {
-  position: absolute;
-  bottom: 16%;
-  right: 5%;
-  color: #9b9ba3;
-  font: 600 10px "DM Sans", sans-serif;
-  letter-spacing: .12em;
+.hero-morph-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  shape-rendering: geometricPrecision;
 }
 .hero-light-flood {
   position: absolute;
@@ -615,7 +594,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .brand-words em { font-size: 13px; letter-spacing: .18em; margin-top: 6px; }
   .hero-scroll { height: 265svh; }
   .hero-sticky { background: #050608; }
-  .hero-3d-fallback .hero-moving-car { width: clamp(220px,72vw,340px); top: 48%; }
+  .hero-morph-svg { min-height: 100%; }
   .hero-intro { padding: max(115px, 17vh) 18px 0; }
   .hero-intro-label { font-size: 8px; letter-spacing: .1em; }
   .hero-intro-text { font-size: 42px; max-width: 300px; }
@@ -683,7 +662,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 @media (prefers-reduced-motion: reduce) {
   .site-root *, .site-root *::before, .site-root *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
   .hero-scroll { height: 100svh; }
-  .hero-3d-host { display: none !important; }
+  .hero-morph-scene { display: none !important; }
   .hero-exit-curtain { opacity: .96 !important; }
   .hero-light-flood { display: none !important; }
   .hero-reveal { opacity: 1 !important; pointer-events: auto !important; }
