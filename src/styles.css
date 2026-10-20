@@ -207,9 +207,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .site-nav .nav-mobile-cta { display: none; }
 
 
-/* Cinematic hero in five reversible scroll-driven acts: top view, acceleration,
-   camera pivot, headlights flooding the screen and staggered brand reveal. */
-.hero-scroll { height: 320vh; height: 320svh; position: relative; background: #040507; }
+/* Scroll-captured hero, rendered by one physically continuous 3D camera.
+   No SVG face crossfades, fake zooming, video playback or sideways scrolling. */
+.hero-scroll { position: relative; height: 305svh; background: #040507; }
 .hero-sticky {
   position: sticky;
   top: 0;
@@ -217,7 +217,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   height: 100svh;
   overflow: hidden;
   isolation: isolate;
-  background: radial-gradient(ellipse at 50% 67%, #19191e 0%, #08090c 49%, #010102 100%);
+  background: radial-gradient(ellipse at 50% 55%, #16191e, #060709 65%, #010102);
 }
 .hero-sticky::before {
   content: "";
@@ -225,227 +225,68 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background:
-    linear-gradient(90deg, #010102 0%, transparent 24%, transparent 76%, #010102 100%),
-    linear-gradient(180deg, #010102 0%, transparent 25%, transparent 75%, #030304 100%);
+  background: linear-gradient(90deg, rgba(0,0,0,.40),transparent 26%,transparent 74%,rgba(0,0,0,.40)),
+    linear-gradient(180deg,rgba(0,0,0,.26),transparent 27%,transparent 77%,rgba(0,0,0,.53));
 }
 .hero-sticky::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 6;
+  opacity: .18;
   pointer-events: none;
-  opacity: .22;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 150 150' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23fff' opacity='.2' filter='url(%23n)' d='M0 0h150v150H0z'/%3E%3C/svg%3E");
-  background-size: 190px 190px;
   mix-blend-mode: soft-light;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 5px);
 }
-.hero-road {
-  position: absolute;
-  z-index: 0;
-  left: 50%;
-  top: -42%;
-  width: min(75vw, 1120px);
-  height: 188%;
-  transform: translateX(-50%);
-  pointer-events: none;
-  opacity: calc(1 - var(--camera-progress) * .96);
-  transform: translateX(-50%) perspective(1100px) rotateX(var(--road-tilt));
-  transform-origin: 50% 50%;
-}
-.hero-road-asphalt {
+.hero-3d-host {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(90deg, transparent 0%, rgba(255,255,255,.035) 1%, transparent 2%, transparent 98%, rgba(255,255,255,.035) 99%, transparent 100%),
-    radial-gradient(ellipse at 50% 50%, #202025 0%, #121317 48%, #08090b 74%, transparent 96%);
-}
-.hero-road-lane {
-  position: absolute;
-  top: -30%;
-  bottom: -30%;
-  width: 3px;
-  opacity: .34;
-  background: linear-gradient(to bottom, transparent, rgba(188,190,202,.65) 25%, rgba(188,190,202,.75) 75%, transparent);
-  box-shadow: 0 0 18px rgba(255,255,255,.12);
-}
-.hero-road-lane--left { left: 8%; }
-.hero-road-lane--right { right: 8%; }
-.hero-road-center {
-  position: absolute;
-  top: -165vh;
-  bottom: -165vh;
-  left: 50%;
-  width: 3px;
-  opacity: .23;
-  background: repeating-linear-gradient(to bottom, transparent 0, transparent 92px, rgba(225,230,238,.75) 93px, rgba(225,230,238,.75) 175px, transparent 176px, transparent 280px);
-  transform: translate3d(-50%, var(--road-offset), 0);
-  will-change: transform;
-}
-.hero-road-speed {
-  position: absolute;
-  top: -100vh;
-  bottom: -100vh;
-  width: 10%;
-  opacity: var(--road-speed);
-  transform: translate3d(0, var(--road-offset), 0);
-  background: repeating-linear-gradient(180deg, transparent 0, rgba(255,255,255,.14) 58px, rgba(255,255,255,.52) 64px, transparent 160px);
-  filter: blur(3px);
-  will-change: transform, opacity;
-}
-.hero-road-speed--left { left: 14%; }
-.hero-road-speed--right { right: 14%; }
-.hero-road-reflection {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 50% 52%, transparent 16%, rgba(176,15,31,.14) 59%, transparent 77%);
-  mix-blend-mode: screen;
-}
-.hero-acceleration { position: absolute; inset: 0; z-index: 3; opacity: var(--road-speed); pointer-events: none; }
-.hero-acceleration-line {
-  position: absolute;
-  top: -18%;
-  height: 140%;
-  width: 2px;
-  transform: translate3d(0, var(--road-offset), 0);
-  background: linear-gradient(180deg, transparent 0%, rgba(216,220,238,.02) 12%, rgba(227,233,247,.4) 52%, transparent 100%);
-  filter: blur(3px);
-}
-.hero-acceleration-line--one { left: 13%; width: 2px; }
-.hero-acceleration-line--two { left: 28%; width: 3px; }
-.hero-acceleration-line--three { right: 28%; width: 3px; }
-.hero-acceleration-line--four { right: 13%; width: 2px; }
-.hero-moving-car {
-  position: absolute;
-  z-index: 4;
-  width: clamp(290px, 32vw, 470px);
-  aspect-ratio: 400 / 760;
-  top: 49%;
-  left: 50%;
-  transform: translate3d(-50%, -50%, 0) translate3d(0, var(--car-y), 0) perspective(1100px) rotateX(var(--car-tilt)) scale(var(--car-scale));
-  transform-origin: 50% 50%;
-  opacity: var(--car-opacity);
-  will-change: transform, opacity;
-  pointer-events: none;
-}
-.hero-car-svg { width: 100%; height: 100%; display: block; overflow: visible; filter: drop-shadow(0 28px 32px rgba(0,0,0,.85)); }
-.hero-vehicle-lights { opacity: var(--headlight-opacity); }
-.hero-car-floor-glow {
-  position: absolute;
-  z-index: -1;
-  left: -34%;
-  top: 48%;
-  width: 168%;
-  height: 90%;
-  background: radial-gradient(ellipse, rgba(216,20,46,.23), rgba(216,20,46,.07) 35%, transparent 66%);
-  opacity: var(--headlight-opacity);
-  filter: blur(25px);
-}
-.hero-car-speed-pulse {
-  position: absolute;
-  z-index: -1;
-  top: 75%;
-  left: 50%;
-  width: 160%;
-  height: 30%;
-  transform: translateX(-50%);
-  background: radial-gradient(ellipse, rgba(255,255,255,.2), transparent 65%);
-  filter: blur(22px);
-  opacity: var(--road-speed);
-}
-
-/* The camera settles into a head-on view. The two independently illustrated
-   views overlap during the pivot, eliminating the previous zoom-out jump. */
-.hero-front-scene {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  opacity: var(--front-scene-opacity);
-  pointer-events: none;
+  z-index: 2;
   overflow: hidden;
-  isolation: isolate;
+  pointer-events: none;
+  opacity: var(--three-opacity,1);
+  background: radial-gradient(ellipse at 50% 45%, rgba(45,46,53,.22),transparent 65%);
 }
-.hero-front-environment {
+.hero-3d-canvas { display: block; width: 100%; height: 100%; }
+.hero-3d-fallback {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse at 50% 51%, rgba(85,97,114,.18) 0%, transparent 43%),
-    linear-gradient(180deg,#030406 3%,#13171c 44%,#16171c 57%,#040507 97%);
+  background: radial-gradient(ellipse at 50% 50%,#191c22,#07080b 71%);
 }
-.hero-front-horizon {
+.hero-3d-fallback .hero-moving-car {
   position: absolute;
-  top: 59%;
-  left: -10%;
-  width: 120%;
-  height: 1px;
-  background: linear-gradient(90deg,transparent 2%,rgba(242,48,65,.35) 30%,rgba(239,251,255,.24) 50%,rgba(242,48,65,.35) 70%,transparent 98%);
-  box-shadow: 0 0 45px 14px rgba(213,16,40,.13);
-}
-.hero-front-road {
-  position: absolute;
-  top: 56%;
-  bottom: -15%;
-  left: -25%;
-  width: 150%;
-  background:
-    linear-gradient(83deg,transparent 0%,rgba(231,238,255,.09) 42%,transparent 43%),
-    linear-gradient(97deg,transparent 0%,rgba(231,238,255,.09) 57%,transparent 58%),
-    linear-gradient(180deg,#181b21,#0c0d11 60%,#030406);
-  clip-path: polygon(35% 0,65% 0,100% 100%,0 100%);
-  opacity: .73;
-}
-.hero-front-reflection {
-  position: absolute;
-  top: 60%;
-  left: 0;
-  right: 0;
-  height: 40%;
-  background: radial-gradient(ellipse at 50% 5%,rgba(208,33,55,.23),transparent 65%);
-}
-.hero-front-car-body {
-  position: absolute;
-  z-index: 3;
-  width: min(1100px,100vw);
-  aspect-ratio: 1000 / 590;
+  width: clamp(250px,32vw,430px);
+  aspect-ratio: 400/760;
   left: 50%;
-  top: 54%;
-  transform: translate3d(-50%, -50%, 0) translate3d(0,var(--front-lift),0) perspective(1050px) rotateX(var(--front-tilt)) scale(var(--front-scale));
-  transform-origin: 50% 50%;
-  will-change: transform;
-}
-.hero-front-car-svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-  overflow: visible;
-  filter: drop-shadow(0 21px 24px rgba(0,0,0,.83));
-}
-.hero-front-lit-elements { opacity: var(--front-headlight-opacity); }
-.hero-front-headlight-spot {
-  position: absolute;
-  z-index: 5;
   top: 49%;
-  width: 30%;
-  height: 30%;
+  opacity: .65;
+  transform: translate3d(-50%,-50%,0) scale(.75);
   pointer-events: none;
-  background: radial-gradient(ellipse,rgba(255,255,255,.95) 0%,rgba(236,248,255,.85) 5%,rgba(204,231,255,.46) 22%,rgba(174,213,255,.1) 43%,transparent 70%);
-  filter: blur(10px);
-  mix-blend-mode: screen;
-  opacity: var(--front-headlight-opacity);
 }
-.hero-front-headlight-spot--left { left: 8%; }
-.hero-front-headlight-spot--right { right: 8%; }
-.hero-front-light-cones { position: absolute; z-index: 2; inset: 0; opacity: var(--front-light-spread); mix-blend-mode: screen; }
-.hero-front-cone {
+.hero-3d-fallback .hero-car-svg { display: block; width: 100%; height: 100%; filter: drop-shadow(0 16px 24px #000); }
+.hero-3d-fallback .hero-vehicle-lights { opacity: var(--headlight-opacity,0); }
+.hero-3d-fallback .hero-car-floor-glow, .hero-3d-fallback .hero-car-speed-pulse { display: none; }
+.hero-3d-host[data-state="ready"] .hero-3d-fallback { display: none; }
+.hero-3d-fallback-note {
   position: absolute;
-  top: 39%;
-  height: 92%;
-  width: 70%;
-  background: radial-gradient(ellipse at 50% 9%,rgba(236,248,255,.9),rgba(190,222,255,.44) 22%,rgba(148,192,242,.17) 54%,transparent 78%);
-  filter: blur(19px);
+  bottom: 16%;
+  right: 5%;
+  color: #9b9ba3;
+  font: 600 10px "DM Sans", sans-serif;
+  letter-spacing: .12em;
 }
-.hero-front-cone--left { left: -30%; transform: rotate(-12deg); }
-.hero-front-cone--right { right: -30%; transform: rotate(12deg); }
+.hero-model-credit {
+  position: absolute;
+  bottom: 9px;
+  right: 55px;
+  z-index: 12;
+  color: rgba(255,255,255,.4) !important;
+  font-size: 8px;
+  letter-spacing: .02em;
+  pointer-events: auto;
+  text-decoration: none;
+}
+.hero-model-credit:hover { color: #fff !important; }
 .hero-light-flood {
   position: absolute;
   z-index: 8;
@@ -780,15 +621,10 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .site-root .brand { gap: 8px; }
   .brand-words strong { font-size: 22px; }
   .brand-words em { font-size: 13px; letter-spacing: .18em; margin-top: 6px; }
-  .hero-scroll { height: 270svh; }
+  .hero-scroll { height: 265svh; }
   .hero-sticky { background: #050608; }
-  .hero-road { width: 115vw; top: -33%; height: 170%; }
-  .hero-moving-car { width: clamp(225px, 66vw, 360px); top: 49%; }
-  .hero-front-car-body { width: 133vw; top: 52%; }
-  .hero-front-light-cones { opacity: calc(var(--front-light-spread) * .85); }
-  .hero-front-headlight-spot { filter: blur(7px); }
-  .hero-acceleration-line--one { left: 6%; }
-  .hero-acceleration-line--four { right: 6%; }
+  .hero-3d-fallback .hero-moving-car { width: clamp(220px,72vw,340px); top: 48%; }
+  .hero-model-credit { left: 18px; right: auto; bottom: 6px; font-size: 7px; }
   .hero-intro { padding: max(115px, 17vh) 18px 0; }
   .hero-intro-label { font-size: 8px; letter-spacing: .1em; }
   .hero-intro-text { font-size: 42px; max-width: 300px; }
@@ -854,12 +690,11 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .dialog-top { padding: 17px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .site-root *, .site-root *:before, .site-root *:after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  .site-root *, .site-root *::before, .site-root *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
   .hero-scroll { height: 100svh; }
-  .hero-moving-car { opacity: .12 !important; transform: translate3d(-50%, -50%, 0) scale(.75) !important; }
-  .hero-road { opacity: .1 !important; }
-  .hero-acceleration, .hero-ignition-flash, .hero-light-flood, .hero-front-scene { display: none !important; }
-  .hero-exit-curtain { opacity: .93 !important; }
+  .hero-3d-host { display: none !important; }
+  .hero-exit-curtain { opacity: .96 !important; }
+  .hero-light-flood { display: none !important; }
   .hero-reveal { opacity: 1 !important; pointer-events: auto !important; }
   .hero-brand-first, .hero-brand-second, .hero-reveal-description, .hero-cta-row { opacity: 1 !important; transform: none !important; }
   .hero-intro { display: none !important; }

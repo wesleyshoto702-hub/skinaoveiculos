@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { HeroCar } from "../components/HeroCar";
-import { FrontHeroCar } from "../components/FrontHeroCar";
+import { CarScroll3D } from "../components/CarScroll3D";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import {
   ArrowDown, ArrowRight, ArrowUpRight, BadgeCheck, CalendarDays,
@@ -220,49 +219,24 @@ function Home() {
   useEffect(() => { document.body.classList.toggle("menu-open", menuOpen); return () => document.body.classList.remove("menu-open"); }, [menuOpen]);
   const openDetails = (vehicle: Vehicle) => setSelected(vehicle);
   const closeDetails = () => setSelected(null);
-  // Five scroll-driven acts: ignition -> driving -> camera pivot ->
-  // frontal headlights -> full-screen light transition -> brand reveal.
-  // Every value is derived from vertical scroll (fully reversible on scroll up).
+  // Real 3D camera on a single model, synchronized with native vertical scroll.
   const phase = (start: number, end: number) => {
     const t = Math.max(0, Math.min(1, (progress - start) / (end - start)));
     return t * t * (3 - 2 * t);
   };
-  const topIgnition = phase(0.10, 0.31);
-  const topDrive = phase(0.17, 0.53);
-  const cameraPivot = phase(0.46, 0.68);
-  const roadMotion = phase(0.16, 0.37) * (1 - phase(0.52, 0.72));
-  const frontIgnition = phase(0.60, 0.78);
-  const whiteoutRise = phase(0.72, 0.84);
-  const whiteoutFall = 1 - phase(0.865, 0.944);
-  const lightFlood = whiteoutRise * whiteoutFall;
-  const frontFade = 1 - phase(0.81, 0.93);
-  const darkTransition = phase(0.81, 0.958);
-  const titleFirst = phase(0.894, 0.953);
-  const titleSecond = phase(0.920, 0.973);
-  const descriptionIn = phase(0.944, 0.986);
-  const buttonsIn = phase(0.958, 0.995);
+  const lightIgnition = phase(0.08, 0.26);
+  const fullFlash = phase(0.78, 0.87) * (1 - phase(0.885, 0.945));
+  const sceneDarkness = phase(0.88, 0.969);
+  const titleFirst = phase(0.905, 0.956);
+  const titleSecond = phase(0.924, 0.973);
+  const descriptionIn = phase(0.947, 0.986);
+  const buttonsIn = phase(0.964, 0.996);
   const heroStyle = {
-    "--headlight-opacity": topIgnition.toFixed(3),
-    // Deliberately minimal scale change: apparent speed comes from the road,
-    // camera angle and lighting, not from zooming the vehicle toward the viewer.
-    "--car-y": (-5 + 10 * topDrive).toFixed(2) + "vh",
-    "--car-scale": (0.86 + 0.10 * topDrive).toFixed(3),
-    "--car-opacity": (1 - cameraPivot).toFixed(3),
-    "--car-tilt": (-50 * cameraPivot).toFixed(2) + "deg",
-    "--camera-progress": cameraPivot.toFixed(3),
-    "--road-tilt": (-25 * cameraPivot).toFixed(2) + "deg",
-    "--road-offset": (-155 * topDrive).toFixed(2) + "vh",
-    "--road-speed": roadMotion.toFixed(3),
-    "--front-scene-opacity": (cameraPivot * frontFade).toFixed(3),
-    "--front-headlight-opacity": frontIgnition.toFixed(3),
-    "--front-light-spread": (frontIgnition * frontIgnition * frontFade).toFixed(3),
-    "--front-scale": (0.94 + 0.06 * cameraPivot).toFixed(3),
-    "--front-tilt": ((1 - cameraPivot) * 15).toFixed(2) + "deg",
-    "--front-lift": ((1 - cameraPivot) * 12).toFixed(2) + "vh",
-    "--flood-opacity": lightFlood.toFixed(3),
-    "--flood-center-opacity": (Math.min(1, lightFlood * 1.25)).toFixed(3),
-    "--scene-darkness": darkTransition.toFixed(3),
-    "--ignition-flash": (Math.max(0, 1 - Math.abs(progress - 0.30) / 0.09) * topIgnition * 0.20).toFixed(3),
+    "--headlight-opacity": lightIgnition.toFixed(3),
+    "--flood-opacity": fullFlash.toFixed(3),
+    "--flood-center-opacity": Math.min(1, fullFlash * 1.3).toFixed(3),
+    "--scene-darkness": sceneDarkness.toFixed(3),
+    "--three-opacity": (1 - phase(0.86, 0.960)).toFixed(3),
     "--intro-opacity": (1 - phase(0.055, 0.22)).toFixed(3),
     "--reveal-opacity": titleFirst.toFixed(3),
     "--brand-first-opacity": titleFirst.toFixed(3),
@@ -272,8 +246,8 @@ function Home() {
     "--reveal-description-opacity": descriptionIn.toFixed(3),
     "--reveal-description-y": ((1 - descriptionIn) * 28).toFixed(1) + "px",
     "--reveal-buttons-opacity": buttonsIn.toFixed(3),
-    "--reveal-buttons-y": ((1 - buttonsIn) * 35).toFixed(1) + "px",
-    "--reveal-pointer": buttonsIn > 0.94 ? "auto" : "none",
+    "--reveal-buttons-y": ((1 - buttonsIn) * 32).toFixed(1) + "px",
+    "--reveal-pointer": buttonsIn > 0.92 ? "auto" : "none",
   } as CSSProperties;
 
   const matches = vehicles.filter(vehicle => {
@@ -307,24 +281,7 @@ function Home() {
       <main>
         <section ref={heroRef} className="hero-scroll" aria-label="Apresentação Skinão Veículos">
           <div className="hero-sticky" style={heroStyle}>
-            <div className="hero-road" aria-hidden="true">
-              <div className="hero-road-asphalt"/>
-              <div className="hero-road-lane hero-road-lane--left"/>
-              <div className="hero-road-lane hero-road-lane--right"/>
-              <div className="hero-road-center"/>
-              <div className="hero-road-speed hero-road-speed--left"/>
-              <div className="hero-road-speed hero-road-speed--right"/>
-              <div className="hero-road-reflection"/>
-            </div>
-            <div className="hero-acceleration" aria-hidden="true">
-              <span className="hero-acceleration-line hero-acceleration-line--one"/>
-              <span className="hero-acceleration-line hero-acceleration-line--two"/>
-              <span className="hero-acceleration-line hero-acceleration-line--three"/>
-              <span className="hero-acceleration-line hero-acceleration-line--four"/>
-            </div>
-            <HeroCar/>
-            <FrontHeroCar/>
-            <div className="hero-ignition-flash" aria-hidden="true"/>
+            <CarScroll3D progress={progress}/>
             <div className="hero-exit-curtain" aria-hidden="true"/>
             <div className="hero-light-flood" aria-hidden="true">
               <span className="hero-light-flood-glow"/>
@@ -352,6 +309,7 @@ function Home() {
               <span className="scroll-cue">ROLE PARA DESCOBRIR <ArrowDown size={15}/></span>
               <span className="hero-scroll-counter">0{Math.max(1, Math.ceil(progress*4))} <span>/</span> 04</span>
             </div>
+            <a className="hero-model-credit" href="https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6" target="_blank" rel="noopener noreferrer">Modelo 3D ilustrativo: vicent091036 · CC BY 4.0</a>
             <div className="hero-progress" aria-hidden="true"><span style={{width:(progress*100)+"%"}}/></div>
           </div>
         </section>
