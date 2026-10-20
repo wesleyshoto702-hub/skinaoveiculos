@@ -1,125 +1,125 @@
 /**
- * A purpose-built front view for the second half of the scroll film.
- * The top-down scene stays in place while this illustration is crossfaded in,
- * creating a camera-angle change without a heavy 3D renderer or video.
+ * Frontal bodywork mounted on the SAME 3D vehicle as the top-down drawing.
+ *
+ * The fascia is a perpendicular plane hinged to the nose of the top car.
+ * Rotating the parent camera rig reveals it continuously (no separate car
+ * scene, opacity swap, image transition or crossfade).
  */
 export function FrontHeroCar() {
   return (
-    <div className="hero-front-scene" aria-hidden="true">
-      <div className="hero-front-environment">
-        <span className="hero-front-horizon" />
-        <span className="hero-front-road" />
-        <span className="hero-front-reflection" />
-      </div>
-      <div className="hero-front-light-cones">
-        <span className="hero-front-cone hero-front-cone--left" />
-        <span className="hero-front-cone hero-front-cone--right" />
-      </div>
-      <div className="hero-front-car-body">
-        <svg className="hero-front-car-svg" viewBox="0 0 1000 590" xmlns="http://www.w3.org/2000/svg" focusable="false" role="presentation">
-          <defs>
-            <linearGradient id="sk-front-body" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor="#59606d"/>
-              <stop offset=".22" stopColor="#252b34"/>
-              <stop offset=".48" stopColor="#0c0f16"/>
-              <stop offset=".78" stopColor="#1b2028"/>
-              <stop offset="1" stopColor="#07080c"/>
-            </linearGradient>
-            <linearGradient id="sk-front-hood" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor="#292e39"/>
-              <stop offset=".56" stopColor="#10141b"/>
-              <stop offset="1" stopColor="#424752"/>
-            </linearGradient>
-            <linearGradient id="sk-front-glass" x1="0" x2="1" y1="0" y2=".85">
-              <stop offset="0" stopColor="#334654"/>
-              <stop offset=".19" stopColor="#172630"/>
-              <stop offset=".47" stopColor="#060b11"/>
-              <stop offset=".76" stopColor="#1d3039"/>
-              <stop offset="1" stopColor="#38424d"/>
-            </linearGradient>
-            <linearGradient id="sk-front-grill" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor="#14191f"/>
-              <stop offset="1" stopColor="#020306"/>
-            </linearGradient>
-            <linearGradient id="sk-front-bumper" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor="#414751"/>
-              <stop offset=".28" stopColor="#181b23"/>
-              <stop offset=".77" stopColor="#080a0f"/>
-              <stop offset="1" stopColor="#353b45"/>
-            </linearGradient>
-            <linearGradient id="sk-front-headlight" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0" stopColor="#f8feff"/>
-              <stop offset=".35" stopColor="#d1edff"/>
-              <stop offset=".78" stopColor="#fcfeff"/>
-              <stop offset="1" stopColor="#83b7dc"/>
-            </linearGradient>
-            <linearGradient id="sk-front-red" x1="0" x2="1">
-              <stop offset="0" stopColor="#3b0b13"/>
-              <stop offset=".35" stopColor="#e72340"/>
-              <stop offset=".64" stopColor="#fb354f"/>
-              <stop offset="1" stopColor="#44080d"/>
-            </linearGradient>
-            <radialGradient id="sk-front-spot">
-              <stop offset="0" stopColor="#ffffff" stopOpacity="1"/>
-              <stop offset=".1" stopColor="#f1faff" stopOpacity=".9"/>
-              <stop offset=".35" stopColor="#d0eaff" stopOpacity=".4"/>
-              <stop offset="1" stopColor="#c3e5ff" stopOpacity="0"/>
-            </radialGradient>
-            <pattern id="sk-front-mesh" width="15" height="12" patternUnits="userSpaceOnUse">
-              <path d="M0 0 8 6 0 12M15 0 7 6 15 12" stroke="#5c6670" strokeWidth="1.4" opacity=".37" fill="none"/>
-            </pattern>
-            <filter id="sk-front-shadow" x="-30%" y="-90%" width="160%" height="280%">
-              <feGaussianBlur stdDeviation="21"/>
-            </filter>
-          </defs>
-          {/* Low car stance and shadow */}
-          <ellipse cx="500" cy="533" rx="420" ry="29" fill="#000" opacity=".94" filter="url(#sk-front-shadow)"/>
-          <path d="M106 391h88v133H92v-64Z" fill="#040507" stroke="#383f46" strokeWidth="5"/>
-          <path d="M807 391h89l13 69v64H806Z" fill="#040507" stroke="#383f46" strokeWidth="5"/>
-          <g stroke="#34383f" strokeWidth="5" opacity=".8">
-            <path d="M110 410v95M128 405v105M150 405v105M171 411v92M829 409v98M850 405v106M871 407v101M890 412v91"/>
-          </g>
-          {/* Roof and windscreen */}
-          <path d="M238 295 290 150Q303 119 353 109 Q500 81 647 109 Q699 119 711 150L763 295Z" fill="#151a22" stroke="#707d89" strokeWidth="5"/>
-          <path d="M303 282 340 160Q348 143 385 135Q503 116 615 135Q656 144 666 160L698 282Z" fill="url(#sk-front-glass)" stroke="#4d5d69" strokeWidth="4"/>
-          <path d="M356 155 334 260" stroke="#e0f3ff" strokeOpacity=".25" strokeWidth="10" strokeLinecap="round"/>
-          <path d="M639 152 661 253" stroke="#e0f3ff" strokeOpacity=".17" strokeWidth="8" strokeLinecap="round"/>
-          <path d="M490 129 475 285" stroke="#6d7f8a" strokeOpacity=".22" strokeWidth="4"/>
-          <path d="M280 191 227 198 199 246 231 260 264 251Z" fill="#121720" stroke="#66727c" strokeWidth="3"/>
-          <path d="M720 191 773 198 801 246 769 260 736 251Z" fill="#121720" stroke="#66727c" strokeWidth="3"/>
-          {/* Hood / fenders / body */}
-          <path d="M237 270Q291 267 316 283Q499 303 681 283Q707 266 763 270L839 330Q878 343 894 394L913 458Q907 505 866 519H136Q94 507 87 458L105 394Q123 342 162 330Z" fill="url(#sk-front-body)" stroke="#4b545e" strokeWidth="6"/>
-          <path d="M302 294Q498 315 696 294L797 348Q501 366 205 348Z" fill="url(#sk-front-hood)" stroke="#636c76" strokeWidth="3"/>
-          <path d="M320 305 257 340M679 305l65 35" fill="none" stroke="#9ba4af" strokeOpacity=".36" strokeWidth="6"/>
-          <path d="M251 343Q504 371 751 343" stroke="#d6e0e9" strokeOpacity=".19" strokeWidth="8" fill="none"/>
-          <path d="M128 354Q155 326 211 331L354 375H172Z" fill="#070c14" stroke="#82909e" strokeWidth="3"/>
-          <path d="M872 354Q845 326 789 331L646 375H828Z" fill="#070c14" stroke="#82909e" strokeWidth="3"/>
-          {/* The light strips are visible even before ignition */}
-          <path d="M151 350Q204 338 275 359L341 377L291 386 192 373Z" fill="#8fa4b7" opacity=".34"/>
-          <path d="M849 350Q796 338 725 359L659 377L709 386 808 373Z" fill="#8fa4b7" opacity=".34"/>
-          <g className="hero-front-lit-elements">
-            <path d="M151 350Q215 340 279 362L333 377L292 379 202 359Z" fill="url(#sk-front-headlight)"/>
-            <path d="M849 350Q785 340 721 362L667 377L708 379 798 359Z" fill="url(#sk-front-headlight)"/>
-            <path d="M150 349Q227 336 316 372M850 349Q773 336 684 372" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round"/>
-            <ellipse cx="215" cy="362" rx="130" ry="89" fill="url(#sk-front-spot)" opacity=".75"/>
-            <ellipse cx="785" cy="362" rx="130" ry="89" fill="url(#sk-front-spot)" opacity=".75"/>
-          </g>
-          {/* Grill, splitter and bumper */}
-          <path d="M342 385Q500 396 658 385L685 447Q501 481 316 447Z" fill="url(#sk-front-grill)" stroke="#68717b" strokeWidth="4"/>
-          <path d="M342 393Q501 406 657 393L664 437Q499 463 336 437Z" fill="url(#sk-front-mesh)" opacity=".83"/>
-          <path d="M486 381h28v9h-28z" fill="#e0e4e9" opacity=".55"/>
-          <path d="M137 407h158l-30 61-136-8Z" fill="#06080c" stroke="#424c57" strokeWidth="3"/>
-          <path d="M863 407H705l30 61 136-8Z" fill="#06080c" stroke="#424c57" strokeWidth="3"/>
-          <path d="M152 441 238 455M848 441l-86 14" stroke="#c2263b" strokeWidth="5" opacity=".8"/>
-          <path d="M109 472Q508 509 891 472L870 511Q500 545 130 511Z" fill="url(#sk-front-bumper)" stroke="#56616c" strokeWidth="3"/>
-          <path d="M174 508Q500 533 826 508" stroke="url(#sk-front-red)" strokeWidth="8" fill="none" strokeLinecap="round"/>
-          <path d="M340 480h320v23H340z" fill="#08090c" stroke="#4b525d" strokeWidth="2"/>
-          <text x="500" y="497" textAnchor="middle" fill="#e8eaf0" fontSize="18" fontWeight="800" letterSpacing="5" fontFamily="Arial, sans-serif">SKINÃO</text>
-          <path d="M92 459 103 472M908 459l-11 13" stroke="#ed243e" strokeWidth="6" strokeLinecap="round"/>
-        </svg>
-        <span className="hero-front-headlight-spot hero-front-headlight-spot--left" />
-        <span className="hero-front-headlight-spot hero-front-headlight-spot--right" />
-      </div>
+    <div className="hero-car-fascia" aria-hidden="true">
+      <svg className="hero-front-car-svg" viewBox="0 0 800 740" xmlns="http://www.w3.org/2000/svg" role="presentation" focusable="false">
+        <defs>
+          <linearGradient id="skf-body" x1="0" x2=".12" y1="0" y2="1">
+            <stop offset="0" stopColor="#414b57"/>
+            <stop offset=".16" stopColor="#141b24"/>
+            <stop offset=".39" stopColor="#252b36"/>
+            <stop offset=".66" stopColor="#090e15"/>
+            <stop offset=".86" stopColor="#363b47"/>
+            <stop offset="1" stopColor="#07080d"/>
+          </linearGradient>
+          <linearGradient id="skf-hood" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stopColor="#1f2732"/>
+            <stop offset=".31" stopColor="#303a46"/>
+            <stop offset=".55" stopColor="#11161f"/>
+            <stop offset="1" stopColor="#0b1018"/>
+          </linearGradient>
+          <linearGradient id="skf-windshield" x1="0" x2="1" y1="0" y2=".55">
+            <stop offset="0" stopColor="#647781"/>
+            <stop offset=".13" stopColor="#1f3540"/>
+            <stop offset=".48" stopColor="#070f18"/>
+            <stop offset=".8" stopColor="#172d36"/>
+            <stop offset="1" stopColor="#4b6070"/>
+          </linearGradient>
+          <linearGradient id="skf-side" x1="0" x2="1">
+            <stop offset="0" stopColor="#0c1118"/>
+            <stop offset=".5" stopColor="#363c48"/>
+            <stop offset="1" stopColor="#090b12"/>
+          </linearGradient>
+          <linearGradient id="skf-lamp" x1="0" x2="1">
+            <stop offset="0" stopColor="#b8ddf7"/>
+            <stop offset=".25" stopColor="#ffffff"/>
+            <stop offset=".67" stopColor="#d9f1ff"/>
+            <stop offset="1" stopColor="#7fa8c7"/>
+          </linearGradient>
+          <radialGradient id="skf-halo">
+            <stop offset="0" stopColor="#fff" stopOpacity=".98"/>
+            <stop offset=".15" stopColor="#e8f6ff" stopOpacity=".72"/>
+            <stop offset=".45" stopColor="#a7d6ff" stopOpacity=".28"/>
+            <stop offset="1" stopColor="#b2deff" stopOpacity="0"/>
+          </radialGradient>
+          <linearGradient id="skf-grille" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stopColor="#1d242e"/>
+            <stop offset="1" stopColor="#010204"/>
+          </linearGradient>
+          <linearGradient id="skf-bumper" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stopColor="#323a46"/>
+            <stop offset=".45" stopColor="#0b0f17"/>
+            <stop offset="1" stopColor="#1c242c"/>
+          </linearGradient>
+          <linearGradient id="skf-red" x1="0" x2="1">
+            <stop offset="0" stopColor="#38050d"/>
+            <stop offset=".16" stopColor="#f3334d"/>
+            <stop offset=".5" stopColor="#c7102a"/>
+            <stop offset=".84" stopColor="#fa384e"/>
+            <stop offset="1" stopColor="#38050d"/>
+          </linearGradient>
+          <pattern id="skf-mesh" width="13" height="13" patternUnits="userSpaceOnUse">
+            <path d="M0 0L7 6.5 0 13M13 0L6 6.5 13 13" stroke="#81909f" strokeOpacity=".35" strokeWidth="1.4" fill="none"/>
+          </pattern>
+        </defs>
+        {/* Tires stand behind the body; their elliptical wheel wells preserve depth. */}
+        <path d="M77 511q-14 6-16 33v127q7 29 28 29h77l-3-177Z" fill="#030407" stroke="#323842" strokeWidth="3"/>
+        <path d="M723 511q14 6 16 33v127q-7 29-28 29h-77l3-177Z" fill="#030407" stroke="#323842" strokeWidth="3"/>
+        <g stroke="#37434d" strokeWidth="3" opacity=".8">
+          <path d="M84 560v111m14-126v130m18-130v134m21-132v125M716 560v111m-14-126v130m-18-130v134m-21-132v125"/>
+        </g>
+        {/* Roof: clearly above the long windscreen, never touching the hood. */}
+        <path d="M213 296 240 135Q246 78 313 55 Q399 23 488 55Q557 80 562 135L588 296Z" fill="#10151d" stroke="#596774" strokeWidth="6"/>
+        <path d="M258 130Q262 98 320 77Q397 49 481 77Q537 100 542 130" fill="none" stroke="#abb8c3" strokeOpacity=".56" strokeWidth="6"/>
+        <path d="M227 264 276 123Q292 102 332 92Q400 75 468 92Q514 102 528 123L574 264Q402 288 227 264Z" fill="url(#skf-windshield)" stroke="#5b6b7a" strokeWidth="5"/>
+        <path d="M297 111 260 243" stroke="#dcefff" strokeOpacity=".2" strokeWidth="12" strokeLinecap="round"/>
+        <path d="M497 110 534 244" stroke="#bddcf1" strokeOpacity=".13" strokeWidth="8" strokeLinecap="round"/>
+        <path d="M289 250Q400 268 510 250" stroke="#7f9baa" strokeOpacity=".3" strokeWidth="4" fill="none"/>
+        {/* Side mirrors, hood shoulders and long body silhouette */}
+        <path d="M224 245 167 254 132 307 166 329 217 310Z" fill="url(#skf-side)" stroke="#77838e" strokeWidth="4"/>
+        <path d="M576 245 633 254 668 307 634 329 583 310Z" fill="url(#skf-side)" stroke="#77838e" strokeWidth="4"/>
+        <path d="M194 288Q223 281 244 293Q400 322 556 293Q579 280 606 288L680 354Q705 379 717 426L745 568Q745 622 713 655L664 681H136L88 655Q55 617 55 568L84 426Q95 381 119 354Z" fill="url(#skf-body)" stroke="#67737f" strokeWidth="5"/>
+        {/* Bonnet is intentionally tall: it slopes for 160px before the lamps. */}
+        <path d="M207 308Q400 343 593 308L665 405Q400 440 136 405Z" fill="url(#skf-hood)" stroke="#555f6b" strokeWidth="3.5"/>
+        <path d="M240 328Q402 356 557 328" stroke="#d2dde6" strokeOpacity=".18" strokeWidth="8" fill="none"/>
+        <path d="M183 397 259 348M618 397l-78-49" stroke="#a4b5c2" strokeOpacity=".34" strokeWidth="6" fill="none"/>
+        <path d="M159 419Q400 453 641 419" fill="none" stroke="#3b4651" strokeWidth="6"/>
+        {/* Sculpted lamp pockets rather than overly horizontal light bars */}
+        <path d="M106 451Q137 430 184 436L303 470 271 508 149 494 99 478Z" fill="#060c14" stroke="#788796" strokeWidth="3"/>
+        <path d="M694 451Q663 430 616 436L497 470 529 508 651 494 701 478Z" fill="#060c14" stroke="#788796" strokeWidth="3"/>
+        <path d="M117 457Q158 447 186 452L276 482 248 491 160 473Z" fill="#8ca7b9" opacity=".32"/>
+        <path d="M683 457Q642 447 614 452L524 482 552 491 640 473Z" fill="#8ca7b9" opacity=".32"/>
+        <g className="hero-front-lit-elements">
+          <path d="M113 458Q152 448 186 456L270 483 248 487 162 470Z" fill="url(#skf-lamp)"/>
+          <path d="M687 458Q648 448 614 456L530 483 552 487 638 470Z" fill="url(#skf-lamp)"/>
+          <path d="M114 457Q151 446 188 454L265 479M686 457Q649 446 612 454L535 479" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round"/>
+          <ellipse cx="179" cy="468" rx="92" ry="70" fill="url(#skf-halo)"/>
+          <ellipse cx="621" cy="468" rx="92" ry="70" fill="url(#skf-halo)"/>
+        </g>
+        {/* Undercut grille keeps correct distance from the lamps. */}
+        <path d="M290 479Q400 492 510 479L549 574Q397 598 251 574Z" fill="url(#skf-grille)" stroke="#535f6c" strokeWidth="4"/>
+        <path d="M297 492Q398 508 502 492L527 562Q402 580 270 562Z" fill="url(#skf-mesh)"/>
+        <path d="M386 484h28v8h-28z" fill="#7d8c99" opacity=".8"/>
+        <path d="M116 522 227 522 205 590 104 573Z" fill="#070b10" stroke="#505d67" strokeWidth="3"/>
+        <path d="M684 522 573 522 595 590 696 573Z" fill="#070b10" stroke="#505d67" strokeWidth="3"/>
+        <path d="M127 558 191 566M673 558l-64 8" stroke="#d2243f" strokeWidth="5" opacity=".85"/>
+        {/* Properly deep bumper and ground clearance */}
+        <path d="M92 593Q399 630 708 593L713 634Q696 664 647 678H151Q103 662 87 634Z" fill="url(#skf-bumper)" stroke="#586571" strokeWidth="3"/>
+        <path d="M121 641Q400 673 679 641" fill="none" stroke="#333d49" strokeWidth="8"/>
+        <path d="M155 669Q398 688 645 669" fill="none" stroke="url(#skf-red)" strokeWidth="8" strokeLinecap="round"/>
+        <path d="M302 595h196v33H302z" fill="#050608" stroke="#454e5a" strokeWidth="2"/>
+        <text x="400" y="618" textAnchor="middle" fill="#e5e9ed" fontSize="21" fontWeight="800" letterSpacing="5" fontFamily="Arial, sans-serif">SKINÃO</text>
+        <path d="M138 679h524" stroke="#0a0d12" strokeWidth="9" strokeLinecap="round"/>
+      </svg>
+      <span className="hero-front-light-cones" />
+      <span className="hero-front-headlight-spot hero-front-headlight-spot--left" />
+      <span className="hero-front-headlight-spot hero-front-headlight-spot--right" />
     </div>
   );
 }

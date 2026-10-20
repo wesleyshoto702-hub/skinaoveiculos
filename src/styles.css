@@ -207,8 +207,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .site-nav .nav-mobile-cta { display: none; }
 
 
-/* Cinematic hero in five reversible scroll-driven acts: top view, acceleration,
-   camera pivot, headlights flooding the screen and staggered brand reveal. */
+/* One continuously rotating CSS-3D vehicle: hinged roof + frontal bodywork.
+   The road conveys acceleration, then headlights wash into the brand reveal. */
 .hero-scroll { height: 320vh; height: 320svh; position: relative; background: #040507; }
 .hero-sticky {
   position: sticky;
@@ -318,17 +318,33 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .hero-moving-car {
   position: absolute;
   z-index: 4;
-  width: clamp(290px, 32vw, 470px);
+  width: clamp(310px, 36vw, 550px);
   aspect-ratio: 400 / 760;
   top: 49%;
   left: 50%;
-  transform: translate3d(-50%, -50%, 0) translate3d(0, var(--car-y), 0) perspective(1100px) rotateX(var(--car-tilt)) scale(var(--car-scale));
+  /* Single camera rotation of the entire articulated object, not two layers. */
+  transform: translate3d(-50%, -50%, 0) translate3d(0, var(--car-y), 0)
+    perspective(1450px) rotateX(var(--camera-angle)) scale(var(--car-scale));
   transform-origin: 50% 50%;
+  transform-style: preserve-3d;
   opacity: var(--car-opacity);
-  will-change: transform, opacity;
+  will-change: transform;
   pointer-events: none;
 }
-.hero-car-svg { width: 100%; height: 100%; display: block; overflow: visible; filter: drop-shadow(0 28px 32px rgba(0,0,0,.85)); }
+.hero-car-top-shell {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: translateZ(1px);
+  backface-visibility: hidden;
+}
+.hero-car-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 24px 25px rgba(0,0,0,.66));
+}
 .hero-vehicle-lights { opacity: var(--headlight-opacity); }
 .hero-car-floor-glow {
   position: absolute;
@@ -354,98 +370,64 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   opacity: var(--road-speed);
 }
 
-/* The camera settles into a head-on view. The two independently illustrated
-   views overlap during the pivot, eliminating the previous zoom-out jump. */
-.hero-front-scene {
+/* Physically hinged to the hood of the exact same moving car.
+   At 0deg camera the 88deg plane is nearly edge-on; as the camera tilts
+   to -86deg, it gradually faces the viewer, with no cross-fade/cut. */
+.hero-car-fascia {
   position: absolute;
-  inset: 0;
-  z-index: 4;
-  opacity: var(--front-scene-opacity);
-  pointer-events: none;
-  overflow: hidden;
-  isolation: isolate;
-}
-.hero-front-environment {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 50% 51%, rgba(85,97,114,.18) 0%, transparent 43%),
-    linear-gradient(180deg,#030406 3%,#13171c 44%,#16171c 57%,#040507 97%);
-}
-.hero-front-horizon {
-  position: absolute;
-  top: 59%;
-  left: -10%;
-  width: 120%;
-  height: 1px;
-  background: linear-gradient(90deg,transparent 2%,rgba(242,48,65,.35) 30%,rgba(239,251,255,.24) 50%,rgba(242,48,65,.35) 70%,transparent 98%);
-  box-shadow: 0 0 45px 14px rgba(213,16,40,.13);
-}
-.hero-front-road {
-  position: absolute;
-  top: 56%;
-  bottom: -15%;
-  left: -25%;
-  width: 150%;
-  background:
-    linear-gradient(83deg,transparent 0%,rgba(231,238,255,.09) 42%,transparent 43%),
-    linear-gradient(97deg,transparent 0%,rgba(231,238,255,.09) 57%,transparent 58%),
-    linear-gradient(180deg,#181b21,#0c0d11 60%,#030406);
-  clip-path: polygon(35% 0,65% 0,100% 100%,0 100%);
-  opacity: .73;
-}
-.hero-front-reflection {
-  position: absolute;
-  top: 60%;
-  left: 0;
-  right: 0;
-  height: 40%;
-  background: radial-gradient(ellipse at 50% 5%,rgba(208,33,55,.23),transparent 65%);
-}
-.hero-front-car-body {
-  position: absolute;
-  z-index: 3;
-  width: min(1100px,100vw);
-  aspect-ratio: 1000 / 590;
-  left: 50%;
-  top: 54%;
-  transform: translate3d(-50%, -50%, 0) translate3d(0,var(--front-lift),0) perspective(1050px) rotateX(var(--front-tilt)) scale(var(--front-scale));
-  transform-origin: 50% 50%;
-  will-change: transform;
+  width: 112%;
+  aspect-ratio: 800 / 740;
+  top: 76%;
+  left: -6%;
+  z-index: 2;
+  transform-origin: 50% 0%;
+  transform: rotateX(88deg) translateZ(2px);
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
 }
 .hero-front-car-svg {
+  display: block;
   width: 100%;
   height: 100%;
-  display: block;
   overflow: visible;
-  filter: drop-shadow(0 21px 24px rgba(0,0,0,.83));
+  filter: drop-shadow(0 15px 27px rgba(0,0,0,.62));
 }
 .hero-front-lit-elements { opacity: var(--front-headlight-opacity); }
 .hero-front-headlight-spot {
   position: absolute;
-  z-index: 5;
-  top: 49%;
-  width: 30%;
-  height: 30%;
-  pointer-events: none;
-  background: radial-gradient(ellipse,rgba(255,255,255,.95) 0%,rgba(236,248,255,.85) 5%,rgba(204,231,255,.46) 22%,rgba(174,213,255,.1) 43%,transparent 70%);
-  filter: blur(10px);
-  mix-blend-mode: screen;
+  z-index: 3;
+  top: 56%;
+  width: 38%;
+  height: 28%;
   opacity: var(--front-headlight-opacity);
+  pointer-events: none;
+  background: radial-gradient(ellipse,rgba(255,255,255,.98),rgba(235,248,255,.72) 10%,rgba(154,211,255,.31) 37%,transparent 73%);
+  filter: blur(12px);
+  mix-blend-mode: screen;
 }
-.hero-front-headlight-spot--left { left: 8%; }
-.hero-front-headlight-spot--right { right: 8%; }
-.hero-front-light-cones { position: absolute; z-index: 2; inset: 0; opacity: var(--front-light-spread); mix-blend-mode: screen; }
-.hero-front-cone {
+.hero-front-headlight-spot--left { left: 4%; }
+.hero-front-headlight-spot--right { right: 4%; }
+.hero-front-light-cones {
   position: absolute;
-  top: 39%;
-  height: 92%;
-  width: 70%;
-  background: radial-gradient(ellipse at 50% 9%,rgba(236,248,255,.9),rgba(190,222,255,.44) 22%,rgba(148,192,242,.17) 54%,transparent 78%);
-  filter: blur(19px);
+  z-index: 3;
+  inset: 0;
+  opacity: var(--front-light-spread);
+  mix-blend-mode: screen;
+  pointer-events: none;
 }
-.hero-front-cone--left { left: -30%; transform: rotate(-12deg); }
-.hero-front-cone--right { right: -30%; transform: rotate(12deg); }
+.hero-front-light-cones::before,
+.hero-front-light-cones::after {
+  content: "";
+  position: absolute;
+  top: 45%;
+  width: 55%;
+  height: 70%;
+  filter: blur(22px);
+  background: radial-gradient(ellipse at 50% 12%,rgba(240,250,255,.9),rgba(201,228,255,.25) 40%,transparent 80%);
+}
+.hero-front-light-cones::before { left: -16%; transform: rotate(-12deg); }
+.hero-front-light-cones::after { right: -16%; transform: rotate(12deg); }
+
 .hero-light-flood {
   position: absolute;
   z-index: 8;
@@ -783,10 +765,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .hero-scroll { height: 270svh; }
   .hero-sticky { background: #050608; }
   .hero-road { width: 115vw; top: -33%; height: 170%; }
-  .hero-moving-car { width: clamp(225px, 66vw, 360px); top: 49%; }
-  .hero-front-car-body { width: 133vw; top: 52%; }
-  .hero-front-light-cones { opacity: calc(var(--front-light-spread) * .85); }
-  .hero-front-headlight-spot { filter: blur(7px); }
+  .hero-moving-car { width: clamp(235px, 72vw, 370px); top: 47%; }
+  .hero-car-fascia { width: 116%; left: -8%; top: 76%; }
+  .hero-front-headlight-spot { filter: blur(8px); }
   .hero-acceleration-line--one { left: 6%; }
   .hero-acceleration-line--four { right: 6%; }
   .hero-intro { padding: max(115px, 17vh) 18px 0; }
@@ -858,7 +839,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .hero-scroll { height: 100svh; }
   .hero-moving-car { opacity: .12 !important; transform: translate3d(-50%, -50%, 0) scale(.75) !important; }
   .hero-road { opacity: .1 !important; }
-  .hero-acceleration, .hero-ignition-flash, .hero-light-flood, .hero-front-scene { display: none !important; }
+  .hero-acceleration, .hero-ignition-flash, .hero-light-flood { display: none !important; }
   .hero-exit-curtain { opacity: .93 !important; }
   .hero-reveal { opacity: 1 !important; pointer-events: auto !important; }
   .hero-brand-first, .hero-brand-second, .hero-reveal-description, .hero-cta-row { opacity: 1 !important; transform: none !important; }

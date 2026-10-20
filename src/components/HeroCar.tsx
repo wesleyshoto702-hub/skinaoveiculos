@@ -1,12 +1,15 @@
+import { FrontHeroCar } from "./FrontHeroCar";
+
 /**
- * Stylized top-down performance car, intentionally rendered as SVG rather than a
- * fixed background. The entire vehicle is translated and scaled by the hero's
- * vertical scroll progress while the road moves in the opposite direction.
+ * One articulated CSS-3D vehicle rig. The top surface and the front fascia
+ * share a hinge and one camera rotation, so they never crossfade as two cars.
+ * The upward-running road conveys speed without aggressive car zoom.
  */
 export function HeroCar() {
   return (
     <div className="hero-moving-car" aria-hidden="true">
       <span className="hero-car-floor-glow" />
+      <div className="hero-car-top-shell">
       <svg className="hero-car-svg" viewBox="0 0 400 760" role="presentation" focusable="false" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="sk-body" x1="0" x2="1" y1="0" y2=".24">
@@ -111,6 +114,8 @@ export function HeroCar() {
         {/* Final subtle surface reflection */}
         <path d="M111 163Q103 209 102 250M290 166Q297 207 299 255" stroke="#f4f9ff" strokeWidth="3" opacity=".16" fill="none"/>
       </svg>
+      </div>
+      <FrontHeroCar />
       <span className="hero-car-speed-pulse" />
     </div>
   );
