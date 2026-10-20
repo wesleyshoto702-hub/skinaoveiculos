@@ -843,14 +843,32 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   height: 40%;
   background: radial-gradient(ellipse at 50% 100%,rgba(174,185,197,.09),transparent 69%);
 }
+/* The lane pattern is rendered only once and scrolled by the compositor.
+   Moving a repeating-gradient background-position can repaint each frame
+   and visibly snap when its background size is implicit. The extra 88px
+   matches exactly one repeat tile, so the loop has a seamless endpoint. */
 .sk-loader__road-line {
   position: absolute;
-  width: 100%;
   left: 0;
+  width: 100%;
   height: 2px;
-  background: repeating-linear-gradient(to right,
-    rgba(234,180,50,.86) 0 42px, transparent 42px 88px);
   opacity: .51;
+  pointer-events: none;
+}
+.sk-loader__road-line::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + 88px);
+  height: 100%;
+  background-image: linear-gradient(to right,
+    rgba(234,180,50,.86) 0 42px, transparent 42px 88px);
+  background-size: 88px 100%;
+  background-repeat: repeat-x;
+  transform: translate3d(0,0,0);
+  will-change: transform;
+  backface-visibility: hidden;
   animation: sk-loader-lane-move .78s linear infinite;
 }
 .sk-loader__road-line--first { top: 17%; }
@@ -952,7 +970,10 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 }
 @keyframes sk-loader-wheel-spin { to { transform: rotate(360deg); } }
 @keyframes sk-loader-body-bob { to { transform: translateY(-1.5px); } }
-@keyframes sk-loader-lane-move { to { background-position: -88px 0; } }
+@keyframes sk-loader-lane-move {
+  from { transform: translate3d(0,0,0); }
+  to { transform: translate3d(-88px,0,0); }
+}
 @media (max-width: 700px) {
   .sk-loader { padding: 22px 14px; }
   .sk-loader__content { gap: 23px; transform: none; }
@@ -981,7 +1002,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .sk-loader { transition-duration: .08s !important; }
   .sk-loader__content { transition-duration: .08s !important; }
   .sk-loader__smoke-puff, .sk-loader__car-track, .sk-loader__wheel,
-  .sk-loader__car-body, .sk-loader__road-line { animation: none !important; }
+  .sk-loader__car-body, .sk-loader__road-line::before { animation: none !important; }
   .sk-loader__car-track--original { transform: translate3d(12%,0,0); }
   .sk-loader__car-track--red { display: none; }
 }
