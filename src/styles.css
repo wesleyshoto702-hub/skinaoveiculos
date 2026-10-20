@@ -206,40 +206,251 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .menu-toggle { display: none; color: white; background: transparent; border: 0; padding: 9px; }
 .site-nav .nav-mobile-cta { display: none; }
 
-.hero-scroll { height: 300vh; position: relative; background: #040507; }
-.hero-sticky { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: radial-gradient(ellipse at 50% 55%, #1b1d21 0, #050607 60%, #000 100%); isolation: isolate; }
-.hero-grid { position: absolute; inset: 0; z-index: 1; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px); background-size: 100px 100px; mask-image: linear-gradient(180deg,transparent,black 20%,black 85%,transparent); }
-.hero-sticky:after { content: ""; position: absolute; inset: 0; z-index: 5; pointer-events: none; background: linear-gradient(90deg,rgba(0,0,0,.28),transparent 25%,transparent 75%,rgba(0,0,0,.23)), linear-gradient(0deg,#000 0%,transparent 26%,transparent 81%,rgba(0,0,0,.15)); }
-.hero-car-scene { position: absolute; inset: -3%; z-index: 2; opacity: var(--car-opacity); transform: translate3d(var(--car-x), 0, 0) scale(var(--car-scale)); transform-origin: 55% 55%; will-change: transform,opacity; }
-.car-photo { position: absolute; inset: 0; background-image: linear-gradient(90deg,#050506 2%,rgba(0,0,0,.05) 40%,rgba(0,0,0,.08) 62%,#050506 100%), url("https://images.unsplash.com/photo-1724391114112-c83ad59f1d5f?auto=format&fit=crop&w=1800&q=85"); background-size: cover; background-position: center 52%; filter: saturate(.75) contrast(1.1) brightness(.72); }
-.car-shadow { position: absolute; inset: 0; background: linear-gradient(0deg,#000 0%,transparent 45%,rgba(0,0,0,.6) 100%), radial-gradient(ellipse at 50% 45%,transparent 0%,rgba(0,0,0,.6) 74%); }
-.headlight-flare { position: absolute; z-index: 2; top: 52%; width: 23%; height: 12%; border-radius: 50%; background: radial-gradient(ellipse,#fff 0%,rgba(255,255,255,.9) 5%,rgba(255,255,255,.3) 17%,rgba(255,30,50,.1) 35%,transparent 70%); filter: blur(7px); opacity: calc(var(--headlight-opacity) * .64); mix-blend-mode: screen; pointer-events: none; }
-.headlight-flare--left { left: 20%; }
-.headlight-flare--right { right: 20%; }
-.headlight-haze { position: absolute; inset: 0; background: radial-gradient(ellipse at 53% 52%,rgba(243,17,36,.23),transparent 55%); opacity: var(--headlight-opacity); mix-blend-mode: screen; }
-.speed-trail { position: absolute; z-index: 4; width: 75%; height: 3px; left: 38%; background: linear-gradient(90deg,transparent,#f82035,rgba(255,47,58,.01)); filter: blur(3px); opacity: calc((1 - var(--car-opacity)) * .9); }
-.speed-trail-one { top: 64%; }
-.speed-trail-two { top: 70%; height: 1px; }
-.hero-intro { position: absolute; z-index: 7; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; pointer-events: none; text-align: center; padding: 100px 20px 0; }
+
+/* Vertical scroll-driven cinematic introduction. The car is a moving foreground
+   SVG, while perspective road markings travel UP as the visitor scrolls DOWN. */
+.hero-scroll { height: 320vh; height: 320svh; position: relative; background: #040507; }
+.hero-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  background: radial-gradient(ellipse at 50% 67%, #19191e 0%, #08090c 49%, #010102 100%);
+}
+.hero-sticky::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, #010102 0%, transparent 24%, transparent 76%, #010102 100%),
+    linear-gradient(180deg, #010102 0%, transparent 25%, transparent 75%, #030304 100%);
+}
+.hero-sticky::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  opacity: .22;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 150 150' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23fff' opacity='.2' filter='url(%23n)' d='M0 0h150v150H0z'/%3E%3C/svg%3E");
+  background-size: 190px 190px;
+  mix-blend-mode: soft-light;
+}
+.hero-road {
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  top: -42%;
+  width: min(75vw, 1120px);
+  height: 188%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: calc(1 - var(--scene-darkness) * .96);
+}
+.hero-road-asphalt {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(255,255,255,.035) 1%, transparent 2%, transparent 98%, rgba(255,255,255,.035) 99%, transparent 100%),
+    radial-gradient(ellipse at 50% 50%, #202025 0%, #121317 48%, #08090b 74%, transparent 96%);
+}
+.hero-road-lane {
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  width: 3px;
+  opacity: .34;
+  background: linear-gradient(to bottom, transparent, rgba(188,190,202,.65) 25%, rgba(188,190,202,.75) 75%, transparent);
+  box-shadow: 0 0 18px rgba(255,255,255,.12);
+}
+.hero-road-lane--left { left: 8%; }
+.hero-road-lane--right { right: 8%; }
+.hero-road-center {
+  position: absolute;
+  top: -165vh;
+  bottom: -165vh;
+  left: 50%;
+  width: 3px;
+  opacity: .23;
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 92px, rgba(225,230,238,.75) 93px, rgba(225,230,238,.75) 175px, transparent 176px, transparent 280px);
+  transform: translate3d(-50%, var(--road-offset), 0);
+  will-change: transform;
+}
+.hero-road-speed {
+  position: absolute;
+  top: -100vh;
+  bottom: -100vh;
+  width: 10%;
+  opacity: var(--road-speed);
+  transform: translate3d(0, var(--road-offset), 0);
+  background: repeating-linear-gradient(180deg, transparent 0, rgba(255,255,255,.14) 58px, rgba(255,255,255,.52) 64px, transparent 160px);
+  filter: blur(3px);
+  will-change: transform, opacity;
+}
+.hero-road-speed--left { left: 14%; }
+.hero-road-speed--right { right: 14%; }
+.hero-road-reflection {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 52%, transparent 16%, rgba(176,15,31,.14) 59%, transparent 77%);
+  mix-blend-mode: screen;
+}
+.hero-acceleration { position: absolute; inset: 0; z-index: 3; opacity: var(--road-speed); pointer-events: none; }
+.hero-acceleration-line {
+  position: absolute;
+  top: -18%;
+  height: 140%;
+  width: 2px;
+  transform: translate3d(0, var(--road-offset), 0);
+  background: linear-gradient(180deg, transparent 0%, rgba(216,220,238,.02) 12%, rgba(227,233,247,.4) 52%, transparent 100%);
+  filter: blur(3px);
+}
+.hero-acceleration-line--one { left: 13%; width: 2px; }
+.hero-acceleration-line--two { left: 28%; width: 3px; }
+.hero-acceleration-line--three { right: 28%; width: 3px; }
+.hero-acceleration-line--four { right: 13%; width: 2px; }
+.hero-moving-car {
+  position: absolute;
+  z-index: 4;
+  width: clamp(290px, 32vw, 470px);
+  aspect-ratio: 400 / 760;
+  top: 49%;
+  left: 50%;
+  transform: translate3d(-50%, -50%, 0) translate3d(0, var(--car-y), 0) scale(var(--car-scale));
+  transform-origin: 50% 50%;
+  opacity: var(--car-opacity);
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+.hero-car-svg { width: 100%; height: 100%; display: block; overflow: visible; filter: drop-shadow(0 28px 32px rgba(0,0,0,.85)); }
+.hero-vehicle-lights { opacity: var(--headlight-opacity); }
+.hero-car-floor-glow {
+  position: absolute;
+  z-index: -1;
+  left: -34%;
+  top: 48%;
+  width: 168%;
+  height: 90%;
+  background: radial-gradient(ellipse, rgba(216,20,46,.23), rgba(216,20,46,.07) 35%, transparent 66%);
+  opacity: var(--headlight-opacity);
+  filter: blur(25px);
+}
+.hero-car-speed-pulse {
+  position: absolute;
+  z-index: -1;
+  top: 75%;
+  left: 50%;
+  width: 160%;
+  height: 30%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse, rgba(255,255,255,.2), transparent 65%);
+  filter: blur(22px);
+  opacity: var(--road-speed);
+}
+.hero-ignition-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  opacity: var(--ignition-flash);
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 58%, rgba(244,250,255,.63), rgba(103,142,195,.23) 30%, transparent 69%);
+  mix-blend-mode: screen;
+}
+.hero-exit-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: var(--scene-darkness);
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(85,7,19,.15), transparent 50%),
+    #030305;
+}
+.hero-intro {
+  position: absolute;
+  z-index: 7;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: max(123px, 17vh) 24px 0;
+  text-align: center;
+  gap: 18px;
+  pointer-events: none;
+  opacity: var(--intro-opacity);
+}
 .hero-intro-label { display: flex; align-items: center; gap: 11px; font-size: 10px; font-weight: 800; letter-spacing: .28em; }
-.hero-intro-text { font-family: "Barlow Condensed", Impact, sans-serif; font-size: clamp(40px,5vw,88px); font-weight: 800; line-height: .95; color: rgba(255,255,255,.75); }
+.hero-intro-text {
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: clamp(50px, 6.5vw, 100px);
+  font-weight: 800;
+  line-height: .9;
+  letter-spacing: -.02em;
+  color: rgba(255,255,255,.78);
+  max-width: 800px;
+}
 .hero-intro-text em { font-style: normal; color: white; }
-.hero-reveal { position: absolute; z-index: 8; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 105px 24px 50px; opacity: var(--reveal-opacity); transform: translate3d(0,var(--reveal-y),0); pointer-events: var(--reveal-pointer); }
-.hero-reveal-overline { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 11px; letter-spacing: .3em; margin-bottom: 24px !important; }
-.hero-reveal-overline span { display: inline-block; width: 25px; height: 2px; background: var(--accent); }
-.hero-reveal h1 { font-weight: 900; font-size: clamp(86px, 14vw, 244px); letter-spacing: -.045em; line-height: .7; text-shadow: 0 10px 55px rgba(0,0,0,.6); }
-.hero-reveal h1 > span { display: block; font-size: .61em; color: var(--accent-bright); letter-spacing: .075em; margin: .18em 0 0 .08em; }
+.hero-reveal {
+  position: absolute;
+  z-index: 8;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 110px 22px 72px;
+  opacity: var(--reveal-opacity);
+  pointer-events: var(--reveal-pointer);
+}
+.hero-reveal-overline { display: flex; gap: 10px; align-items: center; margin-bottom: 26px !important; font-size: 11px; font-weight: 800; letter-spacing: .26em; }
+.hero-reveal-overline > span { display: inline-block; height: 2px; width: 25px; background: var(--accent); }
+.hero-reveal h1 {
+  display: block;
+  width: 100%;
+  font-weight: 900;
+  font-size: clamp(82px, 13.8vw, 226px);
+  line-height: .88;
+  letter-spacing: -.045em;
+  text-shadow: 0 15px 45px rgba(0,0,0,.55);
+}
+.hero-brand-line { display: block; overflow: hidden; padding-bottom: .12em; }
+.hero-brand-line-inner { display: block; width: max-content; max-width: 100%; margin: 0 auto; }
+.hero-brand-first { transform: translate3d(0, var(--brand-first-y), 0); opacity: var(--brand-first-opacity); }
+.hero-brand-line--accent { font-size: .62em; line-height: 1.04; color: var(--accent-bright); letter-spacing: .055em; }
+.hero-brand-second { transform: translate3d(0, var(--brand-second-y), 0); opacity: var(--brand-second-opacity); }
 .hero-period { color: white; }
-.hero-reveal-description { color: #c5c5c8; font-size: 15px; line-height: 1.8; margin-top: 37px !important; max-width: 470px; }
-.hero-cta-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 29px; }
-.hero-side-mark { position: absolute; z-index: 9; right: 35px; top: 50%; transform: translateY(-50%); writing-mode: vertical-rl; color: rgba(255,255,255,.35); font-size: 9px; font-weight: 700; letter-spacing: .25em; }
+.hero-reveal-description {
+  color: #c5c5c8;
+  font-size: 15px;
+  line-height: 1.8;
+  max-width: 470px;
+  margin-top: 25px !important;
+  opacity: var(--reveal-description-opacity);
+  transform: translate3d(0,var(--reveal-description-y),0);
+}
+.hero-cta-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 27px;
+  opacity: var(--reveal-buttons-opacity);
+  transform: translate3d(0,var(--reveal-buttons-y),0);
+}
+.hero-side-mark { position: absolute; z-index: 9; right: 35px; top: 50%; transform: translateY(-50%); writing-mode: vertical-rl; color: rgba(255,255,255,.35); font-size: 9px; font-weight: 700; letter-spacing: .25em; pointer-events: none; }
 .hero-bottom { position: absolute; z-index: 9; left: 56px; right: 56px; bottom: 35px; display: flex; justify-content: space-between; align-items: center; color: rgba(255,255,255,.62); font-size: 10px; font-weight: 700; letter-spacing: .15em; pointer-events: none; }
 .muted-separator { color: var(--accent); padding: 0 10px; }
 .scroll-cue { display: flex; gap: 13px; align-items: center; }
 .hero-scroll-counter { font-family: "Barlow Condensed",sans-serif; font-size: 18px; letter-spacing: .08em; color: white; }
 .hero-scroll-counter span { color: var(--accent); }
-.hero-progress { position: absolute; bottom: 0; left: 0; right: 0; z-index: 10; height: 3px; background: rgba(255,255,255,.1); }
-.hero-progress span { display: block; height: 100%; background: var(--accent); transition: width .05s linear; }
+.hero-progress { position: absolute; bottom: 0; left: 0; right: 0; z-index: 10; height: 3px; background: rgba(255,255,255,.1); pointer-events: none; }
+.hero-progress > span { display: block; height: 100%; background: var(--accent); }
 .ticker { background: var(--accent); padding: 18px 0; overflow: hidden; border-top: 1px solid #f73449; }
 .ticker-track { display: flex; width: max-content; align-items: center; gap: 38px; animation: ticker-move 32s linear infinite; font-family: "Barlow Condensed",sans-serif; font-size: 20px; font-weight: 800; letter-spacing: .11em; white-space: nowrap; }
 @keyframes ticker-move { to { transform: translateX(-50%); } }
@@ -454,12 +665,13 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .site-root .brand { gap: 8px; }
   .brand-words strong { font-size: 22px; }
   .brand-words em { font-size: 13px; letter-spacing: .18em; margin-top: 6px; }
-  .hero-scroll { height: 230vh; }
+  .hero-scroll { height: 270svh; }
   .hero-sticky { background: #050608; }
-  .hero-car-scene { inset: -15%; transform-origin: 48% 55%; }
-  .car-photo { background-position: 47% 50%; filter: brightness(.72) contrast(1.2); }
-  .headlight-flare { top: 52%; }
-  .hero-intro { padding: 70px 20px 0; }
+  .hero-road { width: 115vw; top: -33%; height: 170%; }
+  .hero-moving-car { width: clamp(225px, 66vw, 360px); top: 49%; }
+  .hero-acceleration-line--one { left: 6%; }
+  .hero-acceleration-line--four { right: 6%; }
+  .hero-intro { padding: max(115px, 17vh) 18px 0; }
   .hero-intro-label { font-size: 8px; letter-spacing: .1em; }
   .hero-intro-text { font-size: 42px; max-width: 300px; }
   .hero-reveal { padding: 90px 14px 45px; }
@@ -526,7 +738,11 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 @media (prefers-reduced-motion: reduce) {
   .site-root *, .site-root *:before, .site-root *:after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
   .hero-scroll { height: 100svh; }
-  .hero-car-scene { opacity: .22 !important; transform: none !important; }
-  .hero-reveal { opacity: 1 !important; transform: none !important; pointer-events: auto !important; }
-  .hero-intro { display: none; }
+  .hero-moving-car { opacity: .12 !important; transform: translate3d(-50%, -50%, 0) scale(.75) !important; }
+  .hero-road { opacity: .1 !important; }
+  .hero-acceleration, .hero-ignition-flash { display: none !important; }
+  .hero-exit-curtain { opacity: .9 !important; }
+  .hero-reveal { opacity: 1 !important; pointer-events: auto !important; }
+  .hero-brand-first, .hero-brand-second, .hero-reveal-description, .hero-cta-row { opacity: 1 !important; transform: none !important; }
+  .hero-intro { display: none !important; }
 }

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { HeroCar } from "../components/HeroCar";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import {
   ArrowDown, ArrowRight, ArrowUpRight, BadgeCheck, CalendarDays,
@@ -218,18 +219,40 @@ function Home() {
   useEffect(() => { document.body.classList.toggle("menu-open", menuOpen); return () => document.body.classList.remove("menu-open"); }, [menuOpen]);
   const openDetails = (vehicle: Vehicle) => setSelected(vehicle);
   const closeDetails = () => setSelected(null);
-  const progressLight = Math.max(0, Math.min(1, (progress-0.1)/0.24));
-  const progressDrive = Math.max(0, Math.min(1, (progress-0.43)/0.29));
-  const progressReveal = Math.max(0, Math.min(1, (progress-0.69)/0.19));
+  // All phases are derived from vertical scrolling; no horizontal translation,
+  // autonomous timers or forced scroll jumps. Reversing scroll reverses the film.
+  const phase = (start: number, end: number) => {
+    const t = Math.max(0, Math.min(1, (progress - start) / (end - start)));
+    return t * t * (3 - 2 * t);
+  };
+  const ignition = phase(0.10, 0.27);
+  const drive = phase(0.13, 0.71);
+  const velocity = phase(0.31, 0.61);
+  const passed = phase(0.63, 0.77);
+  const titleFirst = phase(0.74, 0.86);
+  const titleSecond = phase(0.80, 0.90);
+  const descriptionIn = phase(0.85, 0.94);
+  const buttonsIn = phase(0.88, 0.97);
   const heroStyle = {
-    "--headlight-opacity": progressLight.toFixed(3),
-    "--car-x": (-140*progressDrive) + "vw",
-    "--car-scale": (1.04 + progressDrive*0.38).toFixed(3),
-    "--car-opacity": Math.max(0, 1-progressDrive*1.8).toFixed(3),
-    "--reveal-opacity": progressReveal.toFixed(3),
-    "--reveal-y": ((1-progressReveal)*48).toFixed(1) + "px",
-    "--reveal-pointer": progressReveal>0.75 ? "auto" : "none",
-    "--intro-opacity": Math.max(0, 1-progress*6).toFixed(3),
+    "--headlight-opacity": ignition.toFixed(3),
+    "--car-y": (-15 + 145 * Math.pow(drive, 1.24)).toFixed(2) + "vh",
+    "--car-scale": (0.62 + 2.55 * Math.pow(drive, 1.35)).toFixed(3),
+    "--car-opacity": (1 - passed).toFixed(3),
+    "--road-offset": (-170 * drive).toFixed(2) + "vh",
+    "--road-speed": (velocity * (1 - passed)).toFixed(3),
+    "--scene-darkness": phase(0.65, 0.81).toFixed(3),
+    "--ignition-flash": (Math.max(0, 1 - Math.abs(progress - 0.27) / 0.12) * ignition * 0.50).toFixed(3),
+    "--intro-opacity": (1 - phase(0.06, 0.24)).toFixed(3),
+    "--reveal-opacity": titleFirst.toFixed(3),
+    "--brand-first-opacity": titleFirst.toFixed(3),
+    "--brand-first-y": ((1 - titleFirst) * 110).toFixed(1) + "%",
+    "--brand-second-opacity": titleSecond.toFixed(3),
+    "--brand-second-y": ((1 - titleSecond) * 115).toFixed(1) + "%",
+    "--reveal-description-opacity": descriptionIn.toFixed(3),
+    "--reveal-description-y": ((1 - descriptionIn) * 28).toFixed(1) + "px",
+    "--reveal-buttons-opacity": buttonsIn.toFixed(3),
+    "--reveal-buttons-y": ((1 - buttonsIn) * 35).toFixed(1) + "px",
+    "--reveal-pointer": buttonsIn > 0.93 ? "auto" : "none",
   } as CSSProperties;
 
   const matches = vehicles.filter(vehicle => {
@@ -263,23 +286,34 @@ function Home() {
       <main>
         <section ref={heroRef} className="hero-scroll" aria-label="Apresentação Skinão Veículos">
           <div className="hero-sticky" style={heroStyle}>
-            <div className="hero-grid" aria-hidden="true"/>
-            <div className="hero-car-scene" aria-hidden="true">
-              <div className="car-photo"/>
-              <div className="car-shadow"/>
-              <div className="headlight-flare headlight-flare--left"/>
-              <div className="headlight-flare headlight-flare--right"/>
-              <div className="headlight-haze"/>
-              <div className="speed-trail speed-trail-one"/>
-              <div className="speed-trail speed-trail-two"/>
+            <div className="hero-road" aria-hidden="true">
+              <div className="hero-road-asphalt"/>
+              <div className="hero-road-lane hero-road-lane--left"/>
+              <div className="hero-road-lane hero-road-lane--right"/>
+              <div className="hero-road-center"/>
+              <div className="hero-road-speed hero-road-speed--left"/>
+              <div className="hero-road-speed hero-road-speed--right"/>
+              <div className="hero-road-reflection"/>
             </div>
-            <div className="hero-intro" style={{opacity:"var(--intro-opacity)"}}>
+            <div className="hero-acceleration" aria-hidden="true">
+              <span className="hero-acceleration-line hero-acceleration-line--one"/>
+              <span className="hero-acceleration-line hero-acceleration-line--two"/>
+              <span className="hero-acceleration-line hero-acceleration-line--three"/>
+              <span className="hero-acceleration-line hero-acceleration-line--four"/>
+            </div>
+            <HeroCar/>
+            <div className="hero-ignition-flash" aria-hidden="true"/>
+            <div className="hero-exit-curtain" aria-hidden="true"/>
+            <div className="hero-intro">
               <span className="hero-intro-label"><span className="red-dot"/> UMA NOVA EXPERIÊNCIA SOBRE QUATRO RODAS</span>
-              <span className="hero-intro-text">NÃO É SÓ SOBRE <em>DIRIGIR.</em></span>
+              <span className="hero-intro-text">PREPARE-SE PARA <em>ACELERAR.</em></span>
             </div>
             <div className="hero-reveal">
-              <p className="hero-reveal-overline"><span/> BEM-VINDO À NOVA ERA</p>
-              <h1>SKINÃO <span>VEÍCULOS<span className="hero-period">.</span></span></h1>
+              <p className="hero-reveal-overline"><span/> A ESTRADA COMEÇA AQUI</p>
+              <h1 aria-label="Skinão Veículos">
+                <span className="hero-brand-line"><span className="hero-brand-line-inner hero-brand-first">SKINÃO</span></span>
+                <span className="hero-brand-line hero-brand-line--accent"><span className="hero-brand-line-inner hero-brand-second">VEÍCULOS<span className="hero-period">.</span></span></span>
+              </h1>
               <p className="hero-reveal-description">Seu próximo capítulo começa aqui. Encontre o carro que combina com você.</p>
               <div className="hero-cta-row">
                 <a href="#estoque" className="btn btn-red">EXPLORAR ESTOQUE <ArrowUpRight size={18}/></a>
