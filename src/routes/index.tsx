@@ -2,12 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CarScroll3D } from "../components/CarScroll3D";
 import { LoadingScreen } from "../components/LoadingScreen";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
-import {
-  ArrowDown, ArrowRight, ArrowUpRight, BadgeCheck, CalendarDays,
-  CarFront, Check, ChevronLeft, ChevronRight, Clock3, Fuel, Gauge,
-  Instagram, MapPin, Menu, MessageCircle, Search, ShieldCheck,
-  SlidersHorizontal, Sparkles, X,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Instagram, Menu, MessageCircle, Search, X } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -96,7 +91,6 @@ function whatsApp(message: string) {
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <a href="#inicio" className={"brand " + (compact ? "brand--compact" : "")} aria-label="Skinão Veículos — início">
-      <span className="brand-drawing" aria-hidden="true"><CarFront size={26} strokeWidth={1.4}/><span/></span>
       <span className="brand-words"><strong>SKINÃO</strong><em>VEÍCULOS</em></span>
     </a>
   );
@@ -105,7 +99,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
 function SectionTitle({ eyebrow, title, description }: { eyebrow: string; title: string; description?: string }) {
   return (
     <div className="section-heading">
-      <p className="eyebrow"><span className="eyebrow-line"/> {eyebrow}</p>
+      <p className="eyebrow">{eyebrow}</p>
       <h2>{title}</h2>
       {description && <p className="section-description">{description}</p>}
     </div>
@@ -118,21 +112,18 @@ function VehicleCard({ vehicle, onDetails }: { vehicle: Vehicle; onDetails: (veh
     <article className="vehicle-card">
       <button type="button" className="vehicle-card-photo" onClick={() => onDetails(vehicle)} aria-label={"Ver detalhes de " + label}>
         <img src={vehicle.photo} alt={"Imagem ilustrativa: " + label} loading="lazy" decoding="async"/>
-        {vehicle.badge && <span className="vehicle-tag">{vehicle.badge}</span>}
-        <span className="photo-corner"><ArrowUpRight size={18}/></span>
       </button>
       <div className="vehicle-card-body">
         <div className="vehicle-title"><div><span className="vehicle-brand">{vehicle.brand}</span><h3>{vehicle.model}</h3></div><span className="vehicle-year">{vehicle.year}</span></div>
         <p className="vehicle-version">{vehicle.version}</p>
         <div className="vehicle-specs">
-          <span><Gauge size={15}/>{kilometers(vehicle.km)}</span>
-          <span><SlidersHorizontal size={15}/>{vehicle.transmission}</span>
-          <span><Fuel size={15}/>{vehicle.fuel}</span>
+          <span>{kilometers(vehicle.km)}</span>
+          <span>{vehicle.transmission}</span>
+          <span>{vehicle.fuel}</span>
         </div>
-        <div className="vehicle-price"><div><small>VALOR ILUSTRATIVO</small><strong>{money(vehicle.price)}</strong></div>
-          <button type="button" className="vehicle-card-arrow" onClick={() => onDetails(vehicle)} aria-label={"Ver " + label}><ArrowUpRight size={22}/></button>
+        <div className="vehicle-price"><div><small>PREÇO ILUSTRATIVO</small><strong>{money(vehicle.price)}</strong></div>
         </div>
-        <button type="button" className="vehicle-more" onClick={() => onDetails(vehicle)}>Ver detalhes do veículo <ArrowRight size={16}/></button>
+        <button type="button" className="vehicle-more" onClick={() => onDetails(vehicle)}>VER DETALHES DO MODELO</button>
       </div>
     </article>
   );
@@ -151,7 +142,7 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
   return (
     <div className="modal-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
       <section className="vehicle-dialog" role="dialog" aria-modal="true" aria-labelledby="vehicle-modal-title">
-        <div className="dialog-top"><span><span className="red-dot"/> CATÁLOGO DEMONSTRATIVO</span><button type="button" className="icon-button" onClick={onClose} aria-label="Fechar detalhes"><X size={23}/></button></div>
+        <div className="dialog-top"><span>CATÁLOGO DEMONSTRATIVO</span><button type="button" className="icon-button" onClick={onClose} aria-label="Fechar detalhes"><X size={23}/></button></div>
         <div className="dialog-content">
           <div className="dialog-gallery">
             <div className="dialog-image"><img src={vehicle.gallery[currentIndex]} alt={"Foto ilustrativa " + (currentIndex+1) + " de " + vehicle.model}/>
@@ -162,20 +153,20 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
             <div className="gallery-thumbs">{vehicle.gallery.map((photo, index) => <button type="button" className={index===currentIndex?"active":""} onClick={() => setPhotoIndex(index)} key={index} aria-label={"Selecionar foto " + (index+1)}><img src={photo} loading="lazy" alt=""/></button>)}</div>
           </div>
           <div className="dialog-details">
-            <p className="eyebrow"><span className="eyebrow-line"/> DETALHES DO VEÍCULO</p>
+            <p className="eyebrow">DETALHES DO VEÍCULO</p>
             <h2 id="vehicle-modal-title">{vehicle.brand} <strong>{vehicle.model}</strong></h2>
             <p className="dialog-version">{vehicle.version}</p>
             <div className="dialog-price"><small>PREÇO DEMONSTRATIVO</small><strong>{money(vehicle.price)}</strong></div>
             <div className="dialog-stats">
-              <div><CalendarDays size={17}/><span>Ano<strong>{vehicle.year}</strong></span></div>
-              <div><Gauge size={17}/><span>Quilometragem<strong>{kilometers(vehicle.km)}</strong></span></div>
-              <div><SlidersHorizontal size={17}/><span>Câmbio<strong>{vehicle.transmission}</strong></span></div>
-              <div><Fuel size={17}/><span>Combustível<strong>{vehicle.fuel}</strong></span></div>
+              <div><span>Ano<strong>{vehicle.year}</strong></span></div>
+              <div><span>Quilometragem<strong>{kilometers(vehicle.km)}</strong></span></div>
+              <div><span>Câmbio<strong>{vehicle.transmission}</strong></span></div>
+              <div><span>Combustível<strong>{vehicle.fuel}</strong></span></div>
             </div>
             <h3>Itens e diferenciais</h3>
-            <div className="feature-list">{vehicle.features.map(feature => <span key={feature}><Check size={15}/>{feature}</span>)}</div>
+            <div className="feature-list">{vehicle.features.map(feature => <span key={feature}>{feature}</span>)}</div>
             <p className="dialog-disclaimer">Este veículo é um exemplo de layout. Modelo, imagens, valores, características e disponibilidade não representam o estoque real da Skinão Veículos.</p>
-            <button type="button" className="btn btn-red dialog-contact" onClick={() => whatsApp("Olá! Gostaria de saber quais veículos semelhantes a " + vehicle.brand + " " + vehicle.model + " estão disponíveis na Skinão Veículos.")}><MessageCircle size={19}/> Consultar modelos semelhantes <ArrowUpRight size={19}/></button>
+            <button type="button" className="btn btn-red dialog-contact" onClick={() => whatsApp("Olá! Gostaria de saber quais veículos semelhantes a " + vehicle.brand + " " + vehicle.model + " estão disponíveis na Skinão Veículos.")}><MessageCircle size={19}/> CONSULTAR MODELOS SEMELHANTES</button>
             {!waNumber && <p className="contact-config-note">O número oficial do WhatsApp ainda precisa ser configurado para direcionar a mensagem à loja.</p>}
           </div>
         </div>
@@ -274,26 +265,23 @@ function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
               <span className="hero-light-flood-center"/>
             </div>
             <div className="hero-intro">
-              <span className="hero-intro-label"><span className="red-dot"/> UMA NOVA EXPERIÊNCIA SOBRE QUATRO RODAS</span>
-              <span className="hero-intro-text">PREPARE-SE PARA <em>ACELERAR.</em></span>
+              <span className="hero-intro-label">SKINÃO VEÍCULOS · LAVRAS / MG</span>
+              <span className="hero-intro-text">SEU PRÓXIMO <em>CARRO.</em></span>
             </div>
             <div className="hero-reveal">
-              <p className="hero-reveal-overline"><span/> A ESTRADA COMEÇA AQUI</p>
+              <p className="hero-reveal-overline">MULTIMARCAS EM LAVRAS / MG</p>
               <h1 aria-label="Skinão Veículos">
                 <span className="hero-brand-line"><span className="hero-brand-line-inner hero-brand-first">SKINÃO</span></span>
                 <span className="hero-brand-line hero-brand-line--accent"><span className="hero-brand-line-inner hero-brand-second">VEÍCULOS<span className="hero-period">.</span></span></span>
               </h1>
-              <p className="hero-reveal-description">Seu próximo capítulo começa aqui. Encontre o carro que combina com você.</p>
+              <p className="hero-reveal-description">Veja os modelos desta prévia e fale com a loja para consultar disponibilidade.</p>
               <div className="hero-cta-row">
-                <a href="#estoque" className="btn btn-red">EXPLORAR ESTOQUE <ArrowUpRight size={18}/></a>
-                <a href="#sobre" className="btn btn-outline">CONHEÇA A SKINÃO <ArrowRight size={17}/></a>
+                <a href="#estoque" className="btn btn-red">VER CATÁLOGO</a>
               </div>
             </div>
-            <div className="hero-side-mark" aria-hidden="true">PERFORMANCE · ESTILO · MOVIMENTO</div>
             <div className="hero-bottom">
               <span>SKINÃO VEÍCULOS <span className="muted-separator">/</span> LAVRAS — MG</span>
-              <span className="scroll-cue">ROLE PARA DESCOBRIR <ArrowDown size={15}/></span>
-              <span className="hero-scroll-counter">0{Math.max(1, Math.ceil(progress*4))} <span>/</span> 04</span>
+              <span className="scroll-cue">ROLE PARA CONTINUAR</span>
             </div>
             <div className="hero-progress" aria-hidden="true"><span style={{width:(progress*100)+"%"}}/></div>
           </div>
@@ -358,7 +346,7 @@ function Home() {
               <a href={url} key={url} onClick={() => setMenuOpen(false)}>{label}</a>)}
             <button type="button" className="nav-mobile-cta" onClick={() => { setMenuOpen(false); whatsApp("Olá, Skinão Veículos! Vim pelo site e gostaria de conversar."); }}><MessageCircle size={17}/> Falar no WhatsApp</button>
           </nav>
-          <div className="header-actions"><button type="button" className="header-contact" onClick={() => whatsApp("Olá, Skinão Veículos! Vim pelo site e gostaria de conversar.")}>FALE COM A GENTE <ArrowUpRight size={16}/></button>
+          <div className="header-actions"><button type="button" className="header-contact" onClick={() => whatsApp("Olá, Skinão Veículos! Vim pelo site e gostaria de conversar.")}>FALAR NO WHATSAPP</button>
             <button type="button" className="menu-toggle" aria-label={menuOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen?<X size={24}/>:<Menu size={24}/>}</button></div>
         </div>
       </header>
@@ -366,23 +354,20 @@ function Home() {
       <main>
         <HeroScroll onSceneReady={() => setHeroReady(true)}/>
 
-        <div className="ticker" aria-hidden="true"><div className="ticker-track"><span>ESCOLHA SEU PRÓXIMO CAMINHO</span><Sparkles size={17}/><span>ESTILO QUE TE MOVE</span><Sparkles size={17}/><span>MUITO ALÉM DE QUATRO RODAS</span><Sparkles size={17}/><span>ESCOLHA SEU PRÓXIMO CAMINHO</span><Sparkles size={17}/><span>ESTILO QUE TE MOVE</span><Sparkles size={17}/></div></div>
-
         <section className="intro-section section-pad">
           <div className="container intro-grid">
-            <div><p className="eyebrow"><span className="eyebrow-line"/> O PRÓXIMO PASSO É SEU</p>
-              <h2>O CARRO CERTO.<br/><span>A HISTÓRIA CERTA.</span></h2></div>
-            <div className="intro-right"><p>Encontrar o próximo carro deveria ser tão incrível quanto dirigir. Uma experiência feita para você explorar, comparar e escolher com confiança.</p>
-              <a className="text-link" href="#estoque">DESCUBRA NOSSO CATÁLOGO <ArrowUpRight size={18}/></a></div>
+            <div><p className="eyebrow">LAVRAS · MINAS GERAIS</p>
+              <h2>ESCOLHA UM MODELO.<br/><span>FALE COM A LOJA.</span></h2></div>
+            <div className="intro-right"><p>Veja a apresentação dos veículos, filtre o que interessa e converse com a Skinão sobre a disponibilidade real.</p>
+              <a className="text-link" href="#estoque">VER MODELOS</a></div>
           </div>
         </section>
 
         <section className="stock-section section-pad" id="estoque">
           <div className="container">
-            <div className="stock-heading-row"><SectionTitle eyebrow="EXPLORE AS POSSIBILIDADES" title="NOSSO ESTOQUE." description="Encontre o modelo que tem a sua cara. Explore marcas, estilos e diferentes faixas de valor."/>
-              <div className="stock-heading-side"><CarFront size={22}/><span>CATÁLOGO INDEPENDENTE</span></div>
+            <div className="stock-heading-row"><SectionTitle eyebrow="CATÁLOGO DEMONSTRATIVO" title="CONHEÇA OS MODELOS." description="Explore os exemplos, compare informações e escolha o que deseja consultar com a loja."/>
             </div>
-            <div className="demo-notice"><BadgeCheck size={18}/><p><strong>Prévia de desenvolvimento:</strong> os veículos, fotos, preços e especificações abaixo são exemplos ilustrativos. O estoque oficial será conectado na próxima etapa.</p></div>
+            <div className="demo-notice"><p><strong>Catálogo de demonstração.</strong> As fotos, modelos, especificações e os preços abaixo são ilustrativos; não representam veículos disponíveis. Confirme o estoque atual diretamente com a Skinão.</p></div>
             <div className="stock-filters" role="search" aria-label="Buscar veículos">
               <label className="search-field"><Search size={19}/><input aria-label="Buscar por modelo ou marca" placeholder="Qual carro você procura?" value={query} onChange={event=>setQuery(event.target.value)}/></label>
               <label className="select-field"><span className="sr-only">Marca</span><select aria-label="Filtrar por marca" value={brand} onChange={event=>setBrand(event.target.value)}><option value="">Todas as marcas</option>{Array.from(new Set(vehicles.map(v=>v.brand))).sort().map(b=><option key={b} value={b}>{b}</option>)}</select></label>
@@ -390,67 +375,71 @@ function Home() {
               <label className="select-field"><span className="sr-only">Câmbio</span><select aria-label="Filtrar por câmbio" value={transmission} onChange={event=>setTransmission(event.target.value)}><option value="">Qualquer câmbio</option><option>Automático</option><option>Manual</option></select></label>
               <label className="select-field"><span className="sr-only">Preço máximo</span><select aria-label="Filtrar por preço máximo" value={maxPrice} onChange={event=>setMaxPrice(event.target.value)}><option value="">Qualquer preço</option><option value="80000">Até R$ 80 mil</option><option value="100000">Até R$ 100 mil</option><option value="120000">Até R$ 120 mil</option><option value="160000">Até R$ 160 mil</option></select></label>
             </div>
-            <div className="results-bar"><span><strong>{matches.length.toString().padStart(2,"0")}</strong> VEÍCULOS NA DEMONSTRAÇÃO</span>
-              <div className="results-actions"><button type="button" onClick={resetFilters} className="clear-filters">LIMPAR FILTROS <X size={14}/></button>
+            <div className="results-bar"><span><strong>{matches.length.toString().padStart(2,"0")}</strong> MODELOS DE EXEMPLO</span>
+              <div className="results-actions"><button type="button" onClick={resetFilters} className="clear-filters">LIMPAR FILTROS</button>
                 <select aria-label="Ordenar veículos" value={order} onChange={event=>setOrder(event.target.value)}><option value="featured">Ordenar: destaques</option><option value="low">Menor preço</option><option value="high">Maior preço</option><option value="new">Mais recentes</option></select></div>
             </div>
             {matches.length>0 ? <div className="stock-grid">{matches.map(vehicle=><VehicleCard key={vehicle.id} vehicle={vehicle} onDetails={openDetails}/>)}</div> :
-              <div className="empty-results"><Search size={30}/><h3>Nenhum veículo encontrado</h3><p>Tente ajustar os filtros para encontrar outras opções.</p><button type="button" className="btn btn-outline" onClick={resetFilters}>LIMPAR FILTROS <ArrowRight size={16}/></button></div>}
-            <div className="stock-bottom"><p>Não encontrou o que procura? Converse com a nossa equipe.</p><button className="text-link" type="button" onClick={()=>whatsApp("Olá, Skinão Veículos! Procuro um veículo e gostaria de conhecer as opções disponíveis.")}>CONSULTAR DISPONIBILIDADE <ArrowUpRight size={18}/></button></div>
+              <div className="empty-results"><Search size={30}/><h3>Nenhum veículo encontrado</h3><p>Tente ajustar os filtros para encontrar outras opções.</p><button type="button" className="btn btn-outline" onClick={resetFilters}>LIMPAR FILTROS</button></div>}
+            <div className="stock-bottom"><p>Quer saber quais veículos estão disponíveis hoje?</p><button className="text-link" type="button" onClick={()=>whatsApp("Olá, Skinão Veículos! Procuro um veículo e gostaria de conhecer as opções disponíveis.")}>CONSULTAR DISPONIBILIDADE NO WHATSAPP</button></div>
           </div>
         </section>
 
-        <section className="statement-section" aria-label="Um novo jeito de escolher seu carro">
-          <div className="statement-photo" aria-hidden="true"/>
-          <div className="statement-overlay"/>
-          <div className="container statement-content"><p className="eyebrow"><span className="eyebrow-line"/> SUA PRÓXIMA CONQUISTA COMEÇA AQUI</p><h2>MAIS QUE UM CARRO.<br/><span>UMA NOVA FASE.</span></h2><p>O caminho fica ainda melhor quando a escolha faz sentido para você.</p><a href="#financiamento" className="btn btn-white">CONHEÇA SUAS POSSIBILIDADES <ArrowUpRight size={18}/></a></div>
-          <span className="statement-index" aria-hidden="true">01 / 03</span>
-        </section>
-
-        <section className="benefits-section section-pad">
-          <div className="container"><div className="benefits-title"><SectionTitle eyebrow="PRAZER EM FAZER PARTE DA SUA JORNADA" title="ESCOLHA COM CONFIANÇA." description="Pensamos em uma experiência mais simples, organizada e transparente do primeiro clique à conversa com a loja."/></div>
-            <div className="benefits-grid">
-              {[{icon:ShieldCheck,n:"01",title:"INFORMAÇÃO CLARA",description:"Visualize os principais detalhes de cada veículo em um só lugar."},{icon:CarFront,n:"02",title:"VARIEDADE MULTIMARCAS",description:"Explore diferentes estilos, modelos e faixas de preço no mesmo catálogo."},{icon:MessageCircle,n:"03",title:"CONTATO DIRETO",description:"Tire dúvidas sobre o carro que chamou a sua atenção sem complicações."}].map(item=><div className="benefit-card" key={item.n}><div className="benefit-top"><item.icon size={33} strokeWidth={1.35}/><span>{item.n}</span></div><h3>{item.title}</h3><p>{item.description}</p><div className="benefit-line"/></div>)}
+        <section className="benefits-section section-pad" aria-label="Como consultar os veículos">
+          <div className="container benefits-layout">
+            <div className="benefits-title">
+              <SectionTitle eyebrow="COMO FUNCIONA" title="DO CATÁLOGO À CONVERSA." description="Veja o que você pode fazer nesta página."/>
+            </div>
+            <div className="benefits-list">
+              {[
+                {n:"01",title:"ENCONTRE UM MODELO",description:"Use os filtros por marca, categoria, câmbio e preço no catálogo demonstrativo."},
+                {n:"02",title:"VEJA OS DETALHES",description:"Abra cada modelo para consultar dados e imagens de exemplo em uma única tela."},
+                {n:"03",title:"FALE COM A SKINÃO",description:"Confirme diretamente com a equipe quais veículos e condições estão disponíveis em Lavras."},
+              ].map(item => <div className="benefit-row" key={item.n}>
+                <span className="benefit-number">{item.n}</span>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+              </div>)}
             </div>
           </div>
         </section>
 
         <section className="finance-section section-pad" id="financiamento">
           <div className="container finance-grid">
-            <div className="finance-copy"><p className="eyebrow"><span className="eyebrow-line"/> PLANEJE SUA PRÓXIMA CONQUISTA</p><h2>SEU PRÓXIMO<br/>CARRO PODE ESTAR<br/><span>MAIS PERTO.</span></h2>
-              <p>Quer avaliar possibilidades de financiamento? Conte um pouco sobre o que procura e comece uma conversa com a equipe.</p>
+            <div className="finance-copy"><p className="eyebrow">FINANCIAMENTO</p><h2>QUER FINANCIAR?<br/><span>VAMOS CONVERSAR.</span></h2>
+              <p>Informe o carro de interesse e o valor de entrada. A Skinão poderá orientar sobre as opções e os próximos passos.</p>
               <div className="finance-steps"><div><span>01</span> ESCOLHA O VEÍCULO</div><div><span>02</span> CONTE SUA IDEIA</div><div><span>03</span> FALE COM A EQUIPE</div></div>
               <small>A aprovação e as condições dependem de análise da instituição financeira. Não realizamos aprovação automática pelo site.</small>
             </div>
-            <form className="finance-form" onSubmit={sendFinance}><span className="form-kicker"><span className="red-dot"/> COMECE POR AQUI</span><h3>VAMOS CONVERSAR?</h3><p>Preencha os dados e prepare uma mensagem para o atendimento.</p>
+            <form className="finance-form" onSubmit={sendFinance}><span className="form-kicker">CONSULTA PELO WHATSAPP</span><h3>CONTE O QUE PROCURA.</h3><p>Ao continuar, você poderá revisar a mensagem no WhatsApp antes de enviar.</p>
               <label>SEU NOME <input required maxLength={100} value={finance.name} placeholder="Como podemos te chamar?" onChange={e=>setFinance({...finance,name:e.target.value})}/></label>
               <label>WHATSAPP COM DDD <input required type="tel" inputMode="tel" minLength={10} maxLength={20} value={finance.phone} placeholder="(35) 99999-9999" onChange={e=>setFinance({...finance,phone:e.target.value})}/></label>
               <label>VEÍCULO DE INTERESSE <select value={finance.model} onChange={e=>setFinance({...finance,model:e.target.value})}><option value="">Ainda estou escolhendo</option>{vehicles.map(v=><option key={v.id} value={v.brand+" "+v.model}>{v.brand} {v.model} (exemplo)</option>)}</select></label>
               <label>ENTRADA PRETENDIDA <input maxLength={40} value={finance.entry} placeholder="Ex.: R$ 20.000 ou a combinar" onChange={e=>setFinance({...finance,entry:e.target.value})}/></label>
-              <button type="submit" className="btn btn-red">PREPARAR CONSULTA <ArrowUpRight size={18}/></button>
-              <span className="form-foot"><ShieldCheck size={15}/> Seus dados não são armazenados nesta versão.</span>
+              <button type="submit" className="btn btn-red">REVISAR MENSAGEM NO WHATSAPP</button>
+              <span className="form-foot">Seus dados não são armazenados nesta versão.</span>
               {!waNumber && <span className="form-foot">O envio direto para a loja será ativado após configurar o WhatsApp oficial.</span>}
             </form>
           </div>
         </section>
 
         <section className="about-section section-pad" id="sobre">
-          <div className="container about-grid"><div className="about-image"><img src={image("photo-1503376780353-7e6692767b70",1200)} loading="lazy" alt="Fotografia ilustrativa de um automóvel esportivo"/><span className="about-image-caption">UMA NOVA PERSPECTIVA SOBRE SUA PRÓXIMA ESCOLHA.</span></div>
-            <div className="about-copy"><SectionTitle eyebrow="CONHEÇA A SKINÃO" title="A PAIXÃO POR CARROS NOS MOVE."/><p>A Skinão Veículos é uma loja multimarcas de Lavras, Minas Gerais. Nosso novo espaço digital foi pensado para aproximar você do veículo que procura, com uma apresentação organizada e fácil de explorar.</p><p>Mais do que uma vitrine, um ponto de partida para boas conversas e novos caminhos.</p><a href="#contato" className="text-link">VAMOS CONVERSAR <ArrowUpRight size={19}/></a></div>
+          <div className="container about-grid"><div className="about-image"><img src={image("photo-1503376780353-7e6692767b70",1200)} loading="lazy" alt="Fotografia ilustrativa de um automóvel esportivo"/><span className="about-image-caption">IMAGEM ILUSTRATIVA</span></div>
+            <div className="about-copy"><SectionTitle eyebrow="A LOJA" title="SKINÃO VEÍCULOS. LAVRAS, MG."/><p>A Skinão Veículos é uma loja multimarcas em Lavras, Minas Gerais.</p><p>Este site é uma prévia do espaço digital da loja. Os veículos apresentados são ilustrativos; entre em contato para consultar modelos e disponibilidade.</p><a href="#contato" className="text-link">FALAR COM A SKINÃO</a></div>
           </div>
         </section>
 
         <section className="contact-section section-pad" id="contato">
-          <div className="container contact-content"><p className="eyebrow"><span className="eyebrow-line"/> SUA PRÓXIMA CONQUISTA COMEÇA COM UMA CONVERSA</p><h2>VAMOS ENCONTRAR<br/><span>SEU PRÓXIMO CARRO?</span></h2>
-            <p>Fale com a equipe, tire suas dúvidas e descubra o próximo passo da sua jornada.</p>
-            <div className="contact-buttons"><button type="button" onClick={()=>whatsApp("Olá, Skinão Veículos! Conheci o novo site e gostaria de falar sobre os veículos disponíveis.")} className="btn btn-red"><MessageCircle size={20}/> CONVERSAR NO WHATSAPP <ArrowUpRight size={18}/></button><a href={instagram} className="btn btn-outline" target="_blank" rel="noopener noreferrer"><Instagram size={19}/> ACOMPANHE NO INSTAGRAM <ArrowUpRight size={18}/></a></div>
+          <div className="container contact-content"><p className="eyebrow">CONTATO · LAVRAS / MG</p><h2>JÁ TEM UM<br/><span>CARRO EM MENTE?</span></h2>
+            <p>Pergunte sobre disponibilidade, preços e possibilidades de financiamento. A conversa começa com a equipe da Skinão.</p>
+            <div className="contact-buttons"><button type="button" onClick={()=>whatsApp("Olá, Skinão Veículos! Conheci o novo site e gostaria de falar sobre os veículos disponíveis.")} className="btn btn-red"><MessageCircle size={20}/> FALAR NO WHATSAPP</button><a href={instagram} className="btn btn-outline" target="_blank" rel="noopener noreferrer">VER INSTAGRAM</a></div>
             {!waNumber && <p className="contact-config-note">Prévia: o número oficial do WhatsApp precisa ser configurado para direcionar o contato à loja.</p>}
           </div>
-          <div className="contact-bottom container"><span><MapPin size={16}/> LAVRAS, MINAS GERAIS</span><span><Clock3 size={16}/> ATENDIMENTO: CONSULTE OS HORÁRIOS COM A LOJA</span></div>
+          <div className="contact-bottom container"><span>LAVRAS, MINAS GERAIS</span><span>CONFIRME O HORÁRIO DE ATENDIMENTO COM A LOJA</span></div>
         </section>
       </main>
 
-      <footer className="site-footer"><div className="container footer-top"><Brand compact/><div><p>UMA NOVA FORMA DE<br/>ENCONTRAR SEU CAMINHO.</p></div><a href="#inicio" className="back-top" aria-label="Voltar ao início"><ArrowUpRight size={22}/></a></div><div className="container footer-bottom"><span>© {new Date().getFullYear()} SKINÃO VEÍCULOS. TODOS OS DIREITOS RESERVADOS.</span><span>SITE CONCEITUAL EM DESENVOLVIMENTO · LAVRAS / MG</span><a href={instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Skinão Veículos"><Instagram size={18}/></a></div></footer>
+      <footer className="site-footer"><div className="container footer-top"><Brand compact/><div><p>VEÍCULOS MULTIMARCAS<br/>LAVRAS · MINAS GERAIS</p></div><a href="#inicio" className="back-top" aria-label="Voltar ao início">VOLTAR AO INÍCIO</a></div><div className="container footer-bottom"><span>© {new Date().getFullYear()} SKINÃO VEÍCULOS. TODOS OS DIREITOS RESERVADOS.</span><span>CATÁLOGO ILUSTRATIVO · CONSULTAR DISPONIBILIDADE</span><a href={instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Skinão Veículos"><Instagram size={18}/></a></div></footer>
       {selected && <VehicleModal key={selected.id} vehicle={selected} onClose={closeDetails}/>}
       </div>
     </>
