@@ -224,13 +224,14 @@ function Home() {
     const t = Math.max(0, Math.min(1, (progress - start) / (end - start)));
     return t * t * (3 - 2 * t);
   };
-  const lightIgnition = phase(0.08, 0.26);
-  const fullFlash = phase(0.78, 0.87) * (1 - phase(0.885, 0.945));
-  const sceneDarkness = phase(0.88, 0.969);
-  const titleFirst = phase(0.905, 0.956);
-  const titleSecond = phase(0.924, 0.973);
-  const descriptionIn = phase(0.947, 0.986);
-  const buttonsIn = phase(0.964, 0.996);
+  // The camera reaches a full, centered frontal hold before BOTH headlights flash.
+  const lightIgnition = phase(0.785, 0.855);
+  const fullFlash = phase(0.865, 0.925) * (1 - phase(0.935, 0.978));
+  const sceneDarkness = phase(0.938, 0.982);
+  const titleFirst = phase(0.945, 0.973);
+  const titleSecond = phase(0.958, 0.985);
+  const descriptionIn = phase(0.970, 0.992);
+  const buttonsIn = phase(0.977, 0.999);
   const heroStyle = {
     "--headlight-opacity": lightIgnition.toFixed(3),
     "--flood-opacity": fullFlash.toFixed(3),

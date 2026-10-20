@@ -207,8 +207,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .site-nav .nav-mobile-cta { display: none; }
 
 
-/* Scroll-captured hero, rendered by one physically continuous 3D camera.
-   No SVG face crossfades, fake zooming, video playback or sideways scrolling. */
+/* Scroll-driven camera path with the original 2D illustrated car only.
+   No 3D car body, undercarriage, wheels or visible support geometry. */
 .hero-scroll { position: relative; height: 305svh; background: #040507; }
 .hero-sticky {
   position: sticky;
@@ -275,18 +275,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   font: 600 10px "DM Sans", sans-serif;
   letter-spacing: .12em;
 }
-.hero-model-credit {
-  position: absolute;
-  bottom: 9px;
-  right: 55px;
-  z-index: 12;
-  color: rgba(255,255,255,.4) !important;
-  font-size: 8px;
-  letter-spacing: .02em;
-  pointer-events: auto;
-  text-decoration: none;
-}
-.hero-model-credit:hover { color: #fff !important; }
 .hero-light-flood {
   position: absolute;
   z-index: 8;
@@ -300,12 +288,16 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   position: absolute;
   inset: 0;
   opacity: var(--flood-center-opacity);
-  background: radial-gradient(ellipse at 50% 58%,rgba(255,255,255,1),rgba(255,255,255,.78) 43%,transparent 89%);
+  background:
+    radial-gradient(ellipse 35% 48% at 31% 57%, rgba(255,255,255,1) 0%, rgba(228,244,255,.9) 31%, transparent 95%),
+    radial-gradient(ellipse 35% 48% at 69% 57%, rgba(255,255,255,1) 0%, rgba(228,244,255,.9) 31%, transparent 95%);
 }
 .hero-light-flood-center {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 55%,rgba(255,255,255,.12),transparent 62%,rgba(231,28,51,.07));
+  background:
+    radial-gradient(ellipse 35% 50% at 32% 56%, rgba(255,255,255,.6),transparent 90%),
+    radial-gradient(ellipse 35% 50% at 68% 56%, rgba(255,255,255,.6),transparent 90%);
 }
 .hero-ignition-flash {
   position: absolute;
@@ -624,7 +616,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .hero-scroll { height: 265svh; }
   .hero-sticky { background: #050608; }
   .hero-3d-fallback .hero-moving-car { width: clamp(220px,72vw,340px); top: 48%; }
-  .hero-model-credit { left: 18px; right: auto; bottom: 6px; font-size: 7px; }
   .hero-intro { padding: max(115px, 17vh) 18px 0; }
   .hero-intro-label { font-size: 8px; letter-spacing: .1em; }
   .hero-intro-text { font-size: 42px; max-width: 300px; }
