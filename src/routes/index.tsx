@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CarScroll3D } from "../components/CarScroll3D";
 import { LoadingScreen } from "../components/LoadingScreen";
+import { HeroBackdropCars } from "../components/HeroBackdropCars";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { ChevronLeft, ChevronRight, Instagram, Menu, MessageCircle, Search, X } from "lucide-react";
 import logoAsset from "../assets/skinao-logo.png.asset.json";
@@ -183,6 +184,33 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
 function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
   const heroRef = useRef<HTMLElement | null>(null);
   const [progress, setProgress] = useState(0);
+  const [heroInView, setHeroInView] = useState(true);
+  const [showBackgroundCars, setShowBackgroundCars] = useState(false);
+
+  // Run the light 2D finale only while the cinematic section is onscreen.
+  // Avoid continuing SVG/CSS animations after the visitor reaches the catalog.
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(entries => {
+      setHeroInView(entries[0]?.isIntersecting ?? false);
+    });
+    observer.observe(hero);
+    return () => observer.disconnect();
+  }, []);
+
+  // Wait a real second after the final Hero introduction is legible.
+  // Boolean dependency avoids restarting the timer on every scroll frame.
+  // Rewinding or leaving the Hero pauses and resets the reveal.
+  const finalIntroActive = progress >= 0.985 && heroInView;
+  useEffect(() => {
+    if (!finalIntroActive) {
+      setShowBackgroundCars(false);
+      return;
+    }
+    const timeout = window.setTimeout(() => setShowBackgroundCars(true), 1000);
+    return () => window.clearTimeout(timeout);
+  }, [finalIntroActive]);
 
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -276,11 +304,11 @@ function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
               <span className="hero-intro-text hero-intro-text--first">SEU PRÓXIMO CARRO</span>
               <span className="hero-intro-text hero-intro-text--second">COMEÇA AQUI.</span>
             </div>
-            <div className="hero-reveal">
-              <p className="hero-reveal-overline">MULTIMARCAS EM LAVRAS / MG</p>
+            <div className={"hero-reveal" + (finalIntroActive ? " hero-reveal--complete" : "")}>
+              <HeroBackdropCars visible={showBackgroundCars}/>
               <h1 aria-label="Skinão Veículos">
                 <span className="hero-brand-line"><span className="hero-brand-line-inner hero-brand-first">SKINÃO</span></span>
-                <span className="hero-brand-line hero-brand-line--accent"><span className="hero-brand-line-inner hero-brand-second">VEÍCULOS<span className="hero-period">.</span></span></span>
+                <span className="hero-brand-line hero-brand-line--accent"><span className="hero-brand-line-inner hero-brand-second">VEÍCULOS</span></span>
               </h1>
               <p className="hero-reveal-description">Veja os modelos desta prévia e fale com a loja para consultar disponibilidade.</p>
               <div className="hero-cta-row">

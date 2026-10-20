@@ -1503,3 +1503,139 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .site-root h2 .heading-accent {
   color: var(--accent-bright);
 }
+
+
+/* ===============================================================
+   SKINÃO HERO FINALE — respectful cinematic finishing detail.
+   - Keep the original scroll/camera timing and heading reveal.
+   - 2D SVG car silhouettes sit behind the words, never above controls.
+   - Motion and shimmer start only after the final text is visible.
+   =============================================================== */
+.hero-reveal {
+  isolation: isolate;
+}
+.hero-reveal > h1,
+.hero-reveal > .hero-reveal-description,
+.hero-reveal > .hero-cta-row {
+  position: relative;
+  z-index: 2;
+}
+/* The original tight line-height cropped the tilde over Ã in SKINÃO.
+   Extend only the first line's clipping box, without changing font or scroll. */
+.hero-reveal h1 > .hero-brand-line:first-child {
+  padding-top: .19em;
+  margin-top: -.19em;
+}
+/* Subtle periodic light traveling along the two wordmarks.
+   Preserve each word's independent scroll-based transform/opacity. */
+.hero-reveal--complete h1 .hero-brand-first,
+.hero-reveal--complete h1 .hero-brand-second {
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 240% 100%;
+  animation: sk-hero-word-shimmer 10s ease-in-out infinite;
+}
+.hero-reveal--complete h1 .hero-brand-first {
+  background-image: linear-gradient(108deg,
+    #f4f3f3 0%, #ebeaec 25%, #fff 38%,
+    #a5a8ae 45%, #fff 53%, #eeecee 72%, #f6f5f5 100%);
+}
+.hero-reveal--complete h1 .hero-brand-second {
+  background-image: linear-gradient(108deg,
+    #ef304b 0%, #e62742 26%, #ff687d 39%,
+    #ffb0bb 46%, #ff405d 54%, #e62945 75%, #f13a54 100%);
+  animation-delay: -3s;
+}
+@keyframes sk-hero-word-shimmer {
+  0%, 12% { background-position: 100% 0; }
+  75%, 100% { background-position: 0% 0; }
+}
+/* A faint gray fleet: seven distinctive vehicle body styles.
+   CSS transforms only; no scroll listener, canvas, or image downloads. */
+.hero-background-cars {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+  contain: layout paint;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1100ms ease, visibility 0s linear 1100ms;
+}
+.hero-background-cars--visible {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 1100ms ease, visibility 0s linear 0s;
+}
+.hero-background-car {
+  position: absolute;
+  display: block;
+  width: clamp(112px, 17vw, 240px);
+  color: #aeb0b5;
+  opacity: .27;
+  will-change: auto;
+  animation-play-state: paused !important;
+}
+.hero-background-car svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.hero-background-cars--visible .hero-background-car {
+  will-change: transform;
+  animation-play-state: running !important;
+}
+.hero-background-car--1 { left: 3%; top: 17%; width: clamp(140px, 16vw, 215px); animation: sk-car-float-a 29s ease-in-out infinite; }
+.hero-background-car--2 { right: 8%; top: 12%; width: clamp(120px, 13vw, 183px); animation: sk-car-float-b 25s ease-in-out infinite -8s; opacity: .31; }
+.hero-background-car--3 { left: 9%; bottom: 15%; width: clamp(148px, 18vw, 245px); animation: sk-car-float-c 34s ease-in-out infinite -12s; opacity: .29; }
+.hero-background-car--4 { right: 2%; bottom: 19%; width: clamp(138px, 17vw, 231px); animation: sk-car-float-a 31s ease-in-out infinite -17s reverse; }
+.hero-background-car--5 { left: 43%; top: 5%; width: clamp(108px, 11vw, 156px); animation: sk-car-float-c 27s ease-in-out infinite -6s reverse; opacity: .21; }
+.hero-background-car--6 { left: -4%; top: 49%; width: clamp(124px, 14vw, 194px); animation: sk-car-float-b 36s ease-in-out infinite -9s; opacity: .22; }
+.hero-background-car--7 { right: 33%; bottom: 6%; width: clamp(111px, 12vw, 173px); animation: sk-car-float-b 30s ease-in-out infinite -15s reverse; opacity: .25; }
+@keyframes sk-car-float-a {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-8deg); }
+  25% { transform: translate3d(24px, -19px, 0) rotate(0deg); }
+  52% { transform: translate3d(35px, 9px, 0) rotate(8deg); }
+  76% { transform: translate3d(-8px, 22px, 0) rotate(-2deg); }
+}
+@keyframes sk-car-float-b {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(9deg); }
+  28% { transform: translate3d(-29px, 13px, 0) rotate(-4deg); }
+  59% { transform: translate3d(-18px, -23px, 0) rotate(-11deg); }
+  81% { transform: translate3d(20px, -10px, 0) rotate(3deg); }
+}
+@keyframes sk-car-float-c {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(3deg); }
+  24% { transform: translate3d(12px, 24px, 0) rotate(-7deg); }
+  52% { transform: translate3d(-26px, 7px, 0) rotate(-3deg); }
+  78% { transform: translate3d(-13px, -24px, 0) rotate(11deg); }
+}
+@media (max-width: 700px) {
+  .hero-background-car { opacity: .20; }
+  .hero-background-car--1 { left: -18%; top: 22%; width: 151px; }
+  .hero-background-car--2 { right: -19%; top: 18%; width: 158px; opacity: .24; }
+  .hero-background-car--3 { left: -17%; bottom: 23%; width: 159px; }
+  .hero-background-car--4 { right: -19%; bottom: 27%; width: 169px; }
+  .hero-background-car--5 { left: 56%; top: 9%; width: 104px; opacity: .18; }
+  .hero-background-car--6 { left: -12%; top: 49%; width: 112px; opacity: .16; }
+  .hero-background-car--7 { right: 5%; bottom: 10%; width: 110px; opacity: .17; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-reveal--complete h1 .hero-brand-first,
+  .hero-reveal--complete h1 .hero-brand-second {
+    animation: none !important;
+    background-position: 100% 0;
+  }
+  .hero-background-cars {
+    display: none !important;
+    transition: none !important;
+  }
+  .hero-background-car {
+    animation: none !important;
+    will-change: auto;
+  }
+}
