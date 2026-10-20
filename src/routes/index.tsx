@@ -300,6 +300,7 @@ function Home() {
   const [showLoading, setShowLoading] = useState(true);
   const [heroReady, setHeroReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [headerVisible, setHeaderVisible] = useState(false);
   const [selected, setSelected] = useState<Vehicle | null>(null);
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState("");
@@ -322,6 +323,44 @@ function Home() {
       document.body.style.overflow = oldBodyOverflow;
     };
   }, [showLoading]);
+
+  // Keep the navigation completely out of sight while the scroll-driven Hero
+  // is playing. Reveal only when the user scrolls beyond its sticky endpoint.
+  // Recalculate geometry on resize, never on individual scroll events.
+  useEffect(() => {
+    const hero = document.querySelector<HTMLElement>(".hero-scroll");
+    if (!hero) return;
+
+    let revealScrollY = Number.POSITIVE_INFINITY;
+    let wasVisible = false;
+    const update = () => {
+      const shouldShow = window.scrollY > revealScrollY;
+      if (shouldShow !== wasVisible) {
+        wasVisible = shouldShow;
+        setHeaderVisible(shouldShow);
+      }
+    };
+    const measure = () => {
+      const heroTop = hero.getBoundingClientRect().top + window.scrollY;
+      const heroScrollEnd = heroTop + hero.offsetHeight - window.innerHeight;
+      // At progress 1 the 3D motion is complete; allow a little extra
+      // scrolling before sliding the bar in over the finishing Hero.
+      const extraScroll = Math.min(80, Math.max(48, window.innerHeight * 0.08));
+      revealScrollY = heroScrollEnd + extraScroll;
+      update();
+    };
+    measure();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!headerVisible) setMenuOpen(false);
+  }, [headerVisible]);
 
   useEffect(() => { document.body.classList.toggle("menu-open", menuOpen); return () => document.body.classList.remove("menu-open"); }, [menuOpen]);
   const openDetails = (vehicle: Vehicle) => setSelected(vehicle);
@@ -346,7 +385,7 @@ function Home() {
         <LoadingScreen sceneReady={heroReady} onFinished={() => setShowLoading(false)} />
       )}
       <div className="site-root" id="inicio" inert={showLoading}>
-      <header className="site-header">
+      <header className={"site-header" + (headerVisible && !showLoading ? " site-header--visible" : "")} inert={!headerVisible || showLoading} aria-hidden={!headerVisible || showLoading}>
         <div className="site-header-inner container"><Brand/>
           <nav className={"site-nav " + (menuOpen ? "site-nav--open" : "")} aria-label="Navegação principal">
             {[["#inicio","Início"],["#estoque","Estoque"],["#financiamento","Financiamento"],["#sobre","Sobre"],["#contato","Contato"]].map(([url,label]) =>

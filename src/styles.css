@@ -1437,3 +1437,36 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
     background: rgba(255,255,255,.74);
   }
 }
+
+
+/* ==========================================================
+   Hero-to-site handoff: navigation appears only AFTER the
+   full 3D scroll sequence is completed and scrolling continues.
+   No layout shift: transform/opacity run on the compositor.
+   ========================================================== */
+.site-header {
+  transform: translate3d(0, -110%, 0);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform 720ms cubic-bezier(.22, 1, .36, 1),
+    opacity 460ms ease,
+    visibility 0s linear 720ms;
+}
+.site-header.site-header--visible {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    transform 720ms cubic-bezier(.22, 1, .36, 1),
+    opacity 460ms ease,
+    visibility 0s linear 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-header,
+  .site-header.site-header--visible {
+    transition: none;
+  }
+}
