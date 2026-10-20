@@ -559,10 +559,10 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .site-header .header-actions { margin-left: auto; gap: 10px; flex-shrink: 0; }
   .site-header .header-contact {
     display: inline-flex;
-    min-height: 44px;
-    font-size: 10px !important;
-    padding: 10px 16px;
-    letter-spacing: .015em;
+    min-height: 40px;
+    font-size: 9px !important;
+    padding: 7px 12px;
+    letter-spacing: 0;
     white-space: nowrap;
   }
   .menu-toggle {
@@ -606,9 +606,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .site-header-inner { gap: 6px; }
   .site-header .header-actions { gap: 6px; }
   .site-header .header-contact {
-    min-height: 44px;
-    padding: 10px 10px;
-    font-size: 9px !important;
+    min-height: 36px;
+    padding: 6px 9px;
+    font-size: 8.5px !important;
     letter-spacing: 0;
   }
   .site-header .menu-toggle { width: 42px; height: 44px; }
@@ -1499,8 +1499,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .site-root .site-header .brand-logo { height: 23px; }
   .site-header .header-actions { gap: 5px; }
   .site-header .header-contact {
-    font-size: 8.7px !important;
-    padding-inline: 8px;
+    min-height: 34px;
+    font-size: 8px !important;
+    padding-inline: 7px;
     letter-spacing: 0;
   }
   .site-header .menu-toggle { width: 40px; }
