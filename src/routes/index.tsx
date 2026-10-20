@@ -3,6 +3,7 @@ import { CarScroll3D } from "../components/CarScroll3D";
 import { LoadingScreen } from "../components/LoadingScreen";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { ChevronLeft, ChevronRight, Instagram, Menu, MessageCircle, Search, X } from "lucide-react";
+import logoAsset from "../assets/skinao-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -80,7 +81,7 @@ const vehicles: Vehicle[] = [
 
 const money = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(value);
 const kilometers = (value: number) => new Intl.NumberFormat("pt-BR").format(value) + " km";
-const waNumber = (import.meta.env.VITE_SKINAO_WHATSAPP || "").replace(/\D/g, "");
+const waNumber = (import.meta.env["VITE_SKINAO_WHATSAPP"] || "").replace(/\D/g, "");
 const instagram = "https://www.instagram.com/skinaoveiculos/";
 
 function whatsApp(message: string) {
@@ -91,7 +92,7 @@ function whatsApp(message: string) {
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <a href="#inicio" className={"brand " + (compact ? "brand--compact" : "")} aria-label="Skinão Veículos — início">
-      <span className="brand-words"><strong>SKINÃO</strong><em>VEÍCULOS</em></span>
+      <img className="brand-logo" src={logoAsset.url} alt="SKINÃO VEÍCULOS" width={167} height={46} />
     </a>
   );
 }
