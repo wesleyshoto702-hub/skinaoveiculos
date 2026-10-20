@@ -197,6 +197,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .brand-words { display: flex; flex-direction: column; line-height: .75; letter-spacing: .025em; transform: skewX(-6deg); }
 .brand-words strong { font-family: "Barlow Condensed",Impact,sans-serif; font-weight: 900; font-size: 28px; letter-spacing: .01em; }
 .brand-words em { font-family: "Barlow Condensed",Impact,sans-serif; font-size: 17px; color: var(--accent-bright); font-weight: 800; font-style: normal; letter-spacing: .21em; margin-top: 7px; }
+.site-root .brand-logo { display: block; width: auto; height: 46px; }
+.site-root .brand--compact .brand-logo { height: 60px; }
 .site-nav { display: flex; align-items: center; gap: clamp(16px, 2.3vw, 35px); margin-left: auto; }
 .site-nav > a { color: #dedee2; font-size: 11px; font-weight: 700; letter-spacing: .06em; transition: color .2s; }
 .site-nav > a:hover { color: var(--accent-bright); }
@@ -584,6 +586,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .site-root .brand { gap: 8px; }
   .brand-words strong { font-size: 22px; }
   .brand-words em { font-size: 13px; letter-spacing: .18em; margin-top: 6px; }
+  .site-root .brand-logo { height: 34px; }
+  .site-root .brand--compact .brand-logo { height: 44px; }
   .hero-scroll { height: 265svh; }
   .hero-sticky { background: #050608; }
   .hero-three-stage { min-height: 100%; }
