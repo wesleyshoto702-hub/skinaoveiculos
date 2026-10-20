@@ -184,58 +184,53 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
   );
 }
 
-function Home() {
+/**
+ * Keep scroll-driven updates inside the Hero: previously each scroll frame
+ * re-rendered the entire Home (catalog, finance, navigation and all cards).
+ */
+function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
   const heroRef = useRef<HTMLElement | null>(null);
   const [progress, setProgress] = useState(0);
-  const [showLoading, setShowLoading] = useState(true);
-  const [heroReady, setHeroReady] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [selected, setSelected] = useState<Vehicle | null>(null);
-  const [query, setQuery] = useState("");
-  const [brand, setBrand] = useState("");
-  const [type, setType] = useState("");
-  const [transmission, setTransmission] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [order, setOrder] = useState("featured");
-  const [finance, setFinance] = useState({ name: "", phone: "", model: "", entry: "" });
 
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (reduceMotion.matches) { setProgress(0.94); return; }
-    let scheduled = false;
-    const update = () => {
-      scheduled = false;
+
+    let sectionTop = 0;
+    let scrollRange = 1;
+    let scheduled = 0;
+
+    // A layout measurement is needed only at mount/resize, not on every scroll.
+    const measure = () => {
       const hero = heroRef.current;
       if (!hero) return;
-      const start = hero.getBoundingClientRect().top + window.scrollY;
-      const range = Math.max(1, hero.offsetHeight - window.innerHeight);
-      const next = Math.max(0, Math.min(1, (window.scrollY - start) / range));
-      setProgress(old => Math.abs(old-next)>0.002 ? next : old);
+      sectionTop = hero.getBoundingClientRect().top + window.scrollY;
+      scrollRange = Math.max(1, hero.offsetHeight - window.innerHeight);
     };
-    const onScroll = () => { if (!scheduled) { scheduled = true; window.requestAnimationFrame(update); } };
+    const update = () => {
+      const next = Math.max(0, Math.min(1, (window.scrollY - sectionTop) / scrollRange));
+      setProgress(old => Math.abs(old - next) > 0.001 ? next : old);
+    };
+    const onScroll = () => {
+      if (scheduled) return;
+      scheduled = window.requestAnimationFrame(() => {
+        scheduled = 0;
+        update();
+      });
+    };
+    const onResize = () => { measure(); onScroll(); };
+
+    measure();
     update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); };
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      if (scheduled) window.cancelAnimationFrame(scheduled);
+    };
   }, []);
 
-  // Lock page scrolling only while the cinematic introduction covers the page.
-  // The 3D scene can initialize underneath it and is already visible on exit.
-  useEffect(() => {
-    if (!showLoading) return;
-    const oldHtmlOverflow = document.documentElement.style.overflow;
-    const oldBodyOverflow = document.body.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.documentElement.style.overflow = oldHtmlOverflow;
-      document.body.style.overflow = oldBodyOverflow;
-    };
-  }, [showLoading]);
-
-  useEffect(() => { document.body.classList.toggle("menu-open", menuOpen); return () => document.body.classList.remove("menu-open"); }, [menuOpen]);
-  const openDetails = (vehicle: Vehicle) => setSelected(vehicle);
-  const closeDetails = () => setSelected(null);
   // Real 3D camera on a single model, synchronized with native vertical scroll.
   const phase = (start: number, end: number) => {
     const t = Math.max(0, Math.min(1, (progress - start) / (end - start)));
@@ -268,6 +263,74 @@ function Home() {
     "--reveal-pointer": buttonsIn > 0.92 ? "auto" : "none",
   } as CSSProperties;
 
+
+  return (
+        <section ref={heroRef} className="hero-scroll" aria-label="Apresentação Skinão Veículos">
+          <div className="hero-sticky" style={heroStyle}>
+            <CarScroll3D progress={progress} onSceneReady={onSceneReady}/>
+            <div className="hero-exit-curtain" aria-hidden="true"/>
+            <div className="hero-light-flood" aria-hidden="true">
+              <span className="hero-light-flood-glow"/>
+              <span className="hero-light-flood-center"/>
+            </div>
+            <div className="hero-intro">
+              <span className="hero-intro-label"><span className="red-dot"/> UMA NOVA EXPERIÊNCIA SOBRE QUATRO RODAS</span>
+              <span className="hero-intro-text">PREPARE-SE PARA <em>ACELERAR.</em></span>
+            </div>
+            <div className="hero-reveal">
+              <p className="hero-reveal-overline"><span/> A ESTRADA COMEÇA AQUI</p>
+              <h1 aria-label="Skinão Veículos">
+                <span className="hero-brand-line"><span className="hero-brand-line-inner hero-brand-first">SKINÃO</span></span>
+                <span className="hero-brand-line hero-brand-line--accent"><span className="hero-brand-line-inner hero-brand-second">VEÍCULOS<span className="hero-period">.</span></span></span>
+              </h1>
+              <p className="hero-reveal-description">Seu próximo capítulo começa aqui. Encontre o carro que combina com você.</p>
+              <div className="hero-cta-row">
+                <a href="#estoque" className="btn btn-red">EXPLORAR ESTOQUE <ArrowUpRight size={18}/></a>
+                <a href="#sobre" className="btn btn-outline">CONHEÇA A SKINÃO <ArrowRight size={17}/></a>
+              </div>
+            </div>
+            <div className="hero-side-mark" aria-hidden="true">PERFORMANCE · ESTILO · MOVIMENTO</div>
+            <div className="hero-bottom">
+              <span>SKINÃO VEÍCULOS <span className="muted-separator">/</span> LAVRAS — MG</span>
+              <span className="scroll-cue">ROLE PARA DESCOBRIR <ArrowDown size={15}/></span>
+              <span className="hero-scroll-counter">0{Math.max(1, Math.ceil(progress*4))} <span>/</span> 04</span>
+            </div>
+            <div className="hero-progress" aria-hidden="true"><span style={{width:(progress*100)+"%"}}/></div>
+          </div>
+        </section>
+  );
+}
+
+function Home() {
+  const [showLoading, setShowLoading] = useState(true);
+  const [heroReady, setHeroReady] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [selected, setSelected] = useState<Vehicle | null>(null);
+  const [query, setQuery] = useState("");
+  const [brand, setBrand] = useState("");
+  const [type, setType] = useState("");
+  const [transmission, setTransmission] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [order, setOrder] = useState("featured");
+  const [finance, setFinance] = useState({ name: "", phone: "", model: "", entry: "" });
+
+  // Lock page scrolling only while the cinematic introduction covers the page.
+  // The 3D scene can initialize underneath it and is already visible on exit.
+  useEffect(() => {
+    if (!showLoading) return;
+    const oldHtmlOverflow = document.documentElement.style.overflow;
+    const oldBodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = oldHtmlOverflow;
+      document.body.style.overflow = oldBodyOverflow;
+    };
+  }, [showLoading]);
+
+  useEffect(() => { document.body.classList.toggle("menu-open", menuOpen); return () => document.body.classList.remove("menu-open"); }, [menuOpen]);
+  const openDetails = (vehicle: Vehicle) => setSelected(vehicle);
+  const closeDetails = () => setSelected(null);
   const matches = vehicles.filter(vehicle => {
     const search = (vehicle.brand + " " + vehicle.model + " " + vehicle.version).toLocaleLowerCase("pt-BR");
     return (!query || search.includes(query.toLocaleLowerCase("pt-BR"))) &&
@@ -301,39 +364,7 @@ function Home() {
       </header>
 
       <main>
-        <section ref={heroRef} className="hero-scroll" aria-label="Apresentação Skinão Veículos">
-          <div className="hero-sticky" style={heroStyle}>
-            <CarScroll3D progress={progress} onSceneReady={() => setHeroReady(true)}/>
-            <div className="hero-exit-curtain" aria-hidden="true"/>
-            <div className="hero-light-flood" aria-hidden="true">
-              <span className="hero-light-flood-glow"/>
-              <span className="hero-light-flood-center"/>
-            </div>
-            <div className="hero-intro">
-              <span className="hero-intro-label"><span className="red-dot"/> UMA NOVA EXPERIÊNCIA SOBRE QUATRO RODAS</span>
-              <span className="hero-intro-text">PREPARE-SE PARA <em>ACELERAR.</em></span>
-            </div>
-            <div className="hero-reveal">
-              <p className="hero-reveal-overline"><span/> A ESTRADA COMEÇA AQUI</p>
-              <h1 aria-label="Skinão Veículos">
-                <span className="hero-brand-line"><span className="hero-brand-line-inner hero-brand-first">SKINÃO</span></span>
-                <span className="hero-brand-line hero-brand-line--accent"><span className="hero-brand-line-inner hero-brand-second">VEÍCULOS<span className="hero-period">.</span></span></span>
-              </h1>
-              <p className="hero-reveal-description">Seu próximo capítulo começa aqui. Encontre o carro que combina com você.</p>
-              <div className="hero-cta-row">
-                <a href="#estoque" className="btn btn-red">EXPLORAR ESTOQUE <ArrowUpRight size={18}/></a>
-                <a href="#sobre" className="btn btn-outline">CONHEÇA A SKINÃO <ArrowRight size={17}/></a>
-              </div>
-            </div>
-            <div className="hero-side-mark" aria-hidden="true">PERFORMANCE · ESTILO · MOVIMENTO</div>
-            <div className="hero-bottom">
-              <span>SKINÃO VEÍCULOS <span className="muted-separator">/</span> LAVRAS — MG</span>
-              <span className="scroll-cue">ROLE PARA DESCOBRIR <ArrowDown size={15}/></span>
-              <span className="hero-scroll-counter">0{Math.max(1, Math.ceil(progress*4))} <span>/</span> 04</span>
-            </div>
-            <div className="hero-progress" aria-hidden="true"><span style={{width:(progress*100)+"%"}}/></div>
-          </div>
-        </section>
+        <HeroScroll onSceneReady={() => setHeroReady(true)}/>
 
         <div className="ticker" aria-hidden="true"><div className="ticker-track"><span>ESCOLHA SEU PRÓXIMO CAMINHO</span><Sparkles size={17}/><span>ESTILO QUE TE MOVE</span><Sparkles size={17}/><span>MUITO ALÉM DE QUATRO RODAS</span><Sparkles size={17}/><span>ESCOLHA SEU PRÓXIMO CAMINHO</span><Sparkles size={17}/><span>ESTILO QUE TE MOVE</span><Sparkles size={17}/></div></div>
 

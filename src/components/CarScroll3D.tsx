@@ -17,10 +17,14 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
  */
 async function mountScene(host: HTMLDivElement): Promise<SceneController> {
   const THREE = await import("three");
+  // MSAA and excessive devicePixelRatio are the biggest avoidable mobile GPU
+  // costs. Preserve full desktop quality; use a bounded canvas on phones.
+  const mobileAtMount = host.clientWidth <= 700;
   const renderer = new THREE.WebGLRenderer({
-    antialias: true, alpha: false, powerPreference: "high-performance",
+    antialias: !mobileAtMount, alpha: false,
+    powerPreference: "high-performance",
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.55));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobileAtMount ? 1 : 1.55));
   renderer.setSize(Math.max(host.clientWidth, 1), Math.max(host.clientHeight, 1), false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -372,10 +376,10 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
   let previousFrameTime=0;
   let roadSpeed=0;
   let wheelAngle=0;
+  let needsDraw=true;
 
-  // Scroll decides when to accelerate; wall-clock time moves the lane marks.
-  // Once the user pauses scrolling, the car still feels as if it is driving.
-  // The road slows again just before the headlight flash and brand reveal.
+  // Time-based driving, with scroll selecting the desired speed.
+  // Keep the already-approved camera positions and ignition timeline.
   const targetRoadSpeed=(progress:number)=>
     24*phase(progress,.15,.63)*(1-phase(progress,.875,.965));
 
@@ -385,6 +389,18 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
     camera.aspect=width/height;
     camera.fov=mobile?45:42;
     camera.updateProjectionMatrix();
+
+    // Cap pixel count as well as DPR; high-density phones previously rendered
+    // ~2.4x as many pixels. No change to CSS size or camera framing.
+    const pixelBudget=mobile?850_000:6_000_000;
+    const pixelRatio=Math.max(.7,Math.min(
+      window.devicePixelRatio||1,
+      mobile?1:1.55,
+      Math.sqrt(pixelBudget/(width*height)),
+    ));
+    if(Math.abs(renderer.getPixelRatio()-pixelRatio)>.025){
+      renderer.setPixelRatio(pixelRatio);
+    }
     renderer.setSize(width,height,false);
     updateLaneDashes(mobile);
     repaint?.();
@@ -393,10 +409,10 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
   observer.observe(host);
   resize();
 
+  // One draw path for both scroll events and the independent road animation.
+  // Previously a scroll event drew immediately AND the road RAF drew again.
   const draw=(progress:number)=>{
-    if(disposed)return;
     const orbit=phase(progress,.12,.73);
-    // The camera remains scroll-controlled; the road animation is independent.
     camera.position.set(
       0,
       lerp(mobile?12.2:10.7,mobile?1.92:1.76,orbit),
@@ -414,7 +430,7 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
       sprite.scale.set(1.45*scale,1.04*scale,1);
       pointLights[i]!.intensity=ignition*2.8+flash*4.0;
     }
-    if(isVisible&&!document.hidden)renderer.render(scene,camera);
+    renderer.render(scene,camera);
   };
 
   const stopLoop=()=>{
@@ -425,44 +441,45 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
   const tick=(now:number)=>{
     animationFrame=0;
     if(disposed||!isVisible||document.hidden)return;
-    const delta=previousFrameTime
-      ?Math.min((now-previousFrameTime)/1000,.05)
-      :0;
+
+    // Delta is measured in wall-clock seconds: road speed does not depend
+    // on refresh rate, and background-tab jumps are bounded.
+    const delta=previousFrameTime?Math.min((now-previousFrameTime)/1000,.05):0;
     previousFrameTime=now;
     const desired=targetRoadSpeed(lastProgress);
-    // Gradual acceleration and braking instead of instant lane teleportation.
     roadSpeed+=(desired-roadSpeed)*(1-Math.exp(-delta*3.4));
+    let roadMoved=false;
     if(delta>0&&roadSpeed>.015){
       const distance=roadSpeed*delta;
       travelled=(travelled+distance)%dashLoopLength;
       updateLaneDashes(mobile);
       wheelAngle=(wheelAngle+distance/.43)%(Math.PI*2);
       for(const wheel of animatedWheels)wheel.rotation.x=wheelAngle;
-      renderer.render(scene,camera);
+      roadMoved=true;
     }
-    if(desired>.06||roadSpeed>.06){
-      animationFrame=requestAnimationFrame(tick);
-    }else{
-      roadSpeed=0;
-      previousFrameTime=0;
+
+    if(needsDraw||roadMoved){
+      draw(lastProgress);
+      needsDraw=false;
     }
+
+    if(desired>.06||roadSpeed>.06)animationFrame=requestAnimationFrame(tick);
+    else { roadSpeed=0; previousFrameTime=0; }
   };
   const maybeRun=()=>{
-    if(!disposed&&isVisible&&!document.hidden&&!animationFrame&&
-      (targetRoadSpeed(lastProgress)>.06||roadSpeed>.06)){
-      previousFrameTime=0;
+    if(!disposed&&isVisible&&!document.hidden&&!animationFrame){
       animationFrame=requestAnimationFrame(tick);
     }
   };
   const render=(progress:number)=>{
     if(disposed)return;
     lastProgress=progress;
-    draw(progress);
+    needsDraw=true;
     maybeRun();
   };
   repaint=()=>render(lastProgress);
 
-  // Prevent continuous GPU use when this Hero is outside the viewport.
+  // Suspend GPU work when the Hero is offscreen or the page loses focus.
   const intersection=new IntersectionObserver(entries=>{
     isVisible=entries[0]?.isIntersecting??false;
     if(isVisible)render(lastProgress);

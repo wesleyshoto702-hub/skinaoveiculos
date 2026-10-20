@@ -21,7 +21,7 @@ export function LoadingScreen({ sceneReady, onFinished }: LoadingScreenProps) {
     const started = performance.now();
     const interval = window.setInterval(() => {
       setElapsed(performance.now() - started);
-    }, 70);
+    }, 140); // The progress rail animates in CSS; fewer React commits during 3D boot.
     return () => window.clearInterval(interval);
   }, []);
 
