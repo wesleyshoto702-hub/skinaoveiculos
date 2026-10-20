@@ -309,7 +309,6 @@ function Home() {
               <span className="scroll-cue">ROLE PARA DESCOBRIR <ArrowDown size={15}/></span>
               <span className="hero-scroll-counter">0{Math.max(1, Math.ceil(progress*4))} <span>/</span> 04</span>
             </div>
-            <a className="hero-model-credit" href="https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6" target="_blank" rel="noopener noreferrer">Modelo 3D ilustrativo: vicent091036 · CC BY 4.0</a>
             <div className="hero-progress" aria-hidden="true"><span style={{width:(progress*100)+"%"}}/></div>
           </div>
         </section>
