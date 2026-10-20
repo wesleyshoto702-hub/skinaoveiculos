@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { BufferGeometry, Material, NormalBufferAttributes, Object3D } from "three";
 
 type SceneController = {
   render: (progress: number) => void;
@@ -84,7 +85,7 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
 
   const car = new THREE.Group();
   scene.add(car);
-  const add = (parent: InstanceType<typeof THREE.Object3D>, geo: THREE.BufferGeometry<THREE.NormalBufferAttributes>, mat: InstanceType<typeof THREE.Material>) => {
+  const add = (parent: InstanceType<typeof Object3D>, geo: BufferGeometry<NormalBufferAttributes>, mat: InstanceType<typeof Material>) => {
     const mesh = new THREE.Mesh(geo, mat);
     parent.add(mesh);
     return mesh;
