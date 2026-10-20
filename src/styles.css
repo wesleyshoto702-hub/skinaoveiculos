@@ -207,8 +207,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .site-nav .nav-mobile-cta { display: none; }
 
 
-/* One continuous vector illustration, generated at every scroll position.
-   No crossfading two cars, no mesh chassis, no WebGL, no image loading. */
+/* Cinematic perspective camera on a single sculpted 3D concept car.
+   No model hot-swaps, crossfades, faux undercarriages or external downloads. */
 .hero-scroll { position: relative; height: 305svh; background: #040507; }
 .hero-sticky {
   position: sticky;
@@ -225,8 +225,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(0,0,0,.40), transparent 26%, transparent 74%, rgba(0,0,0,.40)),
-    linear-gradient(180deg, rgba(0,0,0,.26), transparent 27%, transparent 77%, rgba(0,0,0,.53));
+  background: linear-gradient(90deg, rgba(0,0,0,.40),transparent 26%,transparent 74%,rgba(0,0,0,.40)),
+    linear-gradient(180deg,rgba(0,0,0,.26),transparent 27%,transparent 77%,rgba(0,0,0,.53));
 }
 .hero-sticky::after {
   content: "";
@@ -238,21 +238,35 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   mix-blend-mode: soft-light;
   background: repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 5px);
 }
-.hero-morph-scene {
+.hero-three-scene {
   position: absolute;
   inset: 0;
   z-index: 2;
   overflow: hidden;
   pointer-events: none;
   opacity: var(--three-opacity,1);
-  background: #040507;
+  background: #07090e;
 }
-.hero-morph-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  shape-rendering: geometricPrecision;
+.hero-three-stage { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hero-three-canvas { display: block; width: 100%; height: 100%; }
+.hero-three-fallback {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 58%,rgba(37,44,54,.35),transparent 60%),
+    #07090e;
+}
+.hero-three-fallback::after {
+  content: "";
+  position: absolute;
+  inset: 14% 29%;
+  opacity: .58;
+  background: url("/skinao-classic-top.svg") center / contain no-repeat;
+  filter: drop-shadow(0 16px 24px rgba(0,0,0,.65));
+}
+.hero-three-scene[data-ready="true"] .hero-three-fallback { display: none; }
+@media (max-width: 700px) {
+  .hero-three-fallback::after { inset: 21% 11%; }
 }
 .hero-light-flood {
   position: absolute;
@@ -594,7 +608,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .brand-words em { font-size: 13px; letter-spacing: .18em; margin-top: 6px; }
   .hero-scroll { height: 265svh; }
   .hero-sticky { background: #050608; }
-  .hero-morph-svg { min-height: 100%; }
+  .hero-three-stage { min-height: 100%; }
   .hero-intro { padding: max(115px, 17vh) 18px 0; }
   .hero-intro-label { font-size: 8px; letter-spacing: .1em; }
   .hero-intro-text { font-size: 42px; max-width: 300px; }
@@ -662,7 +676,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 @media (prefers-reduced-motion: reduce) {
   .site-root *, .site-root *::before, .site-root *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
   .hero-scroll { height: 100svh; }
-  .hero-morph-scene { display: none !important; }
+  .hero-three-scene { display: none !important; }
   .hero-exit-curtain { opacity: .96 !important; }
   .hero-light-flood { display: none !important; }
   .hero-reveal { opacity: 1 !important; pointer-events: auto !important; }
