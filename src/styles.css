@@ -1520,11 +1520,19 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   position: relative;
   z-index: 2;
 }
-/* Give the Ã tilde real room above the first row. The previous negative
-   top margin and hidden overflow clipped SKINÃO at both viewport sizes. */
+/* Safe ink area for all Barlow Condensed glyphs (including Ã and final O).
+   Background-clip:text can truncate rounded letter bottoms near the line box,
+   even if the outer line already has overflow:visible. Padding must therefore
+   live on the INNER text element that owns the moving gradient. */
 .hero-reveal h1 > .hero-brand-line:first-child {
-  padding-top: .13em;
+  padding-top: .16em;
   margin-top: 0;
+}
+.hero-reveal h1 .hero-brand-line-inner {
+  box-sizing: content-box;
+  max-width: none;
+  padding: .10em .105em .18em;
+  overflow: visible;
 }
 /* Subtle periodic light traveling along the two wordmarks.
    Preserve each word's independent scroll-based transform/opacity. */
@@ -1534,7 +1542,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   background-clip: text;
   -webkit-text-fill-color: transparent;
   background-size: 240% 100%;
-  animation: sk-hero-word-shimmer 10s ease-in-out infinite;
+  animation: sk-hero-word-shimmer 4.4s linear infinite;
 }
 .hero-reveal--complete h1 .hero-brand-first {
   background-image: linear-gradient(108deg,
@@ -1545,11 +1553,11 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   background-image: linear-gradient(108deg,
     #ef304b 0%, #e62742 26%, #ff687d 39%,
     #ffb0bb 46%, #ff405d 54%, #e62945 75%, #f13a54 100%);
-  animation-delay: -3s;
+  animation-delay: -1.25s;
 }
 @keyframes sk-hero-word-shimmer {
-  0%, 12% { background-position: 100% 0; }
-  75%, 100% { background-position: 0% 0; }
+  0%, 4% { background-position: 100% 0; }
+  88%, 100% { background-position: 0% 0; }
 }
 /* A faint gray fleet: seven distinctive vehicle body styles.
    CSS transforms only; no scroll listener, canvas, or image downloads. */
