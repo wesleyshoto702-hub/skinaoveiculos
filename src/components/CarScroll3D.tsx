@@ -504,10 +504,12 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
   return {render,dispose};
 }
 
-export function CarScroll3D({ progress }: { progress: number }) {
+export function CarScroll3D({ progress, onSceneReady }: { progress: number; onSceneReady?: () => void }) {
   const hostRef=useRef<HTMLDivElement>(null);
   const controllerRef=useRef<SceneController|null>(null);
   const progressRef=useRef(progress);
+  const onSceneReadyRef=useRef(onSceneReady);
+  onSceneReadyRef.current=onSceneReady;
   const [ready,setReady]=useState(false);
 
   useEffect(()=>{
@@ -519,17 +521,25 @@ export function CarScroll3D({ progress }: { progress: number }) {
     let cancelled=false;
     let cleanup: SceneController|null=null;
     const host=hostRef.current;
-    if(!host||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+    if(!host)return;
+    if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+      onSceneReadyRef.current?.();
+      return;
+    }
     mountScene(host).then(controller=>{
       if(cancelled){controller.dispose();return;}
       cleanup=controller;
       controllerRef.current=controller;
       controller.render(progressRef.current);
       setReady(true);
+      onSceneReadyRef.current?.();
     }).catch(error=>{
       // Preserve a static automotive fallback on unsupported devices/WebGL.
       console.warn("Skinão 3D: fallback activated",error);
-      if(!cancelled)setReady(false);
+      if(!cancelled){
+        setReady(false);
+        onSceneReadyRef.current?.(); // Static fallback is safe to reveal.
+      }
     });
     return ()=>{
       cancelled=true;

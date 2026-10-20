@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CarScroll3D } from "../components/CarScroll3D";
+import { LoadingScreen } from "../components/LoadingScreen";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import {
   ArrowDown, ArrowRight, ArrowUpRight, BadgeCheck, CalendarDays,
@@ -186,6 +187,8 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
 function Home() {
   const heroRef = useRef<HTMLElement | null>(null);
   const [progress, setProgress] = useState(0);
+  const [showLoading, setShowLoading] = useState(true);
+  const [heroReady, setHeroReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selected, setSelected] = useState<Vehicle | null>(null);
   const [query, setQuery] = useState("");
@@ -215,6 +218,20 @@ function Home() {
     window.addEventListener("resize", onScroll);
     return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); };
   }, []);
+
+  // Lock page scrolling only while the cinematic introduction covers the page.
+  // The 3D scene can initialize underneath it and is already visible on exit.
+  useEffect(() => {
+    if (!showLoading) return;
+    const oldHtmlOverflow = document.documentElement.style.overflow;
+    const oldBodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = oldHtmlOverflow;
+      document.body.style.overflow = oldBodyOverflow;
+    };
+  }, [showLoading]);
 
   useEffect(() => { document.body.classList.toggle("menu-open", menuOpen); return () => document.body.classList.remove("menu-open"); }, [menuOpen]);
   const openDetails = (vehicle: Vehicle) => setSelected(vehicle);
@@ -266,7 +283,11 @@ function Home() {
   };
 
   return (
-    <div className="site-root" id="inicio">
+    <>
+      {showLoading && (
+        <LoadingScreen sceneReady={heroReady} onFinished={() => setShowLoading(false)} />
+      )}
+      <div className="site-root" id="inicio" inert={showLoading}>
       <header className="site-header">
         <div className="site-header-inner container"><Brand/>
           <nav className={"site-nav " + (menuOpen ? "site-nav--open" : "")} aria-label="Navegação principal">
@@ -282,7 +303,7 @@ function Home() {
       <main>
         <section ref={heroRef} className="hero-scroll" aria-label="Apresentação Skinão Veículos">
           <div className="hero-sticky" style={heroStyle}>
-            <CarScroll3D progress={progress}/>
+            <CarScroll3D progress={progress} onSceneReady={() => setHeroReady(true)}/>
             <div className="hero-exit-curtain" aria-hidden="true"/>
             <div className="hero-light-flood" aria-hidden="true">
               <span className="hero-light-flood-glow"/>
@@ -400,6 +421,7 @@ function Home() {
 
       <footer className="site-footer"><div className="container footer-top"><Brand compact/><div><p>UMA NOVA FORMA DE<br/>ENCONTRAR SEU CAMINHO.</p></div><a href="#inicio" className="back-top" aria-label="Voltar ao início"><ArrowUpRight size={22}/></a></div><div className="container footer-bottom"><span>© {new Date().getFullYear()} SKINÃO VEÍCULOS. TODOS OS DIREITOS RESERVADOS.</span><span>SITE CONCEITUAL EM DESENVOLVIMENTO · LAVRAS / MG</span><a href={instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Skinão Veículos"><Instagram size={18}/></a></div></footer>
       {selected && <VehicleModal key={selected.id} vehicle={selected} onClose={closeDetails}/>}
-    </div>
+      </div>
+    </>
   );
 }
