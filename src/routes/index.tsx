@@ -266,8 +266,7 @@ function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
               <span className="hero-light-flood-center"/>
             </div>
             <div className="hero-intro">
-              <span className="hero-intro-label">SKINÃO VEÍCULOS · LAVRAS / MG</span>
-              <span className="hero-intro-text">SEU PRÓXIMO <em>CARRO.</em></span>
+              <span className="hero-intro-text">SEU PRÓXIMO CARRO<span className="hero-intro-ending">COMEÇA AQUI.</span></span>
             </div>
             <div className="hero-reveal">
               <p className="hero-reveal-overline">MULTIMARCAS EM LAVRAS / MG</p>
@@ -281,7 +280,6 @@ function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
               </div>
             </div>
             <div className="hero-bottom">
-              <span>SKINÃO VEÍCULOS <span className="muted-separator">/</span> LAVRAS — MG</span>
               <span className="scroll-cue">ROLE PARA CONTINUAR</span>
             </div>
             <div className="hero-progress" aria-hidden="true"><span style={{width:(progress*100)+"%"}}/></div>

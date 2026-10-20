@@ -1278,3 +1278,141 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .footer-top > div p { display: none; }
   .back-top { font-size: 10px; }
 }
+
+
+/* ============================================================
+   Skinão — focused Hero copy, opaque header and pill controls.
+   Keep the existing scroll/3D transitions and loader untouched.
+   ============================================================ */
+
+/* The top bar should hide the content scrolling behind it entirely. */
+.site-header {
+  background: #050506;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* A deliberate two-line headline rather than a repeated location caption. */
+.hero-intro {
+  gap: 0;
+}
+.hero-intro-text {
+  width: 100%;
+  max-width: 1120px;
+  font-size: clamp(50px, 6.5vw, 100px);
+  line-height: .94;
+  color: #f6f4f2;
+  text-wrap: balance;
+}
+.hero-intro-ending {
+  display: block;
+  margin-top: clamp(7px, 1vw, 15px);
+  font-size: .82em;
+  line-height: 1;
+  color: #f04457;
+}
+.hero-bottom {
+  justify-content: flex-end;
+}
+.hero-bottom > .scroll-cue {
+  max-width: none;
+  white-space: nowrap;
+}
+
+/* Site CTAs use a consistent pill silhouette, except the finance form submit. */
+.site-root .btn {
+  border-radius: 999px;
+}
+.site-root .finance-form .btn {
+  border-radius: 0;
+}
+.site-nav .nav-mobile-cta {
+  border-radius: 999px;
+}
+.menu-toggle, .icon-button {
+  border-radius: 50%;
+}
+.gallery-left, .gallery-right {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+.gallery-thumbs button {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* White highlight travels around the header WhatsApp pill's actual contour.
+   A custom angle animates the narrow ring, rather than changing button size. */
+@property --sk-contact-orbit {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.header-contact {
+  position: relative;
+  isolation: isolate;
+  min-height: 46px;
+  padding: 12px 22px;
+  border: 1px solid rgba(255,255,255,.38);
+  border-radius: 999px;
+  background: #0c0c0e;
+  transition: background-color .2s ease, border-color .2s ease;
+}
+.header-contact::before {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  inset: -2px;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--sk-contact-orbit),
+    transparent 0deg 235deg,
+    rgba(255,255,255,.2) 270deg,
+    #fff 320deg,
+    rgba(255,255,255,.76) 336deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: sk-contact-orbit 3.2s linear infinite;
+}
+.header-contact:hover {
+  background: #151517;
+  border-color: rgba(255,255,255,.75);
+}
+.header-contact:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 5px;
+}
+@keyframes sk-contact-orbit {
+  to { --sk-contact-orbit: 360deg; }
+}
+
+@media (max-width: 640px) {
+  .hero-intro-text {
+    max-width: 340px;
+    font-size: clamp(38px, 9.6vw, 45px);
+    line-height: .96;
+  }
+  .hero-intro-ending {
+    margin-top: 8px;
+    font-size: .90em;
+  }
+  .hero-bottom {
+    justify-content: flex-end;
+  }
+  .hero-bottom > .scroll-cue {
+    max-width: none;
+    white-space: nowrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .header-contact::before {
+    animation: none;
+    background: rgba(255,255,255,.74);
+  }
+}
