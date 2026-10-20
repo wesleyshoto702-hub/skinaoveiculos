@@ -1297,12 +1297,17 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   gap: 0;
 }
 .hero-intro-text {
+  display: block;
   width: 100%;
   max-width: 1120px;
   font-size: clamp(50px, 6.5vw, 100px);
   line-height: .94;
   color: #f6f4f2;
-  text-wrap: balance;
+  text-align: center;
+}
+.hero-intro-main {
+  display: block;
+  white-space: nowrap;
 }
 .hero-intro-ending {
   display: block;
@@ -1340,6 +1345,10 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .gallery-thumbs button {
   border-radius: 12px;
   overflow: hidden;
+}
+/* The vehicle image itself is a clickable button: soften its corners too. */
+.site-root .vehicle-card-photo {
+  border-radius: 14px;
 }
 
 /* White highlight travels around the header WhatsApp pill's actual contour.
@@ -1394,8 +1403,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 
 @media (max-width: 640px) {
   .hero-intro-text {
-    max-width: 340px;
-    font-size: clamp(38px, 9.6vw, 45px);
+    max-width: 100%;
+    font-size: clamp(25px, 7.95vw, 38px);
     line-height: .96;
   }
   .hero-intro-ending {
@@ -1408,6 +1417,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .hero-bottom > .scroll-cue {
     max-width: none;
     white-space: nowrap;
+  }
+  .site-root .vehicle-card-photo {
+    border-radius: 12px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

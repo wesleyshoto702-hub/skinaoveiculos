@@ -266,7 +266,7 @@ function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
               <span className="hero-light-flood-center"/>
             </div>
             <div className="hero-intro">
-              <span className="hero-intro-text">SEU PRÓXIMO CARRO<span className="hero-intro-ending">COMEÇA AQUI.</span></span>
+              <span className="hero-intro-text"><span className="hero-intro-main">SEU PRÓXIMO CARRO</span><span className="hero-intro-ending">COMEÇA AQUI.</span></span>
             </div>
             <div className="hero-reveal">
               <p className="hero-reveal-overline">MULTIMARCAS EM LAVRAS / MG</p>
