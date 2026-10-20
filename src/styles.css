@@ -207,8 +207,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .site-nav .nav-mobile-cta { display: none; }
 
 
-/* Vertical scroll-driven cinematic introduction. The car is a moving foreground
-   SVG, while perspective road markings travel UP as the visitor scrolls DOWN. */
+/* Cinematic hero in five reversible scroll-driven acts: top view, acceleration,
+   camera pivot, headlights flooding the screen and staggered brand reveal. */
 .hero-scroll { height: 320vh; height: 320svh; position: relative; background: #040507; }
 .hero-sticky {
   position: sticky;
@@ -249,7 +249,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   height: 188%;
   transform: translateX(-50%);
   pointer-events: none;
-  opacity: calc(1 - var(--scene-darkness) * .96);
+  opacity: calc(1 - var(--camera-progress) * .96);
+  transform: translateX(-50%) perspective(1100px) rotateX(var(--road-tilt));
+  transform-origin: 50% 50%;
 }
 .hero-road-asphalt {
   position: absolute;
@@ -320,7 +322,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   aspect-ratio: 400 / 760;
   top: 49%;
   left: 50%;
-  transform: translate3d(-50%, -50%, 0) translate3d(0, var(--car-y), 0) scale(var(--car-scale));
+  transform: translate3d(-50%, -50%, 0) translate3d(0, var(--car-y), 0) perspective(1100px) rotateX(var(--car-tilt)) scale(var(--car-scale));
   transform-origin: 50% 50%;
   opacity: var(--car-opacity);
   will-change: transform, opacity;
@@ -350,6 +352,119 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   background: radial-gradient(ellipse, rgba(255,255,255,.2), transparent 65%);
   filter: blur(22px);
   opacity: var(--road-speed);
+}
+
+/* The camera settles into a head-on view. The two independently illustrated
+   views overlap during the pivot, eliminating the previous zoom-out jump. */
+.hero-front-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  opacity: var(--front-scene-opacity);
+  pointer-events: none;
+  overflow: hidden;
+  isolation: isolate;
+}
+.hero-front-environment {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 51%, rgba(85,97,114,.18) 0%, transparent 43%),
+    linear-gradient(180deg,#030406 3%,#13171c 44%,#16171c 57%,#040507 97%);
+}
+.hero-front-horizon {
+  position: absolute;
+  top: 59%;
+  left: -10%;
+  width: 120%;
+  height: 1px;
+  background: linear-gradient(90deg,transparent 2%,rgba(242,48,65,.35) 30%,rgba(239,251,255,.24) 50%,rgba(242,48,65,.35) 70%,transparent 98%);
+  box-shadow: 0 0 45px 14px rgba(213,16,40,.13);
+}
+.hero-front-road {
+  position: absolute;
+  top: 56%;
+  bottom: -15%;
+  left: -25%;
+  width: 150%;
+  background:
+    linear-gradient(83deg,transparent 0%,rgba(231,238,255,.09) 42%,transparent 43%),
+    linear-gradient(97deg,transparent 0%,rgba(231,238,255,.09) 57%,transparent 58%),
+    linear-gradient(180deg,#181b21,#0c0d11 60%,#030406);
+  clip-path: polygon(35% 0,65% 0,100% 100%,0 100%);
+  opacity: .73;
+}
+.hero-front-reflection {
+  position: absolute;
+  top: 60%;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: radial-gradient(ellipse at 50% 5%,rgba(208,33,55,.23),transparent 65%);
+}
+.hero-front-car-body {
+  position: absolute;
+  z-index: 3;
+  width: min(1100px,100vw);
+  aspect-ratio: 1000 / 590;
+  left: 50%;
+  top: 54%;
+  transform: translate3d(-50%, -50%, 0) translate3d(0,var(--front-lift),0) perspective(1050px) rotateX(var(--front-tilt)) scale(var(--front-scale));
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+.hero-front-car-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 21px 24px rgba(0,0,0,.83));
+}
+.hero-front-lit-elements { opacity: var(--front-headlight-opacity); }
+.hero-front-headlight-spot {
+  position: absolute;
+  z-index: 5;
+  top: 49%;
+  width: 30%;
+  height: 30%;
+  pointer-events: none;
+  background: radial-gradient(ellipse,rgba(255,255,255,.95) 0%,rgba(236,248,255,.85) 5%,rgba(204,231,255,.46) 22%,rgba(174,213,255,.1) 43%,transparent 70%);
+  filter: blur(10px);
+  mix-blend-mode: screen;
+  opacity: var(--front-headlight-opacity);
+}
+.hero-front-headlight-spot--left { left: 8%; }
+.hero-front-headlight-spot--right { right: 8%; }
+.hero-front-light-cones { position: absolute; z-index: 2; inset: 0; opacity: var(--front-light-spread); mix-blend-mode: screen; }
+.hero-front-cone {
+  position: absolute;
+  top: 39%;
+  height: 92%;
+  width: 70%;
+  background: radial-gradient(ellipse at 50% 9%,rgba(236,248,255,.9),rgba(190,222,255,.44) 22%,rgba(148,192,242,.17) 54%,transparent 78%);
+  filter: blur(19px);
+}
+.hero-front-cone--left { left: -30%; transform: rotate(-12deg); }
+.hero-front-cone--right { right: -30%; transform: rotate(12deg); }
+.hero-light-flood {
+  position: absolute;
+  z-index: 8;
+  inset: -2px;
+  pointer-events: none;
+  opacity: var(--flood-opacity);
+  background:
+    radial-gradient(ellipse at 50% 56%, #fff 0%, #f7fcff 24%, #eaf3ff 48%, #f5f8ff 81%, #fff 100%);
+}
+.hero-light-flood-glow {
+  position: absolute;
+  inset: 0;
+  opacity: var(--flood-center-opacity);
+  background: radial-gradient(ellipse at 50% 58%,rgba(255,255,255,1),rgba(255,255,255,.78) 43%,transparent 89%);
+}
+.hero-light-flood-center {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 55%,rgba(255,255,255,.12),transparent 62%,rgba(231,28,51,.07));
 }
 .hero-ignition-flash {
   position: absolute;
@@ -669,6 +784,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .hero-sticky { background: #050608; }
   .hero-road { width: 115vw; top: -33%; height: 170%; }
   .hero-moving-car { width: clamp(225px, 66vw, 360px); top: 49%; }
+  .hero-front-car-body { width: 133vw; top: 52%; }
+  .hero-front-light-cones { opacity: calc(var(--front-light-spread) * .85); }
+  .hero-front-headlight-spot { filter: blur(7px); }
   .hero-acceleration-line--one { left: 6%; }
   .hero-acceleration-line--four { right: 6%; }
   .hero-intro { padding: max(115px, 17vh) 18px 0; }
@@ -677,7 +795,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .hero-reveal { padding: 90px 14px 45px; }
   .hero-reveal-overline { font-size: 8px; letter-spacing: .14em; margin-bottom: 26px !important; }
   .hero-reveal h1 { font-size: clamp(75px,19vw,130px); line-height: .72; }
-  .hero-reveal h1 > span { font-size: .52em; }
+  .hero-reveal h1 > .hero-brand-line--accent { font-size: .52em; }
   .hero-reveal-description { font-size: 13px; max-width: 280px; margin-top: 30px !important; }
   .hero-cta-row { flex-direction: column; width: min(300px,100%); margin-top: 25px; }
   .hero-cta-row .btn { min-height: 51px; font-size: 10px; }
@@ -740,8 +858,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .hero-scroll { height: 100svh; }
   .hero-moving-car { opacity: .12 !important; transform: translate3d(-50%, -50%, 0) scale(.75) !important; }
   .hero-road { opacity: .1 !important; }
-  .hero-acceleration, .hero-ignition-flash { display: none !important; }
-  .hero-exit-curtain { opacity: .9 !important; }
+  .hero-acceleration, .hero-ignition-flash, .hero-light-flood, .hero-front-scene { display: none !important; }
+  .hero-exit-curtain { opacity: .93 !important; }
   .hero-reveal { opacity: 1 !important; pointer-events: auto !important; }
   .hero-brand-first, .hero-brand-second, .hero-reveal-description, .hero-cta-row { opacity: 1 !important; transform: none !important; }
   .hero-intro { display: none !important; }

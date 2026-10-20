@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { HeroCar } from "../components/HeroCar";
+import { FrontHeroCar } from "../components/FrontHeroCar";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import {
   ArrowDown, ArrowRight, ArrowUpRight, BadgeCheck, CalendarDays,
@@ -219,40 +220,60 @@ function Home() {
   useEffect(() => { document.body.classList.toggle("menu-open", menuOpen); return () => document.body.classList.remove("menu-open"); }, [menuOpen]);
   const openDetails = (vehicle: Vehicle) => setSelected(vehicle);
   const closeDetails = () => setSelected(null);
-  // All phases are derived from vertical scrolling; no horizontal translation,
-  // autonomous timers or forced scroll jumps. Reversing scroll reverses the film.
+  // Five scroll-driven acts: ignition -> driving -> camera pivot ->
+  // frontal headlights -> full-screen light transition -> brand reveal.
+  // Every value is derived from vertical scroll (fully reversible on scroll up).
   const phase = (start: number, end: number) => {
     const t = Math.max(0, Math.min(1, (progress - start) / (end - start)));
     return t * t * (3 - 2 * t);
   };
-  const ignition = phase(0.10, 0.27);
-  const drive = phase(0.13, 0.71);
-  const velocity = phase(0.31, 0.61);
-  const passed = phase(0.63, 0.77);
-  const titleFirst = phase(0.74, 0.86);
-  const titleSecond = phase(0.80, 0.90);
-  const descriptionIn = phase(0.85, 0.94);
-  const buttonsIn = phase(0.88, 0.97);
+  const topIgnition = phase(0.10, 0.31);
+  const topDrive = phase(0.17, 0.53);
+  const cameraPivot = phase(0.46, 0.68);
+  const roadMotion = phase(0.16, 0.37) * (1 - phase(0.52, 0.72));
+  const frontIgnition = phase(0.60, 0.78);
+  const whiteoutRise = phase(0.72, 0.84);
+  const whiteoutFall = 1 - phase(0.865, 0.944);
+  const lightFlood = whiteoutRise * whiteoutFall;
+  const frontFade = 1 - phase(0.81, 0.93);
+  const darkTransition = phase(0.81, 0.958);
+  const titleFirst = phase(0.894, 0.953);
+  const titleSecond = phase(0.920, 0.973);
+  const descriptionIn = phase(0.944, 0.986);
+  const buttonsIn = phase(0.958, 0.995);
   const heroStyle = {
-    "--headlight-opacity": ignition.toFixed(3),
-    "--car-y": (-15 + 145 * Math.pow(drive, 1.24)).toFixed(2) + "vh",
-    "--car-scale": (0.62 + 2.55 * Math.pow(drive, 1.35)).toFixed(3),
-    "--car-opacity": (1 - passed).toFixed(3),
-    "--road-offset": (-170 * drive).toFixed(2) + "vh",
-    "--road-speed": (velocity * (1 - passed)).toFixed(3),
-    "--scene-darkness": phase(0.65, 0.81).toFixed(3),
-    "--ignition-flash": (Math.max(0, 1 - Math.abs(progress - 0.27) / 0.12) * ignition * 0.50).toFixed(3),
-    "--intro-opacity": (1 - phase(0.06, 0.24)).toFixed(3),
+    "--headlight-opacity": topIgnition.toFixed(3),
+    // Deliberately minimal scale change: apparent speed comes from the road,
+    // camera angle and lighting, not from zooming the vehicle toward the viewer.
+    "--car-y": (-5 + 10 * topDrive).toFixed(2) + "vh",
+    "--car-scale": (0.86 + 0.10 * topDrive).toFixed(3),
+    "--car-opacity": (1 - cameraPivot).toFixed(3),
+    "--car-tilt": (-50 * cameraPivot).toFixed(2) + "deg",
+    "--camera-progress": cameraPivot.toFixed(3),
+    "--road-tilt": (-25 * cameraPivot).toFixed(2) + "deg",
+    "--road-offset": (-155 * topDrive).toFixed(2) + "vh",
+    "--road-speed": roadMotion.toFixed(3),
+    "--front-scene-opacity": (cameraPivot * frontFade).toFixed(3),
+    "--front-headlight-opacity": frontIgnition.toFixed(3),
+    "--front-light-spread": (frontIgnition * frontIgnition * frontFade).toFixed(3),
+    "--front-scale": (0.94 + 0.06 * cameraPivot).toFixed(3),
+    "--front-tilt": ((1 - cameraPivot) * 15).toFixed(2) + "deg",
+    "--front-lift": ((1 - cameraPivot) * 12).toFixed(2) + "vh",
+    "--flood-opacity": lightFlood.toFixed(3),
+    "--flood-center-opacity": (Math.min(1, lightFlood * 1.25)).toFixed(3),
+    "--scene-darkness": darkTransition.toFixed(3),
+    "--ignition-flash": (Math.max(0, 1 - Math.abs(progress - 0.30) / 0.09) * topIgnition * 0.20).toFixed(3),
+    "--intro-opacity": (1 - phase(0.055, 0.22)).toFixed(3),
     "--reveal-opacity": titleFirst.toFixed(3),
     "--brand-first-opacity": titleFirst.toFixed(3),
     "--brand-first-y": ((1 - titleFirst) * 110).toFixed(1) + "%",
     "--brand-second-opacity": titleSecond.toFixed(3),
-    "--brand-second-y": ((1 - titleSecond) * 115).toFixed(1) + "%",
+    "--brand-second-y": ((1 - titleSecond) * 110).toFixed(1) + "%",
     "--reveal-description-opacity": descriptionIn.toFixed(3),
     "--reveal-description-y": ((1 - descriptionIn) * 28).toFixed(1) + "px",
     "--reveal-buttons-opacity": buttonsIn.toFixed(3),
     "--reveal-buttons-y": ((1 - buttonsIn) * 35).toFixed(1) + "px",
-    "--reveal-pointer": buttonsIn > 0.93 ? "auto" : "none",
+    "--reveal-pointer": buttonsIn > 0.94 ? "auto" : "none",
   } as CSSProperties;
 
   const matches = vehicles.filter(vehicle => {
@@ -302,8 +323,13 @@ function Home() {
               <span className="hero-acceleration-line hero-acceleration-line--four"/>
             </div>
             <HeroCar/>
+            <FrontHeroCar/>
             <div className="hero-ignition-flash" aria-hidden="true"/>
             <div className="hero-exit-curtain" aria-hidden="true"/>
+            <div className="hero-light-flood" aria-hidden="true">
+              <span className="hero-light-flood-glow"/>
+              <span className="hero-light-flood-center"/>
+            </div>
             <div className="hero-intro">
               <span className="hero-intro-label"><span className="red-dot"/> UMA NOVA EXPERIÊNCIA SOBRE QUATRO RODAS</span>
               <span className="hero-intro-text">PREPARE-SE PARA <em>ACELERAR.</em></span>
