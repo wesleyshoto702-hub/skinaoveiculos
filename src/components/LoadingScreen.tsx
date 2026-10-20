@@ -74,7 +74,7 @@ export function LoadingScreen({ sceneReady, onFinished }: LoadingScreenProps) {
           <div className="sk-loader__road-glow" />
           <div className="sk-loader__road-line sk-loader__road-line--first" />
           <div className="sk-loader__road-line sk-loader__road-line--second" />
-          <div className="sk-loader__car-track">
+          <div className="sk-loader__car-track sk-loader__car-track--original">
             <svg className="sk-loader__car" viewBox="0 0 640 255" xmlns="http://www.w3.org/2000/svg" focusable="false">
               <defs>
                 <linearGradient id="sk-loader-body" x1="0" y1="0" x2=".2" y2="1">
@@ -137,6 +137,87 @@ export function LoadingScreen({ sceneReady, onFinished }: LoadingScreenProps) {
                   <path d="M532 183V217M515 200H549M520 188L544 212M544 188L520 212"
                     stroke="#9eadb9" strokeWidth="4"/>
                   <circle cx="532" cy="200" r="5" fill="#cdd8df"/>
+                </g>
+              </g>
+            </svg>
+          </div>
+          {/* Second pass: a red two-door sports coupe with a lower roof and long bonnet. */}
+          <div className="sk-loader__car-track sk-loader__car-track--red">
+            <svg className="sk-loader__car sk-loader__car--red" viewBox="0 0 640 255"
+              xmlns="http://www.w3.org/2000/svg" focusable="false">
+              <defs>
+                <linearGradient id="sk-loader-coupe-paint" x1="0" y1="0" x2=".2" y2="1">
+                  <stop offset="0" stopColor="#ffb0a8"/>
+                  <stop offset=".17" stopColor="#fa4652"/>
+                  <stop offset=".48" stopColor="#ba172b"/>
+                  <stop offset="1" stopColor="#560a1b"/>
+                </linearGradient>
+                <linearGradient id="sk-loader-coupe-glass" x1="0" y1="0" x2=".65" y2="1">
+                  <stop offset="0" stopColor="#94acb9"/>
+                  <stop offset=".3" stopColor="#355061"/>
+                  <stop offset="1" stopColor="#0c1622"/>
+                </linearGradient>
+                <linearGradient id="sk-loader-coupe-light" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0" stopColor="#b7deff"/>
+                  <stop offset="1" stopColor="#ffffff"/>
+                </linearGradient>
+                <radialGradient id="sk-loader-coupe-glow">
+                  <stop offset="0" stopColor="#eefaff" stopOpacity=".8"/>
+                  <stop offset=".4" stopColor="#b8e5ff" stopOpacity=".33"/>
+                  <stop offset="1" stopColor="#a2d8ff" stopOpacity="0"/>
+                </radialGradient>
+              </defs>
+              <ellipse cx="323" cy="222" rx="267" ry="12" fill="#000" opacity=".55"/>
+              <g className="sk-loader__car-body">
+                {/* Unique fastback coupe silhouette, noticeably different from the first sedan. */}
+                <path d="M57 178Q63 159 88 154L126 148L187 143
+                         Q201 141 220 117L258 90Q278 72 313 71
+                         H383Q408 72 427 93L466 133
+                         542 146L596 153Q617 157 622 177
+                         L623 190Q623 204 604 208H568
+                         Q557 169 524 169Q487 170 476 208H196
+                         Q188 167 149 167Q109 167 99 208
+                         H76Q58 208 57 191Z"
+                  fill="url(#sk-loader-coupe-paint)" stroke="#ff8894"
+                  strokeWidth="3.8" strokeLinejoin="round"/>
+                {/* Short cabin, sharply raked windscreen and sloping fastback. */}
+                <path d="M218 137L268 95Q285 81 312 81H381
+                         Q397 82 411 97L451 136Z"
+                  fill="url(#sk-loader-coupe-glass)" stroke="#d8838d" strokeWidth="3"/>
+                <path d="M343 82L349 136" stroke="#d49197" strokeWidth="3.5" opacity=".65"/>
+                <path d="M273 93L230 132M391 89L428 130"
+                  stroke="#e5f2ff" strokeWidth="5" opacity=".16" fill="none"/>
+                {/* Black aerodynamic skirt and discreet sporting side air intake. */}
+                <path d="M208 188L473 188L459 201L208 201Z" fill="#280911" opacity=".74"/>
+                <path d="M420 169Q460 168 479 175L462 184H413Z" fill="#470914" opacity=".75"/>
+                <path d="M221 148Q338 151 474 146" fill="none" stroke="#ffd6d4"
+                  strokeWidth="3.1" opacity=".32"/>
+                <path d="M508 151Q552 149 588 156" fill="none" stroke="#ffb2ad"
+                  strokeWidth="3.4" opacity=".46"/>
+                <path d="M185 140H197" stroke="#ffb6b2" strokeWidth="4" strokeLinecap="round"/>
+                {/* Tail spoiler and lights — this car has its own coupe styling. */}
+                <path d="M89 145L151 142L160 147L92 152Z" fill="#5b101d" stroke="#ff5964" strokeWidth="2"/>
+                <path d="M64 165L101 161" stroke="#ff5265" strokeWidth="8" strokeLinecap="round"/>
+                <path d="M576 156L608 159L615 170L562 170Z"
+                  fill="url(#sk-loader-coupe-light)"/>
+                <ellipse cx="611" cy="169" rx="36" ry="22" fill="url(#sk-loader-coupe-glow)"/>
+                <path d="M570 196H604" stroke="#fce5e6" strokeWidth="2.5" opacity=".34"/>
+
+                <g className="sk-loader__wheel">
+                  <circle cx="149" cy="199" r="36" fill="#05070b" stroke="#242c35" strokeWidth="8"/>
+                  <circle cx="149" cy="199" r="23" fill="#d6dce3" stroke="#3d4753" strokeWidth="5"/>
+                  <circle cx="149" cy="199" r="15" fill="#222b37"/>
+                  <path d="M149 181V217M131 199H167M136 186L162 212M162 186L136 212"
+                    stroke="#d3dce5" strokeWidth="4"/>
+                  <circle cx="149" cy="199" r="5" fill="#e9edf1"/>
+                </g>
+                <g className="sk-loader__wheel">
+                  <circle cx="524" cy="199" r="36" fill="#05070b" stroke="#242c35" strokeWidth="8"/>
+                  <circle cx="524" cy="199" r="23" fill="#d6dce3" stroke="#3d4753" strokeWidth="5"/>
+                  <circle cx="524" cy="199" r="15" fill="#222b37"/>
+                  <path d="M524 181V217M506 199H542M511 186L537 212M537 186L511 212"
+                    stroke="#d3dce5" strokeWidth="4"/>
+                  <circle cx="524" cy="199" r="5" fill="#e9edf1"/>
                 </g>
               </g>
             </svg>

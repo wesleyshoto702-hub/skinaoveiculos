@@ -858,16 +858,32 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .sk-loader__car-track {
   position: absolute;
   bottom: -16px;
-  left: -40%;
-  width: clamp(290px, 49%, 455px);
+  left: 0;
+  width: 100%;
   will-change: transform;
-  animation: sk-loader-drive 2.35s cubic-bezier(.28,.06,.68,.94) infinite;
+  /* Both passes share a single timeline; no same-car repeat during the 3s intro. */
+  animation-duration: 3.1s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.sk-loader__car-track--original {
+  animation-name: sk-loader-drive-original;
+}
+.sk-loader__car-track--red {
+  animation-name: sk-loader-drive-red;
+}
+.sk-loader--leaving .sk-loader__car-track {
+  animation-play-state: paused;
 }
 .sk-loader__car {
   display: block;
-  width: 100%;
+  width: clamp(290px, 49%, 455px);
   height: auto;
   filter: drop-shadow(0 10px 9px rgba(0,0,0,.45));
+}
+.sk-loader__car--red {
+  filter: drop-shadow(0 12px 12px rgba(0,0,0,.43))
+    drop-shadow(0 5px 8px rgba(186,20,41,.18));
 }
 .sk-loader__car-body { animation: sk-loader-body-bob .32s ease-in-out infinite alternate; }
 .sk-loader__wheel {
@@ -924,9 +940,15 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   65% { opacity: .30; }
   100% { opacity: 0; transform: translate3d(-45%,-52px,0) scale(1.65); }
 }
-@keyframes sk-loader-drive {
-  0% { transform: translate3d(-10vw,0,0); }
-  100% { transform: translate3d(calc(100vw + 480px),0,0); }
+/* A complete two-car sequence takes 3.1 seconds:
+   dark sedan 0–1.27s; red coupe 1.36–2.73s; then the smooth fade. */
+@keyframes sk-loader-drive-original {
+  0% { transform: translate3d(-96%,0,0); animation-timing-function: cubic-bezier(.33,0,.68,1); }
+  41%, 100% { transform: translate3d(108%,0,0); }
+}
+@keyframes sk-loader-drive-red {
+  0%, 44% { transform: translate3d(-96%,0,0); animation-timing-function: cubic-bezier(.33,0,.68,1); }
+  88%, 100% { transform: translate3d(108%,0,0); }
 }
 @keyframes sk-loader-wheel-spin { to { transform: rotate(360deg); } }
 @keyframes sk-loader-body-bob { to { transform: translateY(-1.5px); } }
@@ -941,7 +963,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .sk-loader__smoke { inset: -25px -5px -18px; }
   .sk-loader__smoke-puff { filter: blur(17px); }
   .sk-loader__road { height: 134px; }
-  .sk-loader__car-track { left: -66%; width: 290px; bottom: -12px; }
+  .sk-loader__car-track { left: 0; width: 100%; bottom: -12px; }
+  .sk-loader__car { width: 290px; }
   .sk-loader__progress { width: min(90%, 400px); }
   .sk-loader__progress-meta { font-size: 8px; letter-spacing: .09em; }
   .sk-loader__bottom { font-size: 8px; }
@@ -959,5 +982,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .sk-loader__content { transition-duration: .08s !important; }
   .sk-loader__smoke-puff, .sk-loader__car-track, .sk-loader__wheel,
   .sk-loader__car-body, .sk-loader__road-line { animation: none !important; }
-  .sk-loader__car-track { transform: translate3d(60vw,0,0); }
+  .sk-loader__car-track--original { transform: translate3d(12%,0,0); }
+  .sk-loader__car-track--red { display: none; }
 }
