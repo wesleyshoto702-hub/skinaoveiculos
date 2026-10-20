@@ -5,7 +5,7 @@ interface LoadingScreenProps {
   onFinished: () => void;
 }
 
-const MIN_SHOW_MS = 2000;
+const MIN_SHOW_MS = 3000;
 const MAX_WAIT_MS = 7000;
 const EXIT_DURATION_MS = 850;
 
