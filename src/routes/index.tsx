@@ -236,13 +236,20 @@ function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
   const titleSecond = phase(0.958, 0.985);
   const descriptionIn = phase(0.970, 0.992);
   const buttonsIn = phase(0.977, 0.999);
+  // Two distinct scroll-driven messages. The second never overlaps the first
+  // and both finish well before the headlight/brand reveal (starts at 0.785).
+  const introFirstOpacity = 1 - phase(0.145, 0.245);
+  const introSecondOpacity = phase(0.295, 0.39) * (1 - phase(0.565, 0.68));
   const heroStyle = {
     "--headlight-opacity": lightIgnition.toFixed(3),
     "--flood-opacity": fullFlash.toFixed(3),
     "--flood-center-opacity": Math.min(1, fullFlash * 1.3).toFixed(3),
     "--scene-darkness": sceneDarkness.toFixed(3),
     "--three-opacity": (1 - phase(0.86, 0.960)).toFixed(3),
-    "--intro-opacity": (1 - phase(0.055, 0.22)).toFixed(3),
+    "--intro-first-opacity": introFirstOpacity.toFixed(3),
+    "--intro-first-y": (-phase(0.145, 0.245) * 18).toFixed(1) + "px",
+    "--intro-second-opacity": introSecondOpacity.toFixed(3),
+    "--intro-second-y": ((1 - phase(0.295, 0.39)) * 20 - phase(0.565, 0.68) * 16).toFixed(1) + "px",
     "--reveal-opacity": titleFirst.toFixed(3),
     "--brand-first-opacity": titleFirst.toFixed(3),
     "--brand-first-y": ((1 - titleFirst) * 110).toFixed(1) + "%",
@@ -266,7 +273,8 @@ function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
               <span className="hero-light-flood-center"/>
             </div>
             <div className="hero-intro">
-              <span className="hero-intro-text"><span className="hero-intro-main">SEU PRÓXIMO CARRO</span><span className="hero-intro-ending">COMEÇA AQUI.</span></span>
+              <span className="hero-intro-text hero-intro-text--first">SEU PRÓXIMO CARRO</span>
+              <span className="hero-intro-text hero-intro-text--second">COMEÇA AQUI.</span>
             </div>
             <div className="hero-reveal">
               <p className="hero-reveal-overline">MULTIMARCAS EM LAVRAS / MG</p>
