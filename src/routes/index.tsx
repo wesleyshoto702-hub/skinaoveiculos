@@ -81,7 +81,7 @@ const vehicles: Vehicle[] = [
 
 const money = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(value);
 const kilometers = (value: number) => new Intl.NumberFormat("pt-BR").format(value) + " km";
-const waNumber = (import.meta.env.VITE_SKINAO_WHATSAPP || "").replace(/\D/g, "");
+const waNumber = (import.meta.env["VITE_SKINAO_WHATSAPP"] || "").replace(/\D/g, "");
 const instagram = "https://www.instagram.com/skinaoveiculos/";
 
 function whatsApp(message: string) {
