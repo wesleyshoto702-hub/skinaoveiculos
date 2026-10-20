@@ -220,6 +220,8 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
     mirror.position.set(side*.92,1.13,.68);
   }
 
+  // Retain the complete wheels so their rotation matches the passing road.
+  const animatedWheels: InstanceType<typeof THREE.Group>[] = [];
   // Physical tyres, alloys, center caps and five clean spokes.
   for(const side of [-1,1]){
     for(const z of [-1.52,1.52]){
@@ -241,6 +243,7 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
         arm.rotation.x=a;
       }
       car.add(wheelGroup);
+      animatedWheels.push(wheelGroup);
     }
   }
 
@@ -306,6 +309,41 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
     line.rotation.x=-Math.PI/2;
     line.position.set(side*3.3,-.014,0);
   }
+
+  // Real-world yellow lane dashes, placed on the asphalt at both sides of
+  // the vehicle. Instancing draws every dash in a single GPU draw call.
+  // The dashes move toward negative Z: the car faces positive Z.
+  // No decals are rendered on top of the paintwork or the vehicle itself.
+  const dashLength=2.05;
+  const dashSpacing=4.35;
+  const dashesPerSide=22;
+  const dashLoopLength=dashSpacing*dashesPerSide;
+  const dashStartZ=37;
+  const dashGeometry=new THREE.PlaneGeometry(.15,dashLength);
+  dashGeometry.rotateX(-Math.PI/2);
+  const yellowPaint=new THREE.MeshBasicMaterial({
+    color: "#f5bd35", side: THREE.DoubleSide,
+    transparent: true, opacity: .94, depthWrite: false, toneMapped: false,
+  });
+  const laneDashes=new THREE.InstancedMesh(dashGeometry,yellowPaint,dashesPerSide*2);
+  laneDashes.frustumCulled=false;
+  laneDashes.renderOrder=1;
+  scene.add(laneDashes);
+  const dashTransform=new THREE.Object3D();
+  let travelled=0;
+  const updateLaneDashes=(isMobile:boolean)=>{
+    const laneOffset=isMobile?1.58:2.19;
+    for(let sideIndex=0;sideIndex<2;sideIndex++){
+      for(let i=0;i<dashesPerSide;i++){
+        const z=dashStartZ-((i*dashSpacing+travelled)%dashLoopLength);
+        dashTransform.position.set(sideIndex===0?-laneOffset:laneOffset,.008,z);
+        dashTransform.updateMatrix();
+        laneDashes.setMatrixAt(sideIndex*dashesPerSide+i,dashTransform.matrix);
+      }
+    }
+    laneDashes.instanceMatrix.needsUpdate=true;
+  };
+
   const shadowCanvas=document.createElement("canvas");
   shadowCanvas.width=shadowCanvas.height=128;
   const shadowCtx=shadowCanvas.getContext("2d");
@@ -328,6 +366,19 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
   let mobile=false;
   let lastProgress=0;
   let repaint: (()=>void)|null=null;
+  let disposed=false;
+  let isVisible=true;
+  let animationFrame=0;
+  let previousFrameTime=0;
+  let roadSpeed=0;
+  let wheelAngle=0;
+
+  // Scroll decides when to accelerate; wall-clock time moves the lane marks.
+  // Once the user pauses scrolling, the car still feels as if it is driving.
+  // The road slows again just before the headlight flash and brand reveal.
+  const targetRoadSpeed=(progress:number)=>
+    24*phase(progress,.15,.63)*(1-phase(progress,.875,.965));
+
   const resize=()=>{
     const width=Math.max(1,host.clientWidth), height=Math.max(1,host.clientHeight);
     mobile=width<=700;
@@ -335,18 +386,17 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
     camera.fov=mobile?45:42;
     camera.updateProjectionMatrix();
     renderer.setSize(width,height,false);
+    updateLaneDashes(mobile);
     repaint?.();
   };
   const observer=new ResizeObserver(resize);
   observer.observe(host);
   resize();
-  let disposed=false;
-  const render=(progress:number)=>{
+
+  const draw=(progress:number)=>{
     if(disposed)return;
-    lastProgress=progress;
     const orbit=phase(progress,.12,.73);
-    // The entire orbit is performed by a REAL perspective camera.
-    // At .73 it stops in front of the car; lights start only at .785.
+    // The camera remains scroll-controlled; the road animation is independent.
     camera.position.set(
       0,
       lerp(mobile?12.2:10.7,mobile?1.92:1.76,orbit),
@@ -364,13 +414,74 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
       sprite.scale.set(1.45*scale,1.04*scale,1);
       pointLights[i]!.intensity=ignition*2.8+flash*4.0;
     }
-    renderer.render(scene,camera);
+    if(isVisible&&!document.hidden)renderer.render(scene,camera);
+  };
+
+  const stopLoop=()=>{
+    if(animationFrame)cancelAnimationFrame(animationFrame);
+    animationFrame=0;
+    previousFrameTime=0;
+  };
+  const tick=(now:number)=>{
+    animationFrame=0;
+    if(disposed||!isVisible||document.hidden)return;
+    const delta=previousFrameTime
+      ?Math.min((now-previousFrameTime)/1000,.05)
+      :0;
+    previousFrameTime=now;
+    const desired=targetRoadSpeed(lastProgress);
+    // Gradual acceleration and braking instead of instant lane teleportation.
+    roadSpeed+=(desired-roadSpeed)*(1-Math.exp(-delta*3.4));
+    if(delta>0&&roadSpeed>.015){
+      const distance=roadSpeed*delta;
+      travelled=(travelled+distance)%dashLoopLength;
+      updateLaneDashes(mobile);
+      wheelAngle=(wheelAngle+distance/.43)%(Math.PI*2);
+      for(const wheel of animatedWheels)wheel.rotation.x=wheelAngle;
+      renderer.render(scene,camera);
+    }
+    if(desired>.06||roadSpeed>.06){
+      animationFrame=requestAnimationFrame(tick);
+    }else{
+      roadSpeed=0;
+      previousFrameTime=0;
+    }
+  };
+  const maybeRun=()=>{
+    if(!disposed&&isVisible&&!document.hidden&&!animationFrame&&
+      (targetRoadSpeed(lastProgress)>.06||roadSpeed>.06)){
+      previousFrameTime=0;
+      animationFrame=requestAnimationFrame(tick);
+    }
+  };
+  const render=(progress:number)=>{
+    if(disposed)return;
+    lastProgress=progress;
+    draw(progress);
+    maybeRun();
   };
   repaint=()=>render(lastProgress);
+
+  // Prevent continuous GPU use when this Hero is outside the viewport.
+  const intersection=new IntersectionObserver(entries=>{
+    isVisible=entries[0]?.isIntersecting??false;
+    if(isVisible)render(lastProgress);
+    else stopLoop();
+  },{threshold:0});
+  intersection.observe(host);
+  const onVisibility=()=>{
+    if(document.hidden)stopLoop();
+    else render(lastProgress);
+  };
+  document.addEventListener("visibilitychange",onVisibility);
+
   const dispose=()=>{
     if(disposed)return;
     disposed=true;
+    stopLoop();
     observer.disconnect();
+    intersection.disconnect();
+    document.removeEventListener("visibilitychange",onVisibility);
     const geometries=new Set<InstanceType<typeof THREE.BufferGeometry>>();
     const materials=new Set<InstanceType<typeof THREE.Material>>();
     scene.traverse(node=>{
