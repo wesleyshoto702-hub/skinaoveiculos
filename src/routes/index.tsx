@@ -390,7 +390,6 @@ function Home() {
           <nav className={"site-nav " + (menuOpen ? "site-nav--open" : "")} aria-label="Navegação principal">
             {[["#inicio","Início"],["#estoque","Estoque"],["#financiamento","Financiamento"],["#sobre","Sobre"],["#contato","Contato"]].map(([url,label]) =>
               <a href={url} key={url} onClick={() => setMenuOpen(false)}>{label}</a>)}
-            <button type="button" className="nav-mobile-cta" onClick={() => { setMenuOpen(false); whatsApp("Olá, Skinão Veículos! Vim pelo site e gostaria de conversar."); }}><MessageCircle size={17}/> Falar no WhatsApp</button>
           </nav>
           <div className="header-actions"><button type="button" className="header-contact" onClick={() => whatsApp("Olá, Skinão Veículos! Vim pelo site e gostaria de conversar.")}>FALAR NO WHATSAPP</button>
             <button type="button" className="menu-toggle" aria-label={menuOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen?<X size={24}/>:<Menu size={24}/>}</button></div>

@@ -206,7 +206,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .header-contact { border: 1px solid rgba(255,255,255,.28); color: white; background: transparent; font-size: 10px !important; font-weight: 800 !important; letter-spacing: .11em; padding: 13px 16px; display: flex; gap: 12px; align-items: center; transition: background .2s; white-space: nowrap; }
 .header-contact:hover { background: var(--accent); border-color: var(--accent); }
 .menu-toggle { display: none; color: white; background: transparent; border: 0; padding: 9px; }
-.site-nav .nav-mobile-cta { display: none; }
 
 
 /* Cinematic perspective camera on a single sculpted 3D concept car.
@@ -555,9 +554,25 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .site-nav { display: none; position: fixed; top: 75px; left: 0; right: 0; background: #0d0e12; padding: 35px 32px; height: calc(100svh - 75px); overflow-y: auto; border-bottom: 1px solid #343439; flex-direction: column; align-items: stretch; gap: 0; box-shadow: 0 30px 70px #000; }
   .site-nav--open { display: flex; }
   .site-nav > a { font-size: 20px; padding: 18px 0; border-bottom: 1px solid #28292e; }
-  .site-nav .nav-mobile-cta { margin-top: 28px; border: 0; background: var(--accent); color: white; padding: 17px; display: flex; justify-content: center; gap: 10px; align-items: center; font-size: 12px; font-weight: 800; }
-  .menu-toggle { display: block; }
-  .header-contact { display: none; }
+  .site-header-inner { gap: 12px; }
+  .site-root .brand-logo { height: 35px; }
+  .site-header .header-actions { margin-left: auto; gap: 10px; flex-shrink: 0; }
+  .site-header .header-contact {
+    display: inline-flex;
+    min-height: 44px;
+    font-size: 10px !important;
+    padding: 10px 16px;
+    letter-spacing: .015em;
+    white-space: nowrap;
+  }
+  .menu-toggle {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    padding: 0;
+  }
   .intro-grid, .finance-grid, .about-grid { grid-template-columns: 1fr; gap: 40px; }
   .intro-right { max-width: 520px; }
   .stock-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
@@ -586,8 +601,17 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .site-root .brand { gap: 8px; }
   .brand-words strong { font-size: 22px; }
   .brand-words em { font-size: 13px; letter-spacing: .18em; margin-top: 6px; }
-  .site-root .brand-logo { height: 34px; }
+  .site-root .brand-logo { height: 26px; }
   .site-root .brand--compact .brand-logo { height: 44px; }
+  .site-header-inner { gap: 6px; }
+  .site-header .header-actions { gap: 6px; }
+  .site-header .header-contact {
+    min-height: 44px;
+    padding: 10px 10px;
+    font-size: 9px !important;
+    letter-spacing: 0;
+  }
+  .site-header .menu-toggle { width: 42px; height: 44px; }
   .hero-scroll { height: 265svh; }
   .hero-sticky { background: #050608; }
   .hero-three-stage { min-height: 100%; }
@@ -1341,9 +1365,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .site-root .finance-form .btn {
   border-radius: 0;
 }
-.site-nav .nav-mobile-cta {
-  border-radius: 999px;
-}
 .menu-toggle, .icon-button {
   border-radius: 50%;
 }
@@ -1361,7 +1382,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   border-radius: 14px;
 }
 
-/* White highlight travels around the header WhatsApp pill's actual contour.
+/* Red highlight travels around the header WhatsApp pill's actual contour.
    A custom angle animates the narrow ring, rather than changing button size. */
 @property --sk-contact-orbit {
   syntax: "<angle>";
@@ -1373,7 +1394,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   isolation: isolate;
   min-height: 46px;
   padding: 12px 22px;
-  border: 1px solid rgba(255,255,255,.38);
+  border: 1px solid rgba(225,39,61,.56);
   border-radius: 999px;
   background: #0c0c0e;
   transition: background-color .2s ease, border-color .2s ease;
@@ -1388,9 +1409,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   background: conic-gradient(
     from var(--sk-contact-orbit),
     transparent 0deg 235deg,
-    rgba(255,255,255,.2) 270deg,
-    #fff 320deg,
-    rgba(255,255,255,.76) 336deg,
+    rgba(213,35,57,.28) 270deg,
+    #ff2846 320deg,
+    rgba(255,53,81,.92) 336deg,
     transparent 360deg
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -1401,7 +1422,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 }
 .header-contact:hover {
   background: #151517;
-  border-color: rgba(255,255,255,.75);
+  border-color: rgba(255,53,81,.92);
 }
 .header-contact:focus-visible {
   outline: 2px solid #fff;
@@ -1434,7 +1455,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 @media (prefers-reduced-motion: reduce) {
   .header-contact::before {
     animation: none;
-    background: rgba(255,255,255,.74);
+    background: rgba(245,39,69,.86);
   }
 }
 
@@ -1469,4 +1490,18 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .site-header.site-header--visible {
     transition: none;
   }
+}
+
+
+/* Extra-small phones: retain logo, WhatsApp pill and menu on one row. */
+@media (max-width: 360px) {
+  .site-header-inner.container { width: calc(100% - 24px); gap: 5px; }
+  .site-root .site-header .brand-logo { height: 23px; }
+  .site-header .header-actions { gap: 5px; }
+  .site-header .header-contact {
+    font-size: 8.7px !important;
+    padding-inline: 8px;
+    letter-spacing: 0;
+  }
+  .site-header .menu-toggle { width: 40px; }
 }
