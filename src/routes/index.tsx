@@ -97,11 +97,11 @@ function Brand({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function SectionTitle({ eyebrow, title, description }: { eyebrow: string; title: string; description?: string }) {
+function SectionTitle({ eyebrow, title, accent, description }: { eyebrow: string; title: string; accent?: string; description?: string }) {
   return (
     <div className="section-heading">
       <p className="eyebrow">{eyebrow}</p>
-      <h2>{title}</h2>
+      <h2>{title}{accent ? <> <span className="heading-accent">{accent}</span></> : null}</h2>
       {description && <p className="section-description">{description}</p>}
     </div>
   );
@@ -402,7 +402,7 @@ function Home() {
         <section className="intro-section section-pad">
           <div className="container intro-grid">
             <div><p className="eyebrow">LAVRAS · MINAS GERAIS</p>
-              <h2>ESCOLHA UM MODELO.<br/><span>FALE COM A LOJA.</span></h2></div>
+              <h2>ESCOLHA UM MODELO.<br/>FALE COM A <span className="heading-accent">LOJA.</span></h2></div>
             <div className="intro-right"><p>Veja a apresentação dos veículos, filtre o que interessa e converse com a Skinão sobre a disponibilidade real.</p>
               <a className="text-link" href="#estoque">VER MODELOS</a></div>
           </div>
@@ -410,7 +410,7 @@ function Home() {
 
         <section className="stock-section section-pad" id="estoque">
           <div className="container">
-            <div className="stock-heading-row"><SectionTitle eyebrow="CATÁLOGO DEMONSTRATIVO" title="CONHEÇA OS MODELOS." description="Explore os exemplos, compare informações e escolha o que deseja consultar com a loja."/>
+            <div className="stock-heading-row"><SectionTitle eyebrow="CATÁLOGO DEMONSTRATIVO" title="CONHEÇA OS" accent="MODELOS." description="Explore os exemplos, compare informações e escolha o que deseja consultar com a loja."/>
             </div>
             <div className="demo-notice"><p><strong>Catálogo de demonstração.</strong> As fotos, modelos, especificações e os preços abaixo são ilustrativos; não representam veículos disponíveis. Confirme o estoque atual diretamente com a Skinão.</p></div>
             <div className="stock-filters" role="search" aria-label="Buscar veículos">
@@ -433,15 +433,14 @@ function Home() {
         <section className="benefits-section section-pad" aria-label="Como consultar os veículos">
           <div className="container benefits-layout">
             <div className="benefits-title">
-              <SectionTitle eyebrow="COMO FUNCIONA" title="DO CATÁLOGO À CONVERSA." description="Veja o que você pode fazer nesta página."/>
+              <SectionTitle eyebrow="COMO FUNCIONA" title="DO CATÁLOGO À" accent="CONVERSA." description="Veja o que você pode fazer nesta página."/>
             </div>
             <div className="benefits-list">
               {[
-                {n:"01",title:"ENCONTRE UM MODELO",description:"Use os filtros por marca, categoria, câmbio e preço no catálogo demonstrativo."},
-                {n:"02",title:"VEJA OS DETALHES",description:"Abra cada modelo para consultar dados e imagens de exemplo em uma única tela."},
-                {n:"03",title:"FALE COM A SKINÃO",description:"Confirme diretamente com a equipe quais veículos e condições estão disponíveis em Lavras."},
-              ].map(item => <div className="benefit-row" key={item.n}>
-                <span className="benefit-number">{item.n}</span>
+                {title:"ENCONTRE UM MODELO",description:"Use os filtros por marca, categoria, câmbio e preço no catálogo demonstrativo."},
+                {title:"VEJA OS DETALHES",description:"Abra cada modelo para consultar dados e imagens de exemplo em uma única tela."},
+                {title:"FALE COM A SKINÃO",description:"Confirme diretamente com a equipe quais veículos e condições estão disponíveis em Lavras."},
+              ].map(item => <div className="benefit-row" key={item.title}>
                 <h3>{item.title}</h3>
                 <p>{item.description}</p>
               </div>)}
@@ -451,7 +450,7 @@ function Home() {
 
         <section className="finance-section section-pad" id="financiamento">
           <div className="container finance-grid">
-            <div className="finance-copy"><p className="eyebrow">FINANCIAMENTO</p><h2>QUER FINANCIAR?<br/><span>VAMOS CONVERSAR.</span></h2>
+            <div className="finance-copy"><p className="eyebrow">FINANCIAMENTO</p><h2>QUER FINANCIAR?<br/>VAMOS <span className="heading-accent">CONVERSAR.</span></h2>
               <p>Informe o carro de interesse e o valor de entrada. A Skinão poderá orientar sobre as opções e os próximos passos.</p>
               <div className="finance-steps"><div><span>01</span> ESCOLHA O VEÍCULO</div><div><span>02</span> CONTE SUA IDEIA</div><div><span>03</span> FALE COM A EQUIPE</div></div>
               <small>A aprovação e as condições dependem de análise da instituição financeira. Não realizamos aprovação automática pelo site.</small>
@@ -475,7 +474,7 @@ function Home() {
         </section>
 
         <section className="contact-section section-pad" id="contato">
-          <div className="container contact-content"><p className="eyebrow">CONTATO · LAVRAS / MG</p><h2>JÁ TEM UM<br/><span>CARRO EM MENTE?</span></h2>
+          <div className="container contact-content"><p className="eyebrow">CONTATO · LAVRAS / MG</p><h2>JÁ TEM UM<br/>CARRO EM <span className="heading-accent">MENTE?</span></h2>
             <p>Pergunte sobre disponibilidade, preços e possibilidades de financiamento. A conversa começa com a equipe da Skinão.</p>
             <div className="contact-buttons"><button type="button" onClick={()=>whatsApp("Olá, Skinão Veículos! Conheci o novo site e gostaria de falar sobre os veículos disponíveis.")} className="btn btn-red"><MessageCircle size={20}/> FALAR NO WHATSAPP</button><a href={instagram} className="btn btn-outline" target="_blank" rel="noopener noreferrer">VER INSTAGRAM</a></div>
             {!waNumber && <p className="contact-config-note">Prévia: o número oficial do WhatsApp precisa ser configurado para direcionar o contato à loja.</p>}

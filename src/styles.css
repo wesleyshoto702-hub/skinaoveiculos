@@ -1156,7 +1156,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .stock-bottom { margin-top: 64px; }
 .stock-bottom p { font-size: 15px; color: #b9b4b5; }
 
-/* Numbered editorial rows instead of three interchangeable feature cards. */
+/* Unnumbered editorial list, without three template cards or step badges. */
 .benefits-section { background: #0e0e10; padding: 132px 0 147px !important; }
 .benefits-layout {
   display: grid;
@@ -1169,22 +1169,13 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .benefits-list { border-top: 1px solid #5a5052; }
 .benefit-row {
   display: grid;
-  grid-template-columns: 56px minmax(0,1fr);
-  column-gap: 16px;
+  grid-template-columns: minmax(0,1fr);
   padding: 30px 0 34px;
   border-bottom: 1px solid #343336;
 }
-.benefit-number {
-  font-family: "Barlow Condensed",Impact,sans-serif;
-  font-size: 24px;
-  color: #ad8b91;
-  letter-spacing: .07em;
-  font-variant-numeric: tabular-nums;
-}
 .benefit-row h3 { font-size: clamp(32px,3.1vw,45px); line-height: 1; font-weight: 750; }
 .benefit-row p {
-  grid-column: 2;
-  max-width: 390px;
+  max-width: 440px;
   color: #b8b3b4;
   font-size: 14px;
   line-height: 1.75;
@@ -1284,7 +1275,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .vehicle-title h3 { font-size: 44px; }
   .vehicle-price strong { font-size: 39px; }
   .benefits-section { padding: 85px 0 95px !important; }
-  .benefit-row { grid-template-columns: 42px minmax(0,1fr); gap: 10px; padding: 25px 0; }
+  .benefit-row { grid-template-columns: minmax(0,1fr); gap: 0; padding: 25px 0; }
   .benefit-row h3 { font-size: 36px; }
   .benefit-row p { font-size: 14px; }
   .finance-section { padding: 86px 0 88px !important; }
@@ -1505,4 +1496,10 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
     letter-spacing: 0;
   }
   .site-header .menu-toggle { width: 40px; }
+}
+
+/* Restrained Skinão red on selected final words only.
+   This is deliberately scoped to marked h2 text, not entire titles. */
+.site-root h2 .heading-accent {
+  color: var(--accent-bright);
 }
