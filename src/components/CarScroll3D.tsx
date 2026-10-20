@@ -84,7 +84,7 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
 
   const car = new THREE.Group();
   scene.add(car);
-  const add = (parent: InstanceType<typeof THREE.Object3D>, geo: InstanceType<typeof THREE.BufferGeometry>, mat: InstanceType<typeof THREE.Material>) => {
+  const add = (parent: InstanceType<typeof THREE.Object3D>, geo: THREE.BufferGeometry<THREE.NormalBufferAttributes>, mat: InstanceType<typeof THREE.Material>) => {
     const mesh = new THREE.Mesh(geo, mat);
     parent.add(mesh);
     return mesh;
@@ -159,10 +159,11 @@ async function mountScene(host: HTMLDivElement): Promise<SceneController> {
   const cabinIndices: number[] = [];
   // Each longitudinal slice describes the glass base and slightly arched roof.
   for (const [z,w,base,top] of canopy) {
-    for (const [x,y] of [
+    const cabinPts: Array<[number, number]> = [
       [-w,base],[-w*.91,base+(top-base)*.78],[-w*.66,top],
       [0,top+.035],[w*.66,top],[w*.91,base+(top-base)*.78],[w,base],
-    ]) cabinVertices.push(x,y,z);
+    ];
+    for (const [x,y] of cabinPts) cabinVertices.push(x,y,z);
   }
   for (let j=0;j<canopy.length-1;j++) {
     for(let k=0;k<6;k++) {
