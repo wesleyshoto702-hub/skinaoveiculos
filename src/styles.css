@@ -357,11 +357,11 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   width: 100%;
   font-weight: 900;
   font-size: clamp(82px, 13.8vw, 226px);
-  line-height: .88;
+  line-height: 1.04;
   letter-spacing: -.045em;
   text-shadow: 0 15px 45px rgba(0,0,0,.55);
 }
-.hero-brand-line { display: block; overflow: hidden; padding-bottom: .12em; }
+.hero-brand-line { display: block; overflow: visible; padding-bottom: .12em; }
 .hero-brand-line-inner { display: block; width: max-content; max-width: 100%; margin: 0 auto; }
 .hero-brand-first { transform: translate3d(0, var(--brand-first-y), 0); opacity: var(--brand-first-opacity); }
 .hero-brand-line--accent { font-size: .62em; line-height: 1.04; color: var(--accent-bright); letter-spacing: .055em; }
@@ -620,7 +620,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .hero-intro-text { font-size: 42px; max-width: 300px; }
   .hero-reveal { padding: 90px 14px 45px; }
   .hero-reveal-overline { font-size: 8px; letter-spacing: .14em; margin-bottom: 26px !important; }
-  .hero-reveal h1 { font-size: clamp(75px,19vw,130px); line-height: .72; }
+  .hero-reveal h1 { font-size: clamp(75px,19vw,130px); line-height: 1.08; }
   .hero-reveal h1 > .hero-brand-line--accent { font-size: .52em; }
   .hero-reveal-description { font-size: 13px; max-width: 280px; margin-top: 30px !important; }
   .hero-cta-row { flex-direction: column; width: min(300px,100%); margin-top: 25px; }
@@ -1520,11 +1520,11 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   position: relative;
   z-index: 2;
 }
-/* The original tight line-height cropped the tilde over Ã in SKINÃO.
-   Extend only the first line's clipping box, without changing font or scroll. */
+/* Give the Ã tilde real room above the first row. The previous negative
+   top margin and hidden overflow clipped SKINÃO at both viewport sizes. */
 .hero-reveal h1 > .hero-brand-line:first-child {
-  padding-top: .19em;
-  margin-top: -.19em;
+  padding-top: .13em;
+  margin-top: 0;
 }
 /* Subtle periodic light traveling along the two wordmarks.
    Preserve each word's independent scroll-based transform/opacity. */
