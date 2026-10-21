@@ -172,29 +172,13 @@ function CarArtwork({ design }: { design: CarDesign }) {
   );
 }
 
-/** Four visibly different motorbike silhouettes, each with a geared rider. */
+/** Four distinct rider-free motorbike silhouettes: only the machines. */
 function BikeArtwork({ design }: { design: BikeDesign }) {
   const { style } = design;
   const sport = style === "sport";
   const cruiser = style === "cruiser";
   const adventure = style === "adventure";
   const paint = "hero-bike-paint-" + design.id;
-  const helmetX = sport ? 119 : cruiser ? 101 : adventure ? 108 : 109;
-  const helmetY = sport ? 24 : adventure ? 19 : cruiser ? 24 : 23;
-  const torso = sport
-    ? "M108 34L122 36Q132 40 140 52L123 59L100 48Z"
-    : cruiser
-      ? "M91 35L109 34L123 55L101 62L91 52Z"
-      : adventure
-        ? "M99 31L116 30L127 53L103 59L95 44Z"
-        : "M100 34L116 32L131 53L106 59L98 46Z";
-  const arm = sport
-    ? "M124 43L146 49L162 44"
-    : cruiser
-      ? "M115 41L136 39L157 35"
-      : adventure
-        ? "M119 39L136 43L153 41"
-        : "M118 42L138 49L156 45";
   const tank = sport
     ? "M99 54L126 43L145 52L136 65H104Z"
     : cruiser
@@ -264,30 +248,6 @@ function BikeArtwork({ design }: { design: BikeDesign }) {
         fill="#eff6e6" opacity=".9" />
       <path d="M64 57L57 62" stroke="#ff7580"
         strokeWidth="3.8" strokeLinecap="round" />
-      {/* Rider: armored jacket, trousers, boots, gloves, full-face helmet. */}
-      <path d={torso} fill="#252c38" stroke="#7d8c9b"
-        strokeWidth="2.5" strokeLinejoin="round" />
-      <path d={arm} fill="none" stroke="#253140"
-        strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d={arm} fill="none" stroke="#8494a5"
-        strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d={cruiser ? "M104 55L97 66L120 77" : "M106 54L99 68L120 78"}
-        fill="none" stroke="#2a3543" strokeWidth="9"
-        strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M117 77L130 82" fill="none" stroke="#8998a8"
-        strokeWidth="7" strokeLinecap="round" />
-      <path d="M121 82L137 83" fill="none" stroke="#151c25"
-        strokeWidth="7" strokeLinecap="round" />
-      <path d="M105 47L116 49" fill="none" stroke={design.color}
-        strokeWidth="3" strokeLinecap="round" />
-      <g transform={"translate(" + helmetX + " " + helmetY + ")"}>
-        <path d="M-11 0Q-11-10 0-11Q11-12 13 0L10 7L-5 10L-10 6Z"
-          fill="#2c394a" stroke="#b5c0cd" strokeWidth="2.6" />
-        <path d="M-3-6Q6-7 12-1L10 3L0 4L-7 1Z"
-          fill="#0b1420" stroke="#8eafc5" strokeWidth="1.8" />
-        <path d="M-7 7L3 9" stroke={design.color}
-          strokeWidth="2.8" strokeLinecap="round" />
-      </g>
     </svg>
   );
 }
