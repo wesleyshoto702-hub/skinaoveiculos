@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CarScroll3D } from "../components/CarScroll3D";
 import { LoadingScreen } from "../components/LoadingScreen";
 import { HeroBackdropCars } from "../components/HeroBackdropCars";
+import { BusinessHours } from "../components/BusinessHours";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { ChevronLeft, ChevronRight, Instagram, Menu, MessageCircle, Search, X } from "lucide-react";
 import logoAsset from "../assets/skinao-logo.png.asset.json";
@@ -542,7 +543,7 @@ function Home() {
         </section>
       </main>
 
-      <footer className="site-footer"><div className="container footer-top"><Brand compact/><div><p>VEÍCULOS MULTIMARCAS<br/>LAVRAS · MINAS GERAIS</p></div><a href="#inicio" className="back-top" aria-label="Voltar ao início">VOLTAR AO INÍCIO</a></div><div className="container footer-bottom"><span>© {new Date().getFullYear()} SKINÃO VEÍCULOS. TODOS OS DIREITOS RESERVADOS.</span><span>CATÁLOGO ILUSTRATIVO · CONSULTAR DISPONIBILIDADE</span><a href={instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Skinão Veículos"><Instagram size={18}/></a></div></footer>
+      <footer className="site-footer"><div className="container footer-top"><Brand compact/><div><p>VEÍCULOS MULTIMARCAS<br/>LAVRAS · MINAS GERAIS</p></div><a href="#inicio" className="back-top" aria-label="Voltar ao início">VOLTAR AO INÍCIO</a></div><BusinessHours/><div className="container footer-bottom"><span>© {new Date().getFullYear()} SKINÃO VEÍCULOS. TODOS OS DIREITOS RESERVADOS.</span><span>CATÁLOGO ILUSTRATIVO · CONSULTAR DISPONIBILIDADE</span><a href={instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Skinão Veículos"><Instagram size={18}/></a></div></footer>
       {selected && <VehicleModal key={selected.id} vehicle={selected} onClose={closeDetails}/>}
       </div>
     </>

@@ -1704,3 +1704,109 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 #lovable-badge {
   display: none !important;
 }
+
+
+/* Compact, real-time opening hours at the very end of the site.
+   The status itself is calculated in America/Sao_Paulo, not from browser time. */
+.footer-hours {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) auto auto;
+  align-items: center;
+  gap: 16px clamp(20px, 3.2vw, 48px);
+  padding-top: 19px;
+  padding-bottom: 19px;
+  border-top: 1px solid #242529;
+}
+.footer-hours-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.footer-hours-label {
+  color: #aaa8ad;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .105em;
+  white-space: nowrap;
+}
+.footer-hours-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  white-space: nowrap;
+}
+.footer-hours-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+}
+.footer-hours-status--open { color: #55d888; }
+.footer-hours-status--closed { color: #f45060; }
+.footer-hours-status--pending { color: #8a8b93; }
+.footer-hours-schedule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 2.4vw, 34px);
+  flex-wrap: wrap;
+}
+.footer-hours-schedule > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  color: #aaa8af;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.footer-hours-schedule strong {
+  color: #f0edef;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.footer-hours-zone {
+  justify-self: end;
+  font-size: 10px;
+  color: #888991;
+  white-space: nowrap;
+}
+@media (max-width: 1000px) {
+  .footer-hours {
+    grid-template-columns: 1fr auto;
+    gap: 12px 24px;
+  }
+  .footer-hours-schedule {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+  }
+}
+@media (max-width: 640px) {
+  .footer-hours {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding-top: 17px;
+    padding-bottom: 19px;
+  }
+  .footer-hours-heading { gap: 10px 14px; }
+  .footer-hours-label { font-size: 9px; }
+  .footer-hours-schedule {
+    grid-column: 1;
+    grid-row: auto;
+    justify-content: flex-start;
+    gap: 9px 18px;
+  }
+  .footer-hours-schedule > span { font-size: 10px; gap: 5px; }
+  .footer-hours-zone {
+    grid-row: auto;
+    justify-self: start;
+    font-size: 9px;
+  }
+}
