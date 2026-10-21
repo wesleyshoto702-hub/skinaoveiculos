@@ -156,14 +156,21 @@ function VehicleCard({ vehicle, onDetails }: { vehicle: Vehicle; onDetails: (veh
         <img src={vehicle.photo} alt={"Imagem ilustrativa: " + label} loading="lazy" decoding="async"/>
       </button>
       <div className="vehicle-card-body">
-        <div className="vehicle-title"><div><span className="vehicle-brand">{vehicle.brand}</span><h3>{vehicle.model}</h3></div><span className="vehicle-year">{vehicle.year}</span></div>
+        <div className="vehicle-title">
+          <div className="vehicle-title-name">
+            <span className="vehicle-brand">{vehicle.brand}</span>
+            <h3>{vehicle.model}</h3>
+          </div>
+          <div className="vehicle-title-meta">
+            <strong className="vehicle-title-price" aria-label={"Preço ilustrativo: " + money(vehicle.price)}>{money(vehicle.price)}</strong>
+            <span className="vehicle-year">{vehicle.year}</span>
+          </div>
+        </div>
         <p className="vehicle-version">{vehicle.version}</p>
         <div className="vehicle-specs">
           <span>{kilometers(vehicle.km)}</span>
           <span>{vehicle.transmission}</span>
           <span>{vehicle.fuel}</span>
-        </div>
-        <div className="vehicle-price"><div><small>PREÇO ILUSTRATIVO</small><strong>{money(vehicle.price)}</strong></div>
         </div>
         <button type="button" className="vehicle-more" onClick={() => onDetails(vehicle)}>VER DETALHES DO MODELO</button>
       </div>
@@ -352,9 +359,6 @@ function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
                   <span className="hero-brand-line hero-brand-line--accent"><span className="hero-brand-line-inner hero-brand-second">VEÍCULOS</span></span>
                 </h1>
                 <p className="hero-reveal-description">Veja os modelos desta prévia e fale com a loja para consultar disponibilidade.</p>
-                <div className="hero-cta-row">
-                  <a href="#estoque" className="btn btn-red">VER CATÁLOGO</a>
-                </div>
               </div>
             </div>
             <div className="hero-bottom">

@@ -1914,3 +1914,122 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
     font-size: 9px;
   }
 }
+
+
+/* ============================================================
+   COMPACT SHOWROOM: denser sections + a reusable catalog heading.
+   Keep the cinematic 3D Hero timeline, loader and modal untouched.
+   This layout lives in VehicleCard and applies to future records.
+   ============================================================ */
+
+/* Section transitions: trim excess negative space, retain breathing room. */
+.site-root .section-pad { padding-block: 80px; }
+.site-root .intro-section.section-pad   { padding: 74px 0 78px !important; }
+.site-root .stock-section.section-pad   { padding: 74px 0 84px !important; }
+.site-root .benefits-section.section-pad { padding: 80px 0 85px !important; }
+.site-root .finance-section.section-pad { padding: 82px 0 85px !important; }
+.site-root .about-section.section-pad   { padding: 78px 0 84px !important; }
+.site-root .visit-section.section-pad   { padding: 64px 0 68px !important; }
+
+.intro-grid { gap: 6%; }
+.intro-right p { margin-bottom: 17px; }
+.stock-heading-row { margin-bottom: 26px; }
+.demo-notice { padding: 13px 0; margin-bottom: 22px; }
+.stock-grid { gap: 34px 27px; }
+.stock-bottom { margin-top: 34px; padding-top: 20px; }
+.benefits-layout { gap: clamp(28px, 5vw, 76px); }
+.benefits-list { gap: 1px; }
+.benefit-row { padding: 19px 0 22px; }
+.benefit-row p { padding-top: 9px; }
+.finance-grid { gap: clamp(30px, 5vw, 75px); }
+.finance-copy > p:not(.eyebrow) { margin: 21px 0 22px; }
+.finance-steps { gap: 12px; padding: 17px 0; }
+.about-grid { gap: clamp(30px, 5vw, 78px); }
+.about-image { height: 390px; }
+.footer-top { min-height: 138px; padding: 30px 0; }
+
+/* Catalog card: [name] [price] [year], one shared layout for every car.
+   Keep long model names wrapping inside their own area, never over the price. */
+.stock-grid .vehicle-card-body { padding: 18px 0 22px; }
+.stock-grid .vehicle-title {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+.stock-grid .vehicle-title-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.stock-grid .vehicle-title h3 {
+  font-size: clamp(32px, 3.55vw, 48px);
+  line-height: .97;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+.stock-grid .vehicle-title-meta {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  gap: clamp(7px, 1.2vw, 14px);
+  white-space: nowrap;
+  padding-bottom: 1px;
+}
+.stock-grid .vehicle-title-price {
+  color: #f7f3f1;
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-weight: 800;
+  font-size: clamp(25px, 2.65vw, 34px);
+  line-height: 1;
+  letter-spacing: -.017em;
+  font-variant-numeric: tabular-nums;
+}
+.stock-grid .vehicle-year {
+  color: #c6c1c1;
+  font-size: 11px;
+  font-weight: 750;
+  padding-bottom: 0;
+  white-space: nowrap;
+}
+.stock-grid .vehicle-version { margin-top: 8px !important; }
+.stock-grid .vehicle-specs { margin-top: 15px; padding: 12px 0; gap: 8px 16px; }
+.stock-grid .vehicle-more { padding-top: 12px; }
+
+@media (max-width: 900px) {
+  .intro-grid, .about-grid, .finance-grid { gap: 30px; }
+  .benefits-layout { gap: 26px; }
+  .stock-grid { gap: 30px 24px; }
+  .stock-grid .vehicle-title h3 { font-size: clamp(29px, 4.3vw, 43px); }
+  .stock-grid .vehicle-title-price { font-size: clamp(23px, 3.2vw, 31px); }
+}
+@media (max-width: 640px) {
+  .site-root .section-pad { padding-block: 58px; }
+  .site-root .intro-section.section-pad    { padding: 53px 0 58px !important; }
+  .site-root .stock-section.section-pad    { padding: 57px 0 63px !important; }
+  .site-root .benefits-section.section-pad { padding: 57px 0 63px !important; }
+  .site-root .finance-section.section-pad  { padding: 60px 0 62px !important; }
+  .site-root .about-section.section-pad    { padding: 59px 0 63px !important; }
+  .site-root .visit-section.section-pad    { padding: 53px 0 58px !important; }
+  .intro-grid, .about-grid, .finance-grid { gap: 25px; }
+  .stock-grid { grid-template-columns: 1fr; gap: 27px; }
+  .stock-grid .vehicle-card-body { padding: 15px 0 19px; }
+  .stock-grid .vehicle-title { gap: 7px; }
+  .stock-grid .vehicle-title h3 { font-size: clamp(29px, 8.6vw, 41px); }
+  .stock-grid .vehicle-title-meta { gap: 7px; }
+  .stock-grid .vehicle-title-price { font-size: clamp(24px, 6.9vw, 31px); }
+  .stock-grid .vehicle-year { font-size: 10px; }
+  .stock-grid .vehicle-specs { margin-top: 12px; padding: 11px 0; }
+  .benefit-row { padding: 15px 0 18px; }
+  .benefits-list { gap: 0; }
+  .finance-copy > p:not(.eyebrow) { margin: 18px 0; }
+  .finance-steps { gap: 10px; padding: 14px 0; }
+  .about-image { height: 285px; }
+  .footer-top { min-height: 112px; padding: 24px 0; }
+}
+@media (max-width: 360px) {
+  .stock-grid .vehicle-title h3 { font-size: 28px; }
+  .stock-grid .vehicle-title-price { font-size: 23px; }
+  .stock-grid .vehicle-title-meta { gap: 6px; }
+}
