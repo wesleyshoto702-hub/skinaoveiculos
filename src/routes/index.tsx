@@ -535,7 +535,7 @@ function Home() {
         <section className="contact-section section-pad" id="contato">
           <div className="container contact-content"><p className="eyebrow">CONTATO</p><h2>JÁ TEM UM<br/>CARRO EM <span className="heading-accent">MENTE?</span></h2>
             <p>Pergunte sobre disponibilidade, preços e possibilidades de financiamento. A conversa começa com a equipe da Skinão.</p>
-            <div className="contact-buttons"><button type="button" onClick={()=>whatsApp("Olá, Skinão Veículos! Conheci o novo site e gostaria de falar sobre os veículos disponíveis.")} className="btn btn-red">FALAR NO WHATSAPP</button><a href={instagram} className="btn btn-outline instagram-btn" target="_blank" rel="noopener noreferrer">VER INSTAGRAM</a></div>
+            <div className="contact-buttons"><button type="button" onClick={()=>whatsApp("Olá, Skinão Veículos! Conheci o novo site e gostaria de falar sobre os veículos disponíveis.")} className="btn btn-red">FALAR NO WHATSAPP</button><a href={instagram} className="btn btn-outline instagram-btn" target="_blank" rel="noopener noreferrer"><Instagram size={19} strokeWidth={2} aria-hidden="true"/> VER INSTAGRAM</a></div>
             {!waNumber && <p className="contact-config-note">Prévia: o número oficial do WhatsApp precisa ser configurado para direcionar o contato à loja.</p>}
           </div>
           <div className="contact-bottom container"><span>LAVRAS, MINAS GERAIS</span><span>CONFIRME O HORÁRIO DE ATENDIMENTO COM A LOJA</span></div>
