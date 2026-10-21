@@ -1705,197 +1705,212 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   display: none !important;
 }
 
-/* =============================================================
-   COMO CHEGAR — independent visit section between Contato/rodapé.
-   Google Maps and live hours share one responsive, readable layout.
-   ============================================================= */
+/* ==========================================================
+   END OF PAGE — compact location, opening hours and contacts.
+   Map/location and hours form ONE section; only actions below.
+   ========================================================== */
 .visit-section {
   background: #0b0b0e;
-  border-top: 1px solid #29272d;
-  padding: 103px 0 120px !important;
+  border-top: 1px solid #27252a;
+  padding: 79px 0 84px !important;
 }
-.visit-heading { margin-bottom: 43px; }
+.visit-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(270px, .75fr);
+  align-items: start;
+  gap: clamp(17px, 2.5vw, 34px);
+}
+.visit-location { min-width: 0; }
+.visit-heading { margin-bottom: 23px; }
 .visit-heading h2 {
   font-family: "Barlow Condensed", Impact, sans-serif;
-  font-size: clamp(68px, 9vw, 126px);
+  font-size: clamp(53px, 6.3vw, 91px);
   line-height: 1;
   font-weight: 800;
   color: #f5f3f2;
 }
 .visit-heading .heading-accent { color: var(--accent-bright); }
-.visit-heading > p:not(.eyebrow) {
-  margin-top: 18px;
-  color: #bdb8bc;
-  font-size: 15px;
-  line-height: 1.65;
-  max-width: 560px;
-}
-.visit-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(330px, .75fr);
-  align-items: stretch;
-  gap: 24px;
-}
 .visit-map-panel {
   min-width: 0;
-  background: #151518;
   border: 1px solid #353238;
-  display: flex;
-  flex-direction: column;
+  background: #151518;
 }
 .visit-map-frame {
-  min-height: 350px;
-  flex: 1;
-  overflow: hidden;
   background: #212126;
+  height: 245px;
+  overflow: hidden;
 }
 .visit-map-frame iframe {
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 350px;
   border: 0;
 }
 .visit-map-details {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 22px 25px;
+  gap: 12px 20px;
+  padding: 16px 18px;
   border-top: 1px solid #38343a;
 }
 .visit-address { min-width: 0; }
 .visit-address strong {
   display: block;
   color: #f2edef;
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: .055em;
-  margin-bottom: 8px;
+  letter-spacing: .04em;
+  margin-bottom: 5px;
 }
 .visit-address address {
   color: #bcb6b9;
-  font-size: 13px;
+  font-size: 11px;
   font-style: normal;
-  line-height: 1.7;
+  line-height: 1.55;
 }
 .visit-map-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 43px;
-  padding: 12px 17px;
-  border: 1px solid #b83548;
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 8px 12px;
+  border: 1px solid #a63749;
   border-radius: 999px;
   color: #f9edef;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .075em;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .02em;
   white-space: nowrap;
   transition: background-color .2s ease, border-color .2s ease;
 }
-.visit-map-link:hover {
-  background: #cd2340;
-  border-color: #cd2340;
-  color: #fff;
-}
-.visit-map-link:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
-}
+.visit-map-link:hover { background: #bf253e; border-color: #bf253e; color: white; }
+.visit-map-link:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+
+/* Compact hours: subtle visual weight and the original live status. */
 .visit-hours-card {
   display: flex;
   flex-direction: column;
-  gap: 28px;
   min-width: 0;
-  padding: 32px 29px;
-  background: linear-gradient(150deg, #202025 0%, #111114 100%);
-  border: 1px solid #3c363e;
+  gap: 17px;
+  padding: 21px 23px;
+  background: #171619;
+  border: 1px solid #373239;
 }
 .footer-hours-heading {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 16px;
+  gap: 9px;
 }
 .footer-hours-label {
-  color: #f4f0f1;
+  color: #f2eef0;
   font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: clamp(20px, 2vw, 25px);
   font-weight: 800;
-  font-size: clamp(25px, 2.4vw, 34px);
-  letter-spacing: .025em;
-  line-height: 1.1;
+  letter-spacing: .02em;
+  line-height: 1.08;
 }
 .footer-hours-status {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  color: #b8b2b5;
-  font-size: 12px;
+  gap: 7px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: .09em;
-  line-height: 1.4;
+  letter-spacing: .07em;
 }
 .footer-hours-dot {
   display: inline-block;
-  width: 10px;
-  height: 10px;
   flex: none;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: currentColor;
-  box-shadow: 0 0 10px currentColor;
+  box-shadow: 0 0 8px currentColor;
 }
 .footer-hours-status--open { color: #55d888; }
 .footer-hours-status--closed { color: #f45060; }
 .footer-hours-status--pending { color: #a1a1a8; }
-.footer-hours-schedule {
-  display: grid;
-  gap: 0;
-}
+.footer-hours-schedule { display: grid; }
 .footer-hours-schedule > span {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 15px;
-  padding: 18px 0;
-  border-top: 1px solid #3f3940;
-  font-size: 14px;
-  color: #bab3b9;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #353137;
+  color: #bbb4b9;
+  font-size: 12px;
 }
-.footer-hours-schedule > span:last-child {
-  border-bottom: 1px solid #3f3940;
-}
+.footer-hours-schedule > span:last-child { border-bottom: 1px solid #353137; }
 .footer-hours-schedule strong {
-  color: #f7f3f5;
+  color: #eee9ec;
   font-weight: 700;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.footer-hours-zone {
-  margin-top: auto;
-  color: #a6a0a5;
-  font-size: 11px;
-  letter-spacing: .02em;
+.footer-hours-zone { color: #999399; font-size: 10px; }
+
+/* Both CTAs belong to the location/hours section, not a new giant section. */
+.site-root .visit-contact-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 12px;
+  margin-top: 26px;
+  padding-top: 24px;
+  border-top: 1px solid #302c32;
 }
-@media (max-width: 950px) {
+.site-root .visit-contact-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-height: 43px;
+  padding: 10px 18px;
+  font-size: 10px;
+  gap: 9px;
+  letter-spacing: .035em;
+}
+.visit-contact-note { margin-top: 12px !important; }
+@media (max-width: 800px) {
   .visit-grid { grid-template-columns: minmax(0, 1fr); }
-  .visit-map-frame, .visit-map-frame iframe { min-height: 330px; }
-  .visit-hours-card { gap: 22px; padding: 27px; }
+  .visit-heading { margin-bottom: 17px; }
+  .visit-map-frame { height: 248px; }
+  .visit-hours-card { padding: 20px 22px; }
 }
 @media (max-width: 640px) {
-  .visit-section { padding: 82px 0 91px !important; }
-  .visit-heading { margin-bottom: 30px; }
-  .visit-heading h2 { font-size: clamp(56px, 12.4vw, 82px); }
-  .visit-heading > p:not(.eyebrow) { font-size: 14px; }
-  .visit-grid { gap: 16px; }
-  .visit-map-frame, .visit-map-frame iframe { min-height: 285px; }
+  .visit-section { padding: 66px 0 73px !important; }
+  .visit-heading h2 { font-size: clamp(50px, 12vw, 72px); }
+  .visit-grid { gap: 17px; }
+  .visit-map-frame { height: 225px; }
   .visit-map-details {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 20px;
+    flex-wrap: wrap;
+    padding: 15px;
+    gap: 13px;
   }
-  .visit-map-link { width: 100%; }
-  .visit-hours-card { padding: 24px 21px; gap: 24px; }
-  .footer-hours-label { font-size: 27px; }
-  .footer-hours-schedule > span { padding: 16px 0; font-size: 13px; }
+  .visit-map-link {
+    min-height: 33px;
+    padding: 7px 11px;
+  }
+  .visit-hours-card { gap: 14px; padding: 19px; }
+  .footer-hours-label { font-size: 22px; }
+  .footer-hours-schedule > span { font-size: 11px; padding: 11px 0; }
+  .site-root .visit-contact-actions {
+    flex-direction: row;
+    align-items: stretch;
+    margin-top: 19px;
+    padding-top: 20px;
+    gap: 10px;
+  }
+  .site-root .visit-contact-actions .btn {
+    flex: 1 1 145px;
+    min-height: 42px;
+    padding: 10px 12px;
+    font-size: 9px;
+  }
 }
