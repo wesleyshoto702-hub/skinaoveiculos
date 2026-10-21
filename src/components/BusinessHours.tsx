@@ -46,7 +46,7 @@ export function BusinessHours() {
   }, []);
 
   return (
-    <div className="container footer-hours" aria-label="Horário de funcionamento da Skinão Veículos">
+    <div className="visit-hours-card" aria-label="Horário de funcionamento da Skinão Veículos">
       <div className="footer-hours-heading">
         <span className="footer-hours-label">HORÁRIO DE FUNCIONAMENTO</span>
         <span className={"footer-hours-status" + (isOpen === null ? " footer-hours-status--pending" : isOpen ? " footer-hours-status--open" : " footer-hours-status--closed")} role="status" aria-live="polite" aria-atomic="true">

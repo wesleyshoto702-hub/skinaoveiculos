@@ -539,11 +539,43 @@ function Home() {
             <div className="contact-buttons"><button type="button" onClick={()=>whatsApp("Olá, Skinão Veículos! Conheci o novo site e gostaria de falar sobre os veículos disponíveis.")} className="btn btn-red">FALAR NO WHATSAPP</button><a href={instagram} className="btn btn-outline instagram-btn" target="_blank" rel="noopener noreferrer"><Instagram size={19} strokeWidth={2} aria-hidden="true"/> VER INSTAGRAM</a></div>
             {!waNumber && <p className="contact-config-note">Prévia: o número oficial do WhatsApp precisa ser configurado para direcionar o contato à loja.</p>}
           </div>
-          <div className="contact-bottom container"><span>LAVRAS, MINAS GERAIS</span><span>CONFIRME O HORÁRIO DE ATENDIMENTO COM A LOJA</span></div>
+        </section>
+
+        <section className="visit-section section-pad" id="localizacao" aria-labelledby="visit-heading">
+          <div className="container">
+            <div className="visit-heading">
+              <p className="eyebrow">VISITE A LOJA</p>
+              <h2 id="visit-heading">COMO <span className="heading-accent">CHEGAR.</span></h2>
+              <p>Veja nossa localização e o horário de atendimento antes de visitar.</p>
+            </div>
+            <div className="visit-grid">
+              <div className="visit-map-panel">
+                <div className="visit-map-frame">
+                  <iframe
+                    title="Google Maps — Skinão Veículos, Rua Chagas Dória, 515, Lavras"
+                    src="https://www.google.com/maps?q=Rua%20Chagas%20Doria%2C%20515%2C%20Lavras%2C%20MG%2C%20Brasil&output=embed"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    allowFullScreen
+                  />
+                </div>
+                <div className="visit-map-details">
+                  <div className="visit-address">
+                    <strong>SKINÃO VEÍCULOS</strong>
+                    <address>Rua Chagas Dória, 515<br/>Lavras — Minas Gerais</address>
+                  </div>
+                  <a className="visit-map-link" href="https://maps.app.goo.gl/E4RqQNUqz9Aydtuo9" target="_blank" rel="noopener noreferrer">
+                    ABRIR NO GOOGLE MAPS
+                  </a>
+                </div>
+              </div>
+              <BusinessHours/>
+            </div>
+          </div>
         </section>
       </main>
 
-      <footer className="site-footer"><div className="container footer-top"><Brand compact/><div><p>VEÍCULOS MULTIMARCAS<br/>LAVRAS · MINAS GERAIS</p></div><a href="#inicio" className="back-top" aria-label="Voltar ao início">VOLTAR AO INÍCIO</a></div><BusinessHours/><div className="container footer-bottom"><span>© {new Date().getFullYear()} SKINÃO VEÍCULOS. TODOS OS DIREITOS RESERVADOS.</span><span>CATÁLOGO ILUSTRATIVO · CONSULTAR DISPONIBILIDADE</span><a href={instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Skinão Veículos"><Instagram size={18}/></a></div></footer>
+      <footer className="site-footer"><div className="container footer-top"><Brand compact/><div><p>VEÍCULOS MULTIMARCAS<br/>LAVRAS · MINAS GERAIS</p></div><a href="#inicio" className="back-top" aria-label="Voltar ao início">VOLTAR AO INÍCIO</a></div><div className="container footer-bottom"><span>© {new Date().getFullYear()} SKINÃO VEÍCULOS. TODOS OS DIREITOS RESERVADOS.</span><span>CATÁLOGO ILUSTRATIVO · CONSULTAR DISPONIBILIDADE</span><a href={instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Skinão Veículos"><Instagram size={18}/></a></div></footer>
       {selected && <VehicleModal key={selected.id} vehicle={selected} onClose={closeDetails}/>}
       </div>
     </>
