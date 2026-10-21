@@ -59,7 +59,6 @@ export function BusinessHours() {
         <span>Seg–Sex <strong>08h–18h</strong></span>
         <span>Sáb <strong>08h–12h</strong></span>
       </div>
-      <span className="footer-hours-zone">Horário de Brasília</span>
     </div>
   );
 }
