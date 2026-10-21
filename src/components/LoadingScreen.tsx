@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LoadingMotorcycle } from "./LoadingMotorcycle";
 
 interface LoadingScreenProps {
   sceneReady: boolean;
@@ -222,6 +223,8 @@ export function LoadingScreen({ sceneReady, onFinished }: LoadingScreenProps) {
               </g>
             </svg>
           </div>
+          {/* Third pass: fully geared rider on a red 2D motorcycle, near the intro's end. */}
+          <LoadingMotorcycle />
         </div>
 
         <div className="sk-loader__progress">

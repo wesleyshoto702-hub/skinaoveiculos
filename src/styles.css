@@ -913,6 +913,46 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   transform-origin: center;
   animation: sk-loader-wheel-spin .48s linear infinite;
 }
+/* Final cinematic pass: a vector motorcycle and helmeted rider.
+   The coupe exits at ~2.73s; the bike arrives near the 3s outro.
+   Animation is compositor-only and doesn't delay 3D readiness. */
+.sk-loader__bike-track {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  bottom: -6px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  pointer-events: none;
+  opacity: 0;
+  animation: sk-loader-bike-pass 1.95s cubic-bezier(.37,.08,.64,.95) 2.05s both;
+  will-change: transform, opacity;
+}
+.sk-loader__bike {
+  display: block;
+  width: min(39%, 300px);
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 9px 8px rgba(0,0,0,.46));
+  animation: sk-loader-bike-suspension .36s ease-in-out infinite alternate;
+}
+.sk-loader__bike-wheel {
+  animation: sk-loader-bike-wheel-spin .42s linear infinite;
+}
+@keyframes sk-loader-bike-pass {
+  0% { opacity: 0; transform: translate3d(-115%, 0, 0); }
+  14% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(115%, 0, 0); }
+}
+@keyframes sk-loader-bike-wheel-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes sk-loader-bike-suspension {
+  to { transform: translateY(-1.4px); }
+}
+
 .sk-loader__progress {
   width: min(86%, 490px);
   display: flex;
@@ -1011,6 +1051,21 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .sk-loader__car-track--red { display: none; }
 }
 
+
+
+/* Keep the bike entirely within the small/mobile lane. */
+@media (max-width: 700px) {
+  .sk-loader__bike-track { bottom: -8px; }
+  .sk-loader__bike { width: min(74%, 244px); }
+}
+@media (max-height: 500px) {
+  .sk-loader__bike-track { bottom: -5px; }
+  .sk-loader__bike { width: min(45%, 155px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* The existing stationary sedan is retained; avoid overlapping vehicles. */
+  .sk-loader__bike-track { display: none !important; }
+}
 
 /* ============================================================
    SKINÃO / SHOWROOM EDITORIAL — 2026
