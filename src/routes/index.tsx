@@ -108,6 +108,45 @@ function SectionTitle({ eyebrow, title, accent, description }: { eyebrow: string
   );
 }
 
+
+// Reveal each title and its description as one piece, only when it reaches
+// the viewport. This never updates React state on scroll.
+function BenefitsList() {
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || typeof IntersectionObserver === "undefined" ||
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const rows = Array.from(list.querySelectorAll<HTMLElement>(".benefit-row"));
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        entry.target.classList.add("benefit-row--visible");
+        observer.unobserve(entry.target);
+      }
+    }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+
+    list.classList.add("benefits-list--animate");
+    rows.forEach(row => observer.observe(row));
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={listRef} className="benefits-list">
+      {[
+        {title:"ENCONTRE UM MODELO",description:"Use os filtros por marca, categoria, câmbio e preço no catálogo demonstrativo."},
+        {title:"VEJA OS DETALHES",description:"Abra cada modelo para consultar dados e imagens de exemplo em uma única tela."},
+        {title:"FALE COM A SKINÃO",description:"Confirme diretamente com a equipe quais veículos e condições estão disponíveis em Lavras."},
+      ].map(item => <div className="benefit-row" key={item.title}>
+        <h3>{item.title}</h3>
+        <p>{item.description}</p>
+      </div>)}
+    </div>
+  );
+}
+
 function VehicleCard({ vehicle, onDetails }: { vehicle: Vehicle; onDetails: (vehicle: Vehicle) => void }) {
   const label = vehicle.brand + " " + vehicle.model;
   return (
@@ -431,8 +470,7 @@ function Home() {
 
         <section className="intro-section section-pad">
           <div className="container intro-grid">
-            <div><p className="eyebrow">LAVRAS · MINAS GERAIS</p>
-              <h2>ESCOLHA UM MODELO.<br/>FALE COM A <span className="heading-accent">LOJA.</span></h2></div>
+            <div><h2>ESCOLHA UM MODELO.<br/>FALE COM A <span className="heading-accent">LOJA.</span></h2></div>
             <div className="intro-right"><p>Veja a apresentação dos veículos, filtre o que interessa e converse com a Skinão sobre a disponibilidade real.</p>
               <a className="text-link" href="#estoque">VER MODELOS</a></div>
           </div>
@@ -465,16 +503,7 @@ function Home() {
             <div className="benefits-title">
               <SectionTitle eyebrow="COMO FUNCIONA" title="DO CATÁLOGO À" accent="CONVERSA." description="Veja o que você pode fazer nesta página."/>
             </div>
-            <div className="benefits-list">
-              {[
-                {title:"ENCONTRE UM MODELO",description:"Use os filtros por marca, categoria, câmbio e preço no catálogo demonstrativo."},
-                {title:"VEJA OS DETALHES",description:"Abra cada modelo para consultar dados e imagens de exemplo em uma única tela."},
-                {title:"FALE COM A SKINÃO",description:"Confirme diretamente com a equipe quais veículos e condições estão disponíveis em Lavras."},
-              ].map(item => <div className="benefit-row" key={item.title}>
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-              </div>)}
-            </div>
+            <BenefitsList/>
           </div>
         </section>
 
@@ -482,7 +511,7 @@ function Home() {
           <div className="container finance-grid">
             <div className="finance-copy"><p className="eyebrow">FINANCIAMENTO</p><h2>QUER FINANCIAR?<br/>VAMOS <span className="heading-accent">CONVERSAR.</span></h2>
               <p>Informe o carro de interesse e o valor de entrada. A Skinão poderá orientar sobre as opções e os próximos passos.</p>
-              <div className="finance-steps"><div><span>01</span> ESCOLHA O VEÍCULO</div><div><span>02</span> CONTE SUA IDEIA</div><div><span>03</span> FALE COM A EQUIPE</div></div>
+              <div className="finance-steps"><div>ESCOLHA O VEÍCULO</div><div>CONTE SUA IDEIA</div><div>FALE COM A EQUIPE</div></div>
               <small>A aprovação e as condições dependem de análise da instituição financeira. Não realizamos aprovação automática pelo site.</small>
             </div>
             <form className="finance-form" onSubmit={sendFinance}><span className="form-kicker">CONSULTA PELO WHATSAPP</span><h3>CONTE O QUE PROCURA.</h3><p>Ao continuar, você poderá revisar a mensagem no WhatsApp antes de enviar.</p>
@@ -498,15 +527,15 @@ function Home() {
         </section>
 
         <section className="about-section section-pad" id="sobre">
-          <div className="container about-grid"><div className="about-image"><img src={image("photo-1503376780353-7e6692767b70",1200)} loading="lazy" alt="Fotografia ilustrativa de um automóvel esportivo"/><span className="about-image-caption">IMAGEM ILUSTRATIVA</span></div>
-            <div className="about-copy"><SectionTitle eyebrow="A LOJA" title="SKINÃO VEÍCULOS. LAVRAS, MG."/><p>A Skinão Veículos é uma loja multimarcas em Lavras, Minas Gerais.</p><p>Este site é uma prévia do espaço digital da loja. Os veículos apresentados são ilustrativos; entre em contato para consultar modelos e disponibilidade.</p><a href="#contato" className="text-link">FALAR COM A SKINÃO</a></div>
+          <div className="container about-grid"><div className="about-image"><img src={image("photo-1503376780353-7e6692767b70",1200)} loading="lazy" alt="Fotografia ilustrativa de um automóvel esportivo"/></div>
+            <div className="about-copy"><SectionTitle eyebrow="A LOJA" title="SKINÃO VEÍCULOS"/><p>A Skinão Veículos é uma loja multimarcas em Lavras, Minas Gerais.</p><p>Este site é uma prévia do espaço digital da loja. Os veículos apresentados são ilustrativos; entre em contato para consultar modelos e disponibilidade.</p></div>
           </div>
         </section>
 
         <section className="contact-section section-pad" id="contato">
-          <div className="container contact-content"><p className="eyebrow">CONTATO · LAVRAS / MG</p><h2>JÁ TEM UM<br/>CARRO EM <span className="heading-accent">MENTE?</span></h2>
+          <div className="container contact-content"><p className="eyebrow">CONTATO</p><h2>JÁ TEM UM<br/>CARRO EM <span className="heading-accent">MENTE?</span></h2>
             <p>Pergunte sobre disponibilidade, preços e possibilidades de financiamento. A conversa começa com a equipe da Skinão.</p>
-            <div className="contact-buttons"><button type="button" onClick={()=>whatsApp("Olá, Skinão Veículos! Conheci o novo site e gostaria de falar sobre os veículos disponíveis.")} className="btn btn-red"><MessageCircle size={20}/> FALAR NO WHATSAPP</button><a href={instagram} className="btn btn-outline" target="_blank" rel="noopener noreferrer">VER INSTAGRAM</a></div>
+            <div className="contact-buttons"><button type="button" onClick={()=>whatsApp("Olá, Skinão Veículos! Conheci o novo site e gostaria de falar sobre os veículos disponíveis.")} className="btn btn-red">FALAR NO WHATSAPP</button><a href={instagram} className="btn btn-outline instagram-btn" target="_blank" rel="noopener noreferrer">VER INSTAGRAM</a></div>
             {!waNumber && <p className="contact-config-note">Prévia: o número oficial do WhatsApp precisa ser configurado para direcionar o contato à loja.</p>}
           </div>
           <div className="contact-bottom container"><span>LAVRAS, MINAS GERAIS</span><span>CONFIRME O HORÁRIO DE ATENDIMENTO COM A LOJA</span></div>

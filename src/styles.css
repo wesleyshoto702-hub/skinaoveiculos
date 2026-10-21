@@ -460,7 +460,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .finance-copy > p:not(.eyebrow) { color: #b0b1b9; font-size: 15px; line-height: 1.85; margin: 31px 0 35px; max-width: 460px; }
 .finance-steps { display: flex; flex-direction: column; gap: 16px; padding: 22px 0; border-top: 1px solid #45464c; border-bottom: 1px solid #45464c; max-width: 425px; }
 .finance-steps div { font-size: 12px; font-weight: 800; letter-spacing: .13em; }
-.finance-steps span { color: var(--accent-bright); margin-right: 20px; }
 .finance-copy small { display: block; font-size: 11px; max-width: 420px; line-height: 1.7; margin-top: 20px; color: #9b9ca3; }
 .finance-form { background: #0e0f12; border: 1px solid #303137; padding: clamp(24px,4vw,47px); display: flex; flex-direction: column; }
 .form-kicker { font-size: 10px; font-weight: 800; letter-spacing: .18em; display: flex; gap: 10px; align-items: center; }
@@ -477,7 +476,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .about-image { position: relative; height: 550px; border: 1px solid #25262a; }
 .about-image img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.45) brightness(.8); }
 .about-image:after { content: ""; position: absolute; top: 24px; left: -13px; bottom: 24px; width: 3px; background: var(--accent); }
-.about-image-caption { position: absolute; left: 30px; right: 30px; bottom: 24px; color: white; z-index: 1; font-size: 10px; font-weight: 800; letter-spacing: .14em; text-shadow: 0 1px 8px #000; }
 .about-copy > p { color: #aaabb1; line-height: 1.9; font-size: 14px; margin-top: 26px; max-width: 540px; }
 .about-copy .text-link { margin-top: 37px; }
 
@@ -1166,13 +1164,28 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 }
 .benefits-title { margin-bottom: 0; max-width: 500px; }
 .benefits-title .section-heading h2 { font-size: clamp(62px,6.2vw,102px); }
-.benefits-list { border-top: 1px solid #5a5052; }
+.benefits-list { display: grid; gap: 8px; }
 .benefit-row {
   display: grid;
   grid-template-columns: minmax(0,1fr);
-  padding: 30px 0 34px;
-  border-bottom: 1px solid #343336;
+  padding: 26px 0 30px;
+  border: 0;
 }
+/* Intersection-driven fade and lift; each title travels with its description.
+   Content stays visible in SSR, reduced-motion, and without IntersectionObserver. */
+.benefits-list--animate .benefit-row {
+  opacity: 0;
+  transform: translate3d(0, 26px, 0);
+  transition:
+    opacity 760ms cubic-bezier(.22, 1, .36, 1),
+    transform 760ms cubic-bezier(.22, 1, .36, 1);
+}
+.benefits-list--animate .benefit-row--visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+.benefits-list--animate .benefit-row:nth-child(2) { transition-delay: 110ms; }
+.benefits-list--animate .benefit-row:nth-child(3) { transition-delay: 220ms; }
 .benefit-row h3 { font-size: clamp(32px,3.1vw,45px); line-height: 1; font-weight: 750; }
 .benefit-row p {
   max-width: 440px;
@@ -1202,17 +1215,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .about-image { border: 0; }
 .about-image:after { display: none; }
 .about-image img { filter: saturate(.58) brightness(.84); }
-.about-image-caption {
-  left: 19px;
-  right: 19px;
-  bottom: 16px;
-  font-size: 10px;
-  letter-spacing: .15em;
-  background: rgba(9,9,11,.65);
-  width: max-content;
-  padding: 8px 12px;
-}
 .about-copy > p { margin-top: 20px; color: #c1bbbc; }
+/* Brand identity, without the redundant city suffix in the title. */
+.about-copy .section-heading h2 { color: var(--accent-bright); }
 
 .contact-section {
   background: #181719;
@@ -1227,6 +1232,21 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .contact-content h2 span { color: #e2d7d6; }
 .contact-content > p:not(.eyebrow):not(.contact-config-note) { margin-top: 27px; color: #c8c1c1; }
 .contact-buttons { justify-content: flex-start; gap: 12px; margin-top: 36px; }
+/* Solid Instagram purple instead of the generic outlined CTA. */
+.site-root .contact-buttons .instagram-btn {
+  background: #833ab4;
+  border-color: #833ab4;
+  color: #fff;
+}
+.site-root .contact-buttons .instagram-btn:hover {
+  background: #6c2f97;
+  border-color: #6c2f97;
+  color: #fff;
+}
+.site-root .contact-buttons .instagram-btn:focus-visible {
+  outline: 2px solid #e9c6ff;
+  outline-offset: 3px;
+}
 .contact-bottom span { font-size: 11px; letter-spacing: .03em; color: #b8b2b4; }
 .footer-top > div p { text-align: left; color: #a39b9c; font-size: 23px; line-height: 1.15; }
 .back-top {
@@ -1275,7 +1295,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .vehicle-title h3 { font-size: 44px; }
   .vehicle-price strong { font-size: 39px; }
   .benefits-section { padding: 85px 0 95px !important; }
-  .benefit-row { grid-template-columns: minmax(0,1fr); gap: 0; padding: 25px 0; }
+  .benefit-row { grid-template-columns: minmax(0,1fr); gap: 0; padding: 24px 0; }
   .benefit-row h3 { font-size: 36px; }
   .benefit-row p { font-size: 14px; }
   .finance-section { padding: 86px 0 88px !important; }
@@ -1669,5 +1689,13 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .hero-background-car {
     animation: none !important;
     will-change: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .benefits-list--animate .benefit-row {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
 }
