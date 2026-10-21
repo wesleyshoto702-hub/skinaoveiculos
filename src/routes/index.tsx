@@ -3,6 +3,7 @@ import { CarScroll3D } from "../components/CarScroll3D";
 import { LoadingScreen } from "../components/LoadingScreen";
 import { HeroBackdropCars } from "../components/HeroBackdropCars";
 import { BusinessHours } from "../components/BusinessHours";
+import { formatBrazilAmount, formatBrazilWhatsApp } from "../lib/formInputMasks";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { ChevronLeft, ChevronRight, Instagram, Menu, MessageCircle, Search, X } from "lucide-react";
 import logoAsset from "../assets/skinao-logo.png.asset.json";
@@ -159,11 +160,13 @@ function VehicleCard({ vehicle, onDetails }: { vehicle: Vehicle; onDetails: (veh
         <div className="vehicle-title">
           <div className="vehicle-title-name">
             <span className="vehicle-brand">{vehicle.brand}</span>
-            <h3>{vehicle.model}</h3>
+            <div className="vehicle-model-line">
+              <h3>{vehicle.model}</h3>
+              <span className="vehicle-year">{vehicle.year}</span>
+            </div>
           </div>
           <div className="vehicle-title-meta">
             <strong className="vehicle-title-price" aria-label={"Preço ilustrativo: " + money(vehicle.price)}>{money(vehicle.price)}</strong>
-            <span className="vehicle-year">{vehicle.year}</span>
           </div>
         </div>
         <p className="vehicle-version">{vehicle.version}</p>
@@ -450,7 +453,7 @@ function Home() {
 
   const sendFinance = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    whatsApp("Olá, Skinão Veículos! Gostaria de conversar sobre financiamento.\nNome: " + finance.name.trim() + "\nTelefone: " + finance.phone.trim() + "\nVeículo de interesse: " + (finance.model || "Ainda não decidi") + "\nEntrada pretendida: " + (finance.entry || "A combinar"));
+    whatsApp("Olá, Skinão Veículos! Gostaria de conversar sobre financiamento.\nNome: " + finance.name.trim() + "\nTelefone: " + finance.phone.trim() + "\nVeículo de interesse: " + (finance.model || "Ainda não decidi") + "\nEntrada pretendida: " + (finance.entry ? "R$ " + finance.entry : "A combinar"));
   };
 
   return (
@@ -477,7 +480,7 @@ function Home() {
           <div className="container intro-grid">
             <div><h2>ESCOLHA UM MODELO.<br/>FALE COM A <span className="heading-accent">LOJA.</span></h2></div>
             <div className="intro-right"><p>Veja a apresentação dos veículos, filtre o que interessa e converse com a Skinão sobre a disponibilidade real.</p>
-              <a className="text-link" href="#estoque">VER MODELOS</a></div>
+</div>
           </div>
         </section>
 
@@ -521,9 +524,14 @@ function Home() {
             </div>
             <form className="finance-form" onSubmit={sendFinance}><span className="form-kicker">CONSULTA PELO WHATSAPP</span><h3>CONTE O QUE PROCURA.</h3><p>Ao continuar, você poderá revisar a mensagem no WhatsApp antes de enviar.</p>
               <label>SEU NOME <input required maxLength={100} value={finance.name} placeholder="Como podemos te chamar?" onChange={e=>setFinance({...finance,name:e.target.value})}/></label>
-              <label>WHATSAPP COM DDD <input required type="tel" inputMode="tel" minLength={10} maxLength={20} value={finance.phone} placeholder="(35) 99999-9999" onChange={e=>setFinance({...finance,phone:e.target.value})}/></label>
+              <label>WHATSAPP COM DDD <input required type="tel" inputMode="tel" minLength={15} maxLength={15} pattern="[(][0-9]{2}[)] [0-9]{5}-[0-9]{4}" title="Informe DDD e celular com 9 dígitos" autoComplete="tel-national" value={finance.phone} placeholder="(35) 99999-9999" onChange={e=>setFinance({...finance,phone:formatBrazilWhatsApp(e.target.value)})}/></label>
               <label>VEÍCULO DE INTERESSE <select value={finance.model} onChange={e=>setFinance({...finance,model:e.target.value})}><option value="">Ainda estou escolhendo</option>{vehicles.map(v=><option key={v.id} value={v.brand+" "+v.model}>{v.brand} {v.model} (exemplo)</option>)}</select></label>
-              <label>ENTRADA PRETENDIDA <input maxLength={40} value={finance.entry} placeholder="Ex.: R$ 20.000 ou a combinar" onChange={e=>setFinance({...finance,entry:e.target.value})}/></label>
+              <label>ENTRADA PRETENDIDA
+                <span className="finance-entry-control">
+                  <span className="finance-entry-prefix" aria-hidden="true">R$</span>
+                  <input type="text" inputMode="decimal" autoComplete="off" maxLength={19} value={finance.entry} placeholder="20.000,00" aria-label="Valor da entrada pretendida em reais" onChange={e=>setFinance({...finance,entry:formatBrazilAmount(e.target.value)})}/>
+                </span>
+              </label>
               <button type="submit" className="btn btn-red">REVISAR MENSAGEM NO WHATSAPP</button>
               <span className="form-foot">Seus dados não são armazenados nesta versão.</span>
               {!waNumber && <span className="form-foot">O envio direto para a loja será ativado após configurar o WhatsApp oficial.</span>}

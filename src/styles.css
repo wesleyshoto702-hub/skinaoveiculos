@@ -2033,3 +2033,98 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .stock-grid .vehicle-title-price { font-size: 23px; }
   .stock-grid .vehicle-title-meta { gap: 6px; }
 }
+
+
+/* ============================================================
+   Skinão — tighter final Hero typography, shared car headings
+   and friendly Brazilian masks for the financing form.
+   Do not touch scroll-driven transforms, 3D scene or loading.
+   ============================================================ */
+
+/* Close the space between the two wordmark lines without reducing the
+   safe inner padding that protects Ã and descenders from clipping. */
+.hero-reveal h1 > .hero-brand-line--accent {
+  margin-top: -.24em;
+  margin-bottom: -.09em;
+}
+.hero-finale-content > .hero-reveal-description {
+  margin-top: 12px !important;
+}
+
+/* Model + year stay together to the left; price remains on the right. */
+.stock-grid .vehicle-model-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: clamp(6px, .9vw, 12px);
+  row-gap: 5px;
+  min-width: 0;
+}
+.stock-grid .vehicle-model-line h3 {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.stock-grid .vehicle-model-line .vehicle-year {
+  flex: 0 0 auto;
+  color: #d4ced0;
+  font-size: 12px;
+  line-height: 1.2;
+  padding: 0;
+}
+.stock-grid .vehicle-title-meta {
+  gap: 0;
+  align-items: baseline;
+}
+
+/* The R$ prefix is fixed and non-editable. Only the adjacent input
+   accepts digits, thousands dots and a decimal comma. */
+.site-root .finance-form .finance-entry-control {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 52px;
+  border: 1px solid #555053;
+  background: #232225;
+  transition: border-color .18s ease;
+}
+.site-root .finance-form .finance-entry-control:focus-within {
+  border-color: var(--accent-bright);
+}
+.site-root .finance-form .finance-entry-prefix {
+  flex: none;
+  color: #f2eded;
+  font-size: 14px;
+  font-weight: 750;
+  padding-left: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.site-root .finance-form .finance-entry-control input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  min-height: 50px;
+  padding: 13px 14px 13px 9px;
+  color: #fff;
+  font-size: 14px;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .hero-reveal h1 > .hero-brand-line--accent {
+    margin-top: -.21em;
+    margin-bottom: -.07em;
+  }
+  .hero-finale-content > .hero-reveal-description {
+    margin-top: 14px !important;
+  }
+  .stock-grid .vehicle-model-line { column-gap: 7px; row-gap: 4px; }
+  .stock-grid .vehicle-model-line .vehicle-year { font-size: 11px; }
+  .stock-grid .vehicle-title-meta { flex-shrink: 0; }
+  .site-root .finance-form .finance-entry-control input { font-size: 16px; }
+}
+@media (max-width: 360px) {
+  .stock-grid .vehicle-model-line { column-gap: 5px; }
+  .stock-grid .vehicle-model-line .vehicle-year { font-size: 10px; }
+}
