@@ -1699,3 +1699,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
     transition: none !important;
   }
 }
+
+/* Hide Lovable badge */
+#lovable-badge {
+  display: none !important;
+}
