@@ -1686,18 +1686,18 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 
 /* All 12 move on independently staggered timelines, mostly around the
    perimeter, while the wordmark stays above them in the stacking order. */
-.hero-background-car--1 { left: -5%; top: 9%; width: clamp(146px,16vw,220px); animation: sk-fleet-drift-a 41s ease-in-out infinite -6s; opacity: .45; }
-.hero-background-car--2 { right: 2%; top: 6%; width: clamp(131px,14vw,190px); animation: sk-fleet-drift-c 37s ease-in-out infinite -15s reverse; opacity: .42; }
-.hero-background-car--3 { left: 6%; bottom: 4%; width: clamp(158px,19vw,248px); animation: sk-fleet-drift-e 52s ease-in-out infinite -29s; opacity: .46; }
-.hero-background-car--4 { right: -6%; bottom: 7%; width: clamp(142px,17vw,230px); animation: sk-fleet-drift-b 46s ease-in-out infinite -13s; opacity: .44; }
-.hero-background-car--5 { left: 43%; top: -1%; width: clamp(113px,11vw,159px); animation: sk-fleet-drift-d 53s ease-in-out infinite -24s; opacity: .36; }
-.hero-background-car--6 { left: -10%; top: 46%; width: clamp(124px,14vw,187px); animation: sk-fleet-drift-c 49s ease-in-out infinite -19s; opacity: .39; }
-.hero-background-car--7 { right: 28%; bottom: -3%; width: clamp(111px,12vw,171px); animation: sk-fleet-drift-a 43s ease-in-out infinite -33s reverse; opacity: .39; }
-.hero-background-car--8 { right: 24%; top: 17%; width: clamp(114px,12vw,164px); animation: sk-fleet-drift-e 38s ease-in-out infinite -11s; opacity: .34; }
-.hero-background-car--9 { right: -9%; top: 36%; width: clamp(147px,16vw,214px); animation: sk-fleet-drift-b 47s ease-in-out infinite -32s reverse; opacity: .45; }
-.hero-background-car--10 { left: -8%; bottom: 31%; width: clamp(140px,15vw,204px); animation: sk-fleet-drift-d 39s ease-in-out infinite -9s; opacity: .43; }
-.hero-background-car--11 { right: 14%; bottom: 25%; width: clamp(134px,14vw,197px); animation: sk-fleet-drift-c 56s ease-in-out infinite -18s; opacity: .40; }
-.hero-background-car--12 { left: 32%; bottom: 2%; width: clamp(122px,13vw,178px); animation: sk-fleet-drift-e 45s ease-in-out infinite -27s reverse; opacity: .36; }
+.hero-background-car--1 { left: 6%; top: 12%; width: clamp(146px,16vw,220px); animation: sk-fleet-drift-a 41s ease-in-out infinite -6s; opacity: .45; }
+.hero-background-car--2 { right: 8%; top: 10%; width: clamp(131px,14vw,190px); animation: sk-fleet-drift-c 37s ease-in-out infinite -15s reverse; opacity: .42; }
+.hero-background-car--3 { left: 14%; bottom: 9%; width: clamp(158px,19vw,248px); animation: sk-fleet-drift-e 52s ease-in-out infinite -29s; opacity: .46; }
+.hero-background-car--4 { right: 12%; bottom: 10%; width: clamp(142px,17vw,230px); animation: sk-fleet-drift-b 46s ease-in-out infinite -13s; opacity: .44; }
+.hero-background-car--5 { left: 38%; top: 6%; width: clamp(113px,11vw,159px); animation: sk-fleet-drift-d 53s ease-in-out infinite -24s; opacity: .36; }
+.hero-background-car--6 { left: 10%; top: 43%; width: clamp(124px,14vw,187px); animation: sk-fleet-drift-c 49s ease-in-out infinite -19s; opacity: .39; }
+.hero-background-car--7 { right: 33%; bottom: 4%; width: clamp(111px,12vw,171px); animation: sk-fleet-drift-a 43s ease-in-out infinite -33s reverse; opacity: .39; }
+.hero-background-car--8 { right: 30%; top: 21%; width: clamp(114px,12vw,164px); animation: sk-fleet-drift-e 38s ease-in-out infinite -11s; opacity: .34; }
+.hero-background-car--9 { right: 18%; top: 37%; width: clamp(147px,16vw,214px); animation: sk-fleet-drift-b 47s ease-in-out infinite -32s reverse; opacity: .45; }
+.hero-background-car--10 { left: 16%; bottom: 28%; width: clamp(140px,15vw,204px); animation: sk-fleet-drift-d 39s ease-in-out infinite -9s; opacity: .43; }
+.hero-background-car--11 { right: 20%; bottom: 23%; width: clamp(134px,14vw,197px); animation: sk-fleet-drift-c 56s ease-in-out infinite -18s; opacity: .40; }
+.hero-background-car--12 { left: 40%; bottom: 7%; width: clamp(122px,13vw,178px); animation: sk-fleet-drift-e 45s ease-in-out infinite -27s reverse; opacity: .36; }
 
 /* Rotation belongs to the INNER SVG: the parent's drifting transform
    continues unaffected. Just four of twelve turn; the others float. */
@@ -1759,18 +1759,18 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 @media (max-width: 700px) {
   /* Keep the name clear; varied vehicles peek in along the mobile edges. */
   .hero-background-car { opacity: .31; }
-  .hero-background-car--1 { left: -27%; top: 12%; width: 151px; }
-  .hero-background-car--2 { right: -26%; top: 9%; width: 157px; opacity: .34; }
-  .hero-background-car--3 { left: -25%; bottom: 10%; width: 168px; }
-  .hero-background-car--4 { right: -28%; bottom: 10%; width: 171px; }
-  .hero-background-car--5 { left: 55%; top: 2%; width: 107px; opacity: .27; }
-  .hero-background-car--6 { left: -25%; top: 43%; width: 126px; opacity: .28; }
-  .hero-background-car--7 { right: 1%; bottom: 0%; width: 111px; opacity: .28; }
-  .hero-background-car--8 { right: 4%; top: 21%; width: 105px; opacity: .25; }
-  .hero-background-car--9 { right: -23%; top: 39%; width: 148px; opacity: .33; }
-  .hero-background-car--10 { left: -23%; bottom: 32%; width: 150px; opacity: .31; }
-  .hero-background-car--11 { right: -17%; bottom: 25%; width: 143px; opacity: .29; }
-  .hero-background-car--12 { left: 32%; bottom: 2%; width: 118px; opacity: .27; }
+  .hero-background-car--1 { left: -8%; top: 14%; width: 151px; }
+  .hero-background-car--2 { right: -7%; top: 12%; width: 157px; opacity: .34; }
+  .hero-background-car--3 { left: -6%; bottom: 12%; width: 168px; }
+  .hero-background-car--4 { right: -8%; bottom: 12%; width: 171px; }
+  .hero-background-car--5 { left: 42%; top: 5%; width: 107px; opacity: .27; }
+  .hero-background-car--6 { left: 5%; top: 41%; width: 126px; opacity: .28; }
+  .hero-background-car--7 { right: 18%; bottom: 3%; width: 111px; opacity: .28; }
+  .hero-background-car--8 { right: 18%; top: 22%; width: 105px; opacity: .25; }
+  .hero-background-car--9 { right: 6%; top: 39%; width: 148px; opacity: .33; }
+  .hero-background-car--10 { left: 4%; bottom: 31%; width: 150px; opacity: .31; }
+  .hero-background-car--11 { right: 9%; bottom: 24%; width: 143px; opacity: .29; }
+  .hero-background-car--12 { left: 36%; bottom: 5%; width: 118px; opacity: .27; }
   .hero-background-cars--visible .hero-background-car { will-change: auto; }
 }
 
