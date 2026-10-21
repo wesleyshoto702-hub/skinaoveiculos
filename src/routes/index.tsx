@@ -361,7 +361,7 @@ function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
                   <span className="hero-brand-line"><span className="hero-brand-line-inner hero-brand-first">SKINÃO</span></span>
                   <span className="hero-brand-line hero-brand-line--accent"><span className="hero-brand-line-inner hero-brand-second">VEÍCULOS</span></span>
                 </h1>
-                <p className="hero-reveal-description">Veja os modelos desta prévia e fale com a loja para consultar disponibilidade.</p>
+                <p className="hero-reveal-description">Mais que veículos, novas conquistas. Encontre seu próximo caminho na Skinão.</p>
               </div>
             </div>
             <div className="hero-bottom">
