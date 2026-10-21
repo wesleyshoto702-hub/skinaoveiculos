@@ -307,12 +307,6 @@ function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
             <div className={"hero-reveal" + (finalIntroActive ? " hero-reveal--complete" : "")}>
               <HeroBackdropCars visible={showBackgroundCars}/>
               <div className="hero-finale-content">
-                <div className={"hero-finale-corners" + (showBackgroundCars ? " hero-finale-corners--visible" : "")} aria-hidden="true">
-                  <span className="hero-finale-corner hero-finale-corner--tl"/>
-                  <span className="hero-finale-corner hero-finale-corner--tr"/>
-                  <span className="hero-finale-corner hero-finale-corner--bl"/>
-                  <span className="hero-finale-corner hero-finale-corner--br"/>
-                </div>
                 <h1 aria-label="Skinão Veículos">
                   <span className="hero-brand-line"><span className="hero-brand-line-inner hero-brand-first">SKINÃO</span></span>
                   <span className="hero-brand-line hero-brand-line--accent"><span className="hero-brand-line-inner hero-brand-second">VEÍCULOS</span></span>
