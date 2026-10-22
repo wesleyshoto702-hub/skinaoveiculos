@@ -379,13 +379,36 @@ function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
 function Home() {
   const [showLoading, setShowLoading] = useState(true);
   const [liveVehicles, setLiveVehicles] = useState<Vehicle[] | null>(null);
-  // The existing demo remains visible until at least one real advertisement is published.
+  // Fetch changes without reloading the page: refresh in visible tabs and on return.
+  // No public subscribe privilege or new dependency is required.
   useEffect(() => {
     let mounted = true;
-    loadPublicVehicles().then(items => {
-      if (mounted) setLiveVehicles(items);
-    }).catch(error => console.warn("Não foi possível carregar o catálogo Skinão:", error));
-    return () => { mounted = false; };
+    let fetching = false;
+    const refreshCatalog = async () => {
+      if (!mounted || fetching) return;
+      fetching = true;
+      try {
+        const items = await loadPublicVehicles();
+        if (mounted) setLiveVehicles(items);
+      } catch (error) {
+        console.warn("Não foi possível carregar o catálogo Skinão:", error);
+      } finally {
+        fetching = false;
+      }
+    };
+    void refreshCatalog();
+    const onVisible = () => { if (!document.hidden) void refreshCatalog(); };
+    const interval = window.setInterval(onVisible, 15000);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    window.addEventListener("online", onVisible);
+    return () => {
+      mounted = false;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+      window.removeEventListener("online", onVisible);
+    };
   }, []);
   const vehicles = liveVehicles ?? demoVehicles;
   const isDemoCatalog = liveVehicles === null || liveVehicles.some(v => v.isDemo);
@@ -393,6 +416,13 @@ function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerVisible, setHeaderVisible] = useState(false);
   const [selected, setSelected] = useState<Vehicle | null>(null);
+  // Keep an open vehicle gallery in sync with new covers/photos, and close removed ads.
+  useEffect(() => {
+    if (selected && liveVehicles && !liveVehicles.some(v => v.id === selected.id)) {
+      setSelected(null);
+    }
+  }, [selected, liveVehicles]);
+  const selectedLiveVehicle = selected ? vehicles.find(v => v.id === selected.id) : null;
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState("");
   const [type, setType] = useState("");
@@ -599,7 +629,7 @@ function Home() {
       </main>
 
       <footer className="site-footer"><div className="container footer-top"><Brand compact/><div><p>VEÍCULOS MULTIMARCAS<br/>LAVRAS · MINAS GERAIS</p></div><a href="#inicio" className="back-top" aria-label="Voltar ao início">VOLTAR AO INÍCIO</a></div><div className="container footer-bottom"><span>© {new Date().getFullYear()} SKINÃO VEÍCULOS. TODOS OS DIREITOS RESERVADOS.</span><span>{isDemoCatalog ? "CATÁLOGO ILUSTRATIVO · CONSULTAR DISPONIBILIDADE" : "ESTOQUE SUJEITO À DISPONIBILIDADE"}</span><a href={instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Skinão Veículos"><Instagram size={18}/></a></div></footer>
-      {selected && <VehicleModal key={selected.id} vehicle={selected} onClose={closeDetails}/>}
+      {selectedLiveVehicle && <VehicleModal key={selectedLiveVehicle.id} vehicle={selectedLiveVehicle} onClose={closeDetails}/>}
       </div>
     </>
   );

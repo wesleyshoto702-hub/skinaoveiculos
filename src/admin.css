@@ -129,13 +129,31 @@
 .ska-upload svg { color:#e44960; }
 .ska-upload input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; }
 .ska-upload small { color:#9ca3af; }
-.ska-photo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px; }
-.ska-photo { height:120px; overflow:hidden; position:relative; background:#1b1c22; border:1px solid #363a44; border-radius:9px; }
-.ska-photo img { height:100%; width:100%; object-fit:cover; }
-.ska-photo>span { position:absolute; left:6px; bottom:6px; background:#c32745; padding:3px 8px;
-  color:white; border-radius:4px; font-size:10px; }
-.ska-photo button { position:absolute; right:5px;top:5px; width:29px;height:29px;display:grid;place-items:center;
-  border:0; background:#15161de0;color:#fafafa;border-radius:6px; }
+.ska-photo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,1fr)); gap:13px; }
+.ska-photo { min-width:0; overflow:hidden; display:flex; flex-direction:column; background:#1b1c22;
+  border:1px solid #363a44; border-radius:10px; }
+.ska-photo--cover { border-color:#b5334c; }
+.ska-photo-preview { height:130px; position:relative; background:#0d1117; }
+.ska-photo-preview img { height:100%; width:100%; object-fit:cover; }
+.ska-photo-preview>span { position:absolute; left:8px; bottom:8px; background:#c32745; padding:4px 8px;
+  color:white; border-radius:4px; font-size:10px; font-weight:800; }
+.ska-photo-controls { display:flex; flex-direction:column; gap:8px; padding:9px; }
+.ska-photo-controls button { display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  min-height:35px; border:1px solid #3b414c; background:#242935; color:#eceef2;
+  border-radius:7px; font-weight:750; font-size:11px; }
+.ska-photo-controls button:not(:disabled):hover { border-color:#ed4561; background:#3b2833; }
+.ska-photo-controls button:focus-visible { outline:2px solid #ff6f82; outline-offset:2px; }
+.ska-cover-button { width:100%; }
+.ska-photo-controls .ska-cover-button.is-cover { border-color:#a83550; background:#412330; color:#ffdce3; opacity:1; }
+.ska-photo-order { display:flex; gap:8px; }
+.ska-photo-order button { flex:1; }
+.ska-photo-order .ska-delete-photo { color:#ff9ba8; }
+@media (max-width:570px) {
+  .ska-photo-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .ska-photo-preview { height:110px; }
+  .ska-photo-controls { padding:7px; }
+  .ska-photo-order { gap:5px; }
+}
 .ska-toggle { flex-direction:row!important; align-items:center; flex-wrap:wrap;gap:9px!important; }
 .ska-toggle input { width:17px; height:17px; accent-color:var(--ska-red); }
 .ska-toggle span { color:white; }

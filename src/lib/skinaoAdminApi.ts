@@ -129,6 +129,14 @@ export const deleteVehicle = (id: string) =>
 export const addPhoto = (row: Omit<VehiclePhoto, "id">) => db("POST", "vehicle_images", row);
 export const deletePhoto = (id: string) =>
   db<void>("DELETE", "vehicle_images?id=eq." + encodeURIComponent(id));
+/** Change only image presentation metadata; the database authorizes administrators via RLS. */
+export async function updatePhoto(
+  id: string, changes: Partial<Pick<VehiclePhoto, "is_cover" | "sort_order">>,
+): Promise<VehiclePhoto> {
+  const rows = await db<VehiclePhoto[]>("PATCH", "vehicle_images?id=eq." + encodeURIComponent(id), changes);
+  if (!rows[0]) throw new Error("Não foi possível atualizar esta fotografia.");
+  return rows[0];
+}
 export function photoUrl(path: string, externalUrl?: string | null) {
   // Existing illustrative images were hosted on Unsplash, not in Supabase Storage.
   if (externalUrl?.startsWith("https://images.unsplash.com/photo-")) return externalUrl;

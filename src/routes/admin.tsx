@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import {
   addPhoto, currentSession, deletePhoto, deleteVehicle, listPhotos, listVehicles,
-  myRole, photoUrl, removeStoredPhotos, saveVehicle, signIn, signOut, uploadPhoto,
+  myRole, photoUrl, removeStoredPhotos, saveVehicle, signIn, signOut, updatePhoto, uploadPhoto,
   type AdminRole, type Session, type Vehicle, type VehicleDraft, type VehiclePhoto,
   type VehicleStatus,
 } from "../lib/skinaoAdminApi";
@@ -200,14 +200,62 @@ function AdminPanel() {
     } catch (e) { setFeedback({ text: e instanceof Error ? e.message : "Erro ao excluir.", error: true }); }
     finally { setWorking(false); }
   }
-  async function removePicture(photo: VehiclePhoto) {
-    if (!window.confirm("Excluir esta fotografia?")) return;
+  // These photo controls save immediately; the vehicle's text fields still use "Salvar veículo".
+  async function setCoverPicture(photo: VehiclePhoto) {
+    if (working) return;
+    const current = orderPhotos(photos, photo.vehicle_id);
+    if (photo.is_cover && current.filter(p => p.is_cover).length === 1) return;
     setWorking(true); setFeedback(null);
     try {
-      await removeStoredPhotos([photo.storage_path]);
-      await deletePhoto(photo.id);
+      // Set the replacement first, so a failed upload never leaves the gallery coverless.
+      await updatePhoto(photo.id, { is_cover: true });
+      for (const old of current.filter(p => p.id !== photo.id && p.is_cover)) {
+        await updatePhoto(old.id, { is_cover: false });
+      }
       await refresh();
+      setFeedback({ text: "Foto de capa atualizada no catálogo." });
     } catch (e) {
+      await refresh();
+      setFeedback({ text: e instanceof Error ? e.message : "Falha ao alterar a capa.", error: true });
+    } finally { setWorking(false); }
+  }
+  async function movePicture(photo: VehiclePhoto, direction: -1 | 1) {
+    if (working) return;
+    const ordered = orderPhotos(photos, photo.vehicle_id);
+    const from = ordered.findIndex(p => p.id === photo.id);
+    const to = from + direction;
+    // The cover stays first; the other photos can be reordered.
+    if (from < 0 || to < 0 || to >= ordered.length ||
+        ordered[from].is_cover || ordered[to].is_cover) return;
+    const changed = [...ordered];
+    [changed[from], changed[to]] = [changed[to], changed[from]];
+    setWorking(true); setFeedback(null);
+    try {
+      await Promise.all(changed.map((item, index) =>
+        item.sort_order !== index ? updatePhoto(item.id, { sort_order: index }) : Promise.resolve()));
+      await refresh();
+      setFeedback({ text: "Ordem das fotografias atualizada no catálogo." });
+    } catch (e) {
+      await refresh();
+      setFeedback({ text: e instanceof Error ? e.message : "Falha ao reorganizar fotos.", error: true });
+    } finally { setWorking(false); }
+  }
+  async function removePicture(photo: VehiclePhoto) {
+    if (working || !window.confirm("Excluir esta fotografia?")) return;
+    setWorking(true); setFeedback(null);
+    try {
+      const nextCover = photo.is_cover
+        ? orderPhotos(photos, photo.vehicle_id).find(p => p.id !== photo.id) : undefined;
+      // Remove the database reference before the storage file to avoid broken public URLs.
+      await deletePhoto(photo.id);
+      if (nextCover) await updatePhoto(nextCover.id, { is_cover: true });
+      try { await removeStoredPhotos([photo.storage_path]); } catch {
+        // Orphaned storage can be cleaned up later; the public gallery is already consistent.
+      }
+      await refresh();
+      setFeedback({ text: "Fotografia excluída do catálogo." });
+    } catch (e) {
+      await refresh();
       setFeedback({ text: e instanceof Error ? e.message : "Erro ao excluir foto.", error: true });
     } finally { setWorking(false); }
   }
@@ -215,6 +263,7 @@ function AdminPanel() {
   const reserved = vehicles.filter(v => v.status === "reserved").length;
   const sold = vehicles.filter(v => v.status === "sold").length;
   const demoCount = vehicles.filter(v => v.is_demo).length;
+  const editingPhotos = editingId ? orderPhotos(photos, editingId) : [];
   const searched = vehicles.filter(v =>
     (v.brand + " " + v.model + " " + v.version).toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR")));
 
@@ -356,14 +405,33 @@ function AdminPanel() {
               <div className="ska-divider"/>
               <h2>Fotografias</h2>
               {draft.is_demo && <p className="ska-feedback ska-feedback--demo">Este veículo foi importado como demonstração. Substitua as imagens ilustrativas por fotografias reais antes de convertê-lo em anúncio da loja.</p>}
-              <p className="ska-muted">Formatos JPG, PNG, WebP e AVIF. Até 8 MB por foto. A primeira imagem será a capa.</p>
+              <p className="ska-muted">JPG, PNG, WebP ou AVIF, até 8 MB por foto. Ao enviar as primeiras imagens, a primeira será a capa.</p>
+              {editingId && editingPhotos.length > 0 && <p className="ska-muted">Escolha a capa e use as setas para organizar as outras imagens. A capa fica sempre em primeiro lugar. Essas alterações são salvas imediatamente.</p>}
               {editingId && <div className="ska-photo-grid">
-                {orderPhotos(photos, editingId).map(p => <div className="ska-photo" key={p.id}>
-                  <img alt={p.alt_text} src={photoUrl(p.storage_path, p.external_url)}/>
-                  {p.is_cover && <span>{p.external_url ? "CAPA · ILUSTRATIVA" : "CAPA"}</span>}
-                  {!p.is_cover && p.external_url && <span>ILUSTRATIVA</span>}
-                  <button type="button" disabled={working} onClick={() => void removePicture(p)} aria-label="Excluir imagem"><Trash2 size={16}/></button>
-                </div>)}
+                {editingPhotos.map((p, index) => {
+                  const previous = editingPhotos[index - 1];
+                  return <div className={"ska-photo" + (p.is_cover ? " ska-photo--cover" : "")} key={p.id}>
+                    <div className="ska-photo-preview">
+                      <img alt={p.alt_text} src={photoUrl(p.storage_path, p.external_url)}/>
+                      {(p.is_cover || p.external_url) && <span>{p.is_cover ? (p.external_url ? "CAPA · ILUSTRATIVA" : "CAPA") : "ILUSTRATIVA"}</span>}
+                    </div>
+                    <div className="ska-photo-controls">
+                      <button type="button" className={"ska-cover-button" + (p.is_cover ? " is-cover" : "")}
+                        disabled={working || p.is_cover} aria-pressed={p.is_cover}
+                        onClick={() => void setCoverPicture(p)} title={p.is_cover ? "Foto de capa atual" : "Definir como foto de capa"}>
+                        <Camera size={15}/>{p.is_cover ? "Capa atual" : "Definir capa"}
+                      </button>
+                      <div className="ska-photo-order">
+                        <button type="button" disabled={working || p.is_cover || index === 0 || Boolean(previous?.is_cover)}
+                          onClick={() => void movePicture(p, -1)} aria-label="Mover foto para a esquerda" title="Mover para a esquerda"><ArrowLeft size={16}/></button>
+                        <button type="button" disabled={working || p.is_cover || index === editingPhotos.length - 1}
+                          onClick={() => void movePicture(p, 1)} aria-label="Mover foto para a direita" title="Mover para a direita"><ArrowRight size={16}/></button>
+                        <button type="button" disabled={working} className="ska-delete-photo"
+                          onClick={() => void removePicture(p)} aria-label="Excluir fotografia" title="Excluir fotografia"><Trash2 size={16}/></button>
+                      </div>
+                    </div>
+                  </div>;
+                })}
               </div>}
               <label className="ska-upload"><ImagePlus size={26}/><span>Selecionar fotografias</span><small>{newPhotos.length ? newPhotos.length+" foto(s) selecionada(s)" : "Você pode selecionar vários arquivos"}</small>
                 <input type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif"
