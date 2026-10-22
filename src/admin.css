@@ -371,3 +371,39 @@
   .ska-session-badge { gap:6px; }
   .ska-session-badge>span:not(.ska-online-dot) { max-width:96px; }
 }
+
+/* Skinão branded confirmation dialog, replaces browser-native confirm when unpublishing. */
+.ska-confirm-overlay { position:fixed; inset:0; z-index:350; display:flex; justify-content:center;
+  align-items:center; padding:18px; background:rgba(4,7,12,.78); backdrop-filter:blur(7px); }
+.ska-confirm-dialog { position:relative; width:min(100%,470px); padding:clamp(25px,4vw,36px);
+  background:var(--ska-panel); color:var(--ska-text); border:1px solid var(--ska-border);
+  border-radius:18px; box-shadow:0 30px 100px #0008; }
+.ska-confirm-icon { width:54px;height:54px;display:grid;place-items:center; border-radius:13px;
+  color:var(--ska-red);background:rgba(229,50,77,.12);border:1px solid rgba(229,50,77,.3);
+  margin-bottom:18px; }
+.ska-confirm-dialog h2 { font:800 34px/1 "Barlow Condensed",sans-serif; margin:11px 0 15px; }
+.ska-confirm-dialog p { color:var(--ska-muted); font-size:13px; line-height:1.75; margin:0; }
+.ska-confirm-dialog p strong { color:var(--ska-text); }
+.ska-confirm-close { position:absolute;right:16px;top:16px; display:grid;place-items:center;
+  width:36px;height:36px;border:1px solid var(--ska-border);border-radius:9px;
+  background:var(--ska-panel-2);color:var(--ska-muted); }
+.ska-confirm-close:hover { color:var(--ska-red); }
+.ska-confirm-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:27px; }
+.ska-confirm-actions .ska-button { flex:1; }
+.ska-confirm-dialog button:focus-visible { outline:2px solid var(--ska-red);outline-offset:3px; }
+.ska[data-ska-theme="light"] .ska-confirm-dialog { box-shadow:0 30px 90px rgba(9,18,34,.25); }
+@media(max-width:570px) {
+  .ska-confirm-actions { flex-direction:column-reverse; }
+  .ska-confirm-actions .ska-button { width:100%; }
+}
+
+/* Large inventory pagination stays inside the administrative dashboard. */
+.ska-stock-pagination { display:flex;align-items:center;justify-content:center;gap:16px;margin-top:22px; }
+.ska-stock-pagination button { display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:41px;padding:9px 15px;border:1px solid var(--ska-border);border-radius:9px;
+  color:var(--ska-text);background:var(--ska-panel);font-size:12px;font-weight:750; }
+.ska-stock-pagination button:not(:disabled):hover { border-color:var(--ska-red);color:var(--ska-red); }
+.ska-stock-pagination span { color:var(--ska-muted);font-size:12px;text-align:center; }
+@media(max-width:570px) { .ska-stock-pagination { gap:8px; }
+  .ska-stock-pagination button { padding:9px 10px;font-size:11px; }
+  .ska-stock-pagination span { font-size:10px; } }

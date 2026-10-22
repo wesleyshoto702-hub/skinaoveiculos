@@ -4,7 +4,7 @@ import { LoadingScreen } from "../components/LoadingScreen";
 import { HeroBackdropCars } from "../components/HeroBackdropCars";
 import { BusinessHours } from "../components/BusinessHours";
 import { formatBrazilAmount, formatBrazilWhatsApp } from "../lib/formInputMasks";
-import { loadPublicVehicles } from "../lib/skinaoPublicCatalog";
+import { CATALOG_PAGE_SIZE, loadCatalogFacets, loadPublicVehiclesPage, type CatalogFacets } from "../lib/skinaoPublicCatalog";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { ChevronLeft, ChevronRight, Instagram, Menu, MessageCircle, Search, X } from "lucide-react";
 import logoAsset from "../assets/skinao-logo.png.asset.json";
@@ -157,7 +157,7 @@ function VehicleCard({ vehicle, onDetails }: { vehicle: Vehicle; onDetails: (veh
   return (
     <article className="vehicle-card">
       <button type="button" className="vehicle-card-photo" onClick={() => onDetails(vehicle)} aria-label={"Ver detalhes de " + label}>
-        <img src={vehicle.photo} alt={"Imagem ilustrativa: " + label} loading="lazy" decoding="async"/>
+        <img src={vehicle.photo} alt={(vehicle.isDemo ? "Imagem ilustrativa: " : "Foto: ") + label} loading="lazy" decoding="async" fetchPriority="low"/>
       </button>
       <div className="vehicle-card-body">
         <div className="vehicle-title">
@@ -200,7 +200,7 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
         <div className="dialog-top"><span>{vehicle.isDemo ? "CATÁLOGO DEMONSTRATIVO" : "ESTOQUE SKINÃO"}</span><button type="button" className="icon-button" onClick={onClose} aria-label="Fechar detalhes"><X size={23}/></button></div>
         <div className="dialog-content">
           <div className="dialog-gallery">
-            <div className="dialog-image"><img src={vehicle.gallery[currentIndex]} alt={(vehicle.isDemo ? "Foto ilustrativa " : "Foto ") + (currentIndex+1) + " de " + vehicle.model}/>
+            <div className="dialog-image"><img src={vehicle.gallery[currentIndex]} decoding="async" alt={(vehicle.isDemo ? "Foto ilustrativa " : "Foto ") + (currentIndex+1) + " de " + vehicle.model}/>
               <button className="gallery-left" type="button" aria-label="Foto anterior" onClick={() => setPhotoIndex(currentIndex-1)}><ChevronLeft size={20}/></button>
               <button className="gallery-right" type="button" aria-label="Próxima foto" onClick={() => setPhotoIndex(currentIndex+1)}><ChevronRight size={20}/></button>
               <span className="gallery-count">{currentIndex+1} / {vehicle.gallery.length}</span>
@@ -379,8 +379,33 @@ function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
 function Home() {
   const [showLoading, setShowLoading] = useState(true);
   const [liveVehicles, setLiveVehicles] = useState<Vehicle[] | null>(null);
-  // Fetch changes without reloading the page: refresh in visible tabs and on return.
-  // No public subscribe privilege or new dependency is required.
+  const [facets, setFacets] = useState<CatalogFacets | null>(null);
+  const [catalogTotal, setCatalogTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState("");
+  const [page, setPage] = useState(0);
+  const [retry, setRetry] = useState(0);
+  const [heroReady, setHeroReady] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [headerVisible, setHeaderVisible] = useState(false);
+  const [selected, setSelected] = useState<Vehicle | null>(null);
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [brand, setBrand] = useState("");
+  const [type, setType] = useState("");
+  const [transmission, setTransmission] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [order, setOrder] = useState("featured");
+  const [finance, setFinance] = useState({ name: "", phone: "", model: "", entry: "" });
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query), 350);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  // The site never downloads the entire stock or every photo to the browser.
+  // Refresh only the current page when the tab is visible.
   useEffect(() => {
     let mounted = true;
     let fetching = false;
@@ -388,14 +413,29 @@ function Home() {
       if (!mounted || fetching) return;
       fetching = true;
       try {
-        const items = await loadPublicVehicles();
-        if (mounted) setLiveVehicles(items);
+        const options = await loadCatalogFacets();
+        const result = await loadPublicVehiclesPage({
+          query: debouncedQuery, brand, type, transmission, maxPrice, order,
+        }, page, options.isDemo);
+        if (!mounted) return;
+        if (page > 0 && result.total <= page * CATALOG_PAGE_SIZE) {
+          setPage(Math.max(0, Math.ceil(result.total / CATALOG_PAGE_SIZE) - 1));
+          return;
+        }
+        setFacets(options);
+        setLiveVehicles(result.vehicles);
+        setCatalogTotal(result.total);
+        setHasMore(result.hasMore);
+        setCatalogError("");
       } catch (error) {
+        if (mounted) setCatalogError("Não foi possível atualizar o estoque. Tentaremos novamente automaticamente.");
         console.warn("Não foi possível carregar o catálogo Skinão:", error);
       } finally {
         fetching = false;
+        if (mounted) setCatalogLoading(false);
       }
     };
+    setCatalogLoading(true);
     void refreshCatalog();
     const onVisible = () => { if (!document.hidden) void refreshCatalog(); };
     const interval = window.setInterval(onVisible, 15000);
@@ -409,27 +449,17 @@ function Home() {
       window.removeEventListener("focus", onVisible);
       window.removeEventListener("online", onVisible);
     };
-  }, []);
+  }, [debouncedQuery, brand, type, transmission, maxPrice, order, page, retry]);
+
   const vehicles = liveVehicles ?? demoVehicles;
-  const isDemoCatalog = liveVehicles === null || liveVehicles.some(v => v.isDemo);
-  const [heroReady, setHeroReady] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [headerVisible, setHeaderVisible] = useState(false);
-  const [selected, setSelected] = useState<Vehicle | null>(null);
-  // Keep an open vehicle gallery in sync with new covers/photos, and close removed ads.
+  const isDemoCatalog = facets?.isDemo ?? (liveVehicles === null || liveVehicles.some(v => v.isDemo));
+  // Reconcile an open detail modal after a live update (or publication removal).
   useEffect(() => {
-    if (selected && liveVehicles && !liveVehicles.some(v => v.id === selected.id)) {
+    if (!catalogLoading && selected && liveVehicles && !liveVehicles.some(v => v.id === selected.id)) {
       setSelected(null);
     }
-  }, [selected, liveVehicles]);
+  }, [selected, liveVehicles, catalogLoading]);
   const selectedLiveVehicle = selected ? vehicles.find(v => v.id === selected.id) : null;
-  const [query, setQuery] = useState("");
-  const [brand, setBrand] = useState("");
-  const [type, setType] = useState("");
-  const [transmission, setTransmission] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [order, setOrder] = useState("featured");
-  const [finance, setFinance] = useState({ name: "", phone: "", model: "", entry: "" });
 
   // Lock page scrolling only while the cinematic introduction covers the page.
   // The 3D scene can initialize underneath it and is already visible on exit.
@@ -486,14 +516,20 @@ function Home() {
   useEffect(() => { document.body.classList.toggle("menu-open", menuOpen); return () => document.body.classList.remove("menu-open"); }, [menuOpen]);
   const openDetails = (vehicle: Vehicle) => setSelected(vehicle);
   const closeDetails = () => setSelected(null);
-  const matches = vehicles.filter(vehicle => {
-    const search = (vehicle.brand + " " + vehicle.model + " " + vehicle.version).toLocaleLowerCase("pt-BR");
-    return (!query || search.includes(query.toLocaleLowerCase("pt-BR"))) &&
-      (!brand || vehicle.brand === brand) && (!type || vehicle.type === type) &&
-      (!transmission || vehicle.transmission === transmission) &&
-      (!maxPrice || vehicle.price <= Number(maxPrice));
-  }).sort((a,b) => order==="low" ? a.price-b.price : order==="high" ? b.price-a.price : order==="new" ? Number(b.year)-Number(a.year) : (Number(Boolean(b.isFeatured)) - Number(Boolean(a.isFeatured))) || String(a.id).localeCompare(String(b.id)));
-  const resetFilters = () => { setQuery(""); setBrand(""); setType(""); setTransmission(""); setMaxPrice(""); setOrder("featured"); };
+  const matches = vehicles;
+  const totalPages = Math.max(1, Math.ceil(catalogTotal / CATALOG_PAGE_SIZE));
+  const selectFilter = (setValue: (value: string) => void, value: string) => {
+    setPage(0);
+    setValue(value);
+  };
+  const navigateCatalog = (nextPage: number) => {
+    setPage(nextPage);
+    document.querySelector(".results-bar")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const resetFilters = () => {
+    setPage(0); setQuery(""); setBrand(""); setType(""); setTransmission("");
+    setMaxPrice(""); setOrder("featured");
+  };
 
   const sendFinance = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -534,18 +570,29 @@ function Home() {
             </div>
             {isDemoCatalog && <div className="demo-notice"><p><strong>Catálogo de demonstração.</strong> As fotos, modelos, especificações e os preços abaixo são ilustrativos; não representam veículos disponíveis. Confirme o estoque atual diretamente com a Skinão.</p></div>}
             <div className="stock-filters" role="search" aria-label="Buscar veículos">
-              <label className="search-field"><Search size={19}/><input aria-label="Buscar por modelo ou marca" placeholder="Qual carro você procura?" value={query} onChange={event=>setQuery(event.target.value)}/></label>
-              <label className="select-field"><span className="sr-only">Marca</span><select aria-label="Filtrar por marca" value={brand} onChange={event=>setBrand(event.target.value)}><option value="">Todas as marcas</option>{Array.from(new Set(vehicles.map(v=>v.brand))).sort().map(b=><option key={b} value={b}>{b}</option>)}</select></label>
-              <label className="select-field"><span className="sr-only">Categoria</span><select aria-label="Filtrar por categoria" value={type} onChange={event=>setType(event.target.value)}><option value="">Todos os tipos</option>{Array.from(new Set(vehicles.map(v=>v.type))).sort().map(t=><option key={t} value={t}>{t}</option>)}</select></label>
-              <label className="select-field"><span className="sr-only">Câmbio</span><select aria-label="Filtrar por câmbio" value={transmission} onChange={event=>setTransmission(event.target.value)}><option value="">Qualquer câmbio</option><option>Automático</option><option>Manual</option></select></label>
-              <label className="select-field"><span className="sr-only">Preço máximo</span><select aria-label="Filtrar por preço máximo" value={maxPrice} onChange={event=>setMaxPrice(event.target.value)}><option value="">Qualquer preço</option><option value="80000">Até R$ 80 mil</option><option value="100000">Até R$ 100 mil</option><option value="120000">Até R$ 120 mil</option><option value="160000">Até R$ 160 mil</option></select></label>
+              <label className="search-field"><Search size={19}/><input aria-label="Buscar por modelo ou marca" placeholder="Qual carro você procura?" value={query} onChange={event=>selectFilter(setQuery,event.target.value)}/></label>
+              <label className="select-field"><span className="sr-only">Marca</span><select aria-label="Filtrar por marca" value={brand} onChange={event=>selectFilter(setBrand,event.target.value)}><option value="">Todas as marcas</option>{(facets?.brands ?? Array.from(new Set(demoVehicles.map(v=>v.brand))).sort()).map(b=><option key={b} value={b}>{b}</option>)}</select></label>
+              <label className="select-field"><span className="sr-only">Categoria</span><select aria-label="Filtrar por categoria" value={type} onChange={event=>selectFilter(setType,event.target.value)}><option value="">Todos os tipos</option>{(facets?.types ?? Array.from(new Set(demoVehicles.map(v=>v.type))).sort()).map(t=><option key={t} value={t}>{t}</option>)}</select></label>
+              <label className="select-field"><span className="sr-only">Câmbio</span><select aria-label="Filtrar por câmbio" value={transmission} onChange={event=>selectFilter(setTransmission,event.target.value)}><option value="">Qualquer câmbio</option>{(facets?.transmissions ?? ["Automático","Manual"]).map(t=><option key={t} value={t}>{t}</option>)}</select></label>
+              <label className="select-field"><span className="sr-only">Preço máximo</span><select aria-label="Filtrar por preço máximo" value={maxPrice} onChange={event=>selectFilter(setMaxPrice,event.target.value)}><option value="">Qualquer preço</option><option value="80000">Até R$ 80 mil</option><option value="100000">Até R$ 100 mil</option><option value="120000">Até R$ 120 mil</option><option value="160000">Até R$ 160 mil</option></select></label>
             </div>
-            <div className="results-bar"><span><strong>{matches.length.toString().padStart(2,"0")}</strong> {isDemoCatalog ? "MODELOS DE EXEMPLO" : "VEÍCULOS DISPONÍVEIS"}</span>
+            <div className="results-bar"><span><strong>{catalogTotal.toLocaleString("pt-BR")}</strong> {isDemoCatalog ? "MODELOS DE EXEMPLO" : "VEÍCULOS DISPONÍVEIS"}</span>
               <div className="results-actions"><button type="button" onClick={resetFilters} className="clear-filters">LIMPAR FILTROS</button>
-                <select aria-label="Ordenar veículos" value={order} onChange={event=>setOrder(event.target.value)}><option value="featured">Ordenar: destaques</option><option value="low">Menor preço</option><option value="high">Maior preço</option><option value="new">Mais recentes</option></select></div>
+                <select aria-label="Ordenar veículos" value={order} onChange={event=>selectFilter(setOrder,event.target.value)}><option value="featured">Ordenar: destaques</option><option value="low">Menor preço</option><option value="high">Maior preço</option><option value="new">Mais recentes</option></select></div>
             </div>
-            {matches.length>0 ? <div className="stock-grid">{matches.map(vehicle=><VehicleCard key={vehicle.id} vehicle={vehicle} onDetails={openDetails}/>)}</div> :
+            {catalogError && <p className="stock-catalog-error" role="status">{catalogError} <button type="button" onClick={() => setRetry(x => x + 1)}>Tentar agora</button></p>}
+            {catalogLoading ? <div className="stock-catalog-loading" role="status">Carregando veículos do catálogo...</div> :
+              matches.length>0 ? <div className="stock-grid">{matches.map(vehicle=><VehicleCard key={vehicle.id} vehicle={vehicle} onDetails={openDetails}/>)}</div> :
               <div className="empty-results"><Search size={30}/><h3>Nenhum veículo encontrado</h3><p>Tente ajustar os filtros para encontrar outras opções.</p><button type="button" className="btn btn-outline" onClick={resetFilters}>LIMPAR FILTROS</button></div>}
+            {!catalogLoading && catalogTotal > CATALOG_PAGE_SIZE && <nav className="stock-pagination" aria-label="Páginas do catálogo">
+              <button type="button" disabled={page === 0} onClick={() => navigateCatalog(Math.max(0,page-1))}>
+                <ChevronLeft size={18}/> Anterior
+              </button>
+              <span>Página {page + 1} de {totalPages}</span>
+              <button type="button" disabled={!hasMore} onClick={() => navigateCatalog(page+1)}>
+                Próxima <ChevronRight size={18}/>
+              </button>
+            </nav>}
             <div className="stock-bottom"><p>Quer saber quais veículos estão disponíveis hoje?</p><button className="text-link" type="button" onClick={()=>whatsApp("Olá, Skinão Veículos! Procuro um veículo e gostaria de conhecer as opções disponíveis.")}>CONSULTAR DISPONIBILIDADE NO WHATSAPP</button></div>
           </div>
         </section>
@@ -569,7 +616,7 @@ function Home() {
             <form className="finance-form" onSubmit={sendFinance}><span className="form-kicker">CONSULTA PELO WHATSAPP</span><h3>CONTE O QUE PROCURA.</h3><p>Ao continuar, você poderá revisar a mensagem no WhatsApp antes de enviar.</p>
               <label>SEU NOME <input required maxLength={100} value={finance.name} placeholder="Como podemos te chamar?" onChange={e=>setFinance({...finance,name:e.target.value})}/></label>
               <label>WHATSAPP COM DDD <input required type="tel" inputMode="tel" minLength={15} maxLength={15} pattern="[(][0-9]{2}[)] [0-9]{5}-[0-9]{4}" title="Informe DDD e celular com 9 dígitos" autoComplete="tel-national" value={finance.phone} placeholder="(35) 99999-9999" onChange={e=>setFinance({...finance,phone:formatBrazilWhatsApp(e.target.value)})}/></label>
-              <label>VEÍCULO DE INTERESSE <select value={finance.model} onChange={e=>setFinance({...finance,model:e.target.value})}><option value="">Ainda estou escolhendo</option>{vehicles.map(v=><option key={v.id} value={v.brand+" "+v.model}>{v.brand} {v.model}{isDemoCatalog ? " (exemplo)" : ""}</option>)}</select></label>
+              <label>VEÍCULO DE INTERESSE <input list="skinao-vehicle-suggestions" value={finance.model} placeholder="Modelo desejado ou ainda estou escolhendo" onChange={e=>setFinance({...finance,model:e.target.value})}/><datalist id="skinao-vehicle-suggestions">{vehicles.map(v=><option key={v.id} value={v.brand+" "+v.model}/>)}</datalist></label>
               <label>ENTRADA PRETENDIDA
                 <span className="finance-entry-control">
                   <span className="finance-entry-prefix" aria-hidden="true">R$</span>

@@ -116,8 +116,65 @@ export async function myRole(id: string): Promise<AdminRole | null> {
   );
   return rows[0]?.role ?? null;
 }
-export const listVehicles = () => db<Vehicle[]>("GET", "vehicles?select=*&order=created_at.desc");
-export const listPhotos = () => db<VehiclePhoto[]>("GET", "vehicle_images?select=*&order=sort_order.asc");
+/** The admin panel also uses server pagination, avoiding a 1000-row ceiling. */
+export const ADMIN_PAGE_SIZE = 20;
+export type AdminStats = { total: number; published: number; reserved: number; sold: number; demos: number };
+export type AdminPage = { vehicles: Vehicle[]; total: number; hasMore: boolean };
+
+export async function listVehiclePage(page: number, search: string): Promise<AdminPage> {
+  const params = new URLSearchParams({
+    select: "*", order: "created_at.desc,id.asc",
+    limit: String(ADMIN_PAGE_SIZE + 1), offset: String(Math.max(0, page) * ADMIN_PAGE_SIZE),
+  });
+  const term = search.trim().slice(0, 100).replace(/[,()*%".\\]/g, " ").replace(/\s+/g, " ").trim();
+  if (term) params.set("or", "(brand.ilike.*" + term + "*,model.ilike.*" + term + "*,version.ilike.*" + term + "*)");
+  const response = await fetch(BASE + "/rest/v1/vehicles?" + params, {
+    headers: await secureHeaders({ Prefer: "count=exact" }),
+  });
+  const rows = await result(response) as Vehicle[];
+  const range = response.headers.get("content-range")?.split("/")[1];
+  const count = range !== undefined && range !== "*" ? Number(range) : NaN;
+  const hasMore = Number.isFinite(count)
+    ? (page + 1) * ADMIN_PAGE_SIZE < count : rows.length > ADMIN_PAGE_SIZE;
+  return {
+    vehicles: rows.slice(0, ADMIN_PAGE_SIZE), hasMore,
+    total: Number.isFinite(count) ? count : page * ADMIN_PAGE_SIZE + Math.min(rows.length, ADMIN_PAGE_SIZE) + (hasMore ? 1 : 0),
+  };
+}
+export async function listPhotosForVehicles(ids: string[]): Promise<VehiclePhoto[]> {
+  if (!ids.length) return [];
+  const resultRows: VehiclePhoto[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const params = new URLSearchParams({
+      select: "*", vehicle_id: "in.(" + ids.join(",") + ")",
+      order: "vehicle_id.asc,is_cover.desc,sort_order.asc", limit: "500", offset: String(offset),
+    });
+    const rows = await db<VehiclePhoto[]>("GET", "vehicle_images?" + params);
+    resultRows.push(...rows);
+    if (rows.length < 500) break;
+  }
+  return resultRows;
+}
+/** Accurate inventory totals without downloading every vehicle into the browser. */
+async function countVehicles(filter: string): Promise<number> {
+  const response = await fetch(BASE + "/rest/v1/vehicles?select=id" + filter, {
+    method: "HEAD", headers: await secureHeaders({ Prefer: "count=exact" }),
+  });
+  if (!response.ok) throw new Error("Não foi possível consultar os totais do estoque.");
+  const raw = response.headers.get("content-range")?.split("/")[1] ?? "0";
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+export async function getAdminStats(): Promise<AdminStats> {
+  const [total, published, reserved, sold, demos] = await Promise.all([
+    countVehicles(""),
+    countVehicles("&is_published=eq.true&status=in.(available,reserved)"),
+    countVehicles("&status=eq.reserved"),
+    countVehicles("&status=eq.sold"),
+    countVehicles("&is_demo=eq.true"),
+  ]);
+  return { total, published, reserved, sold, demos };
+}
 export async function saveVehicle(v: VehicleDraft, id?: string): Promise<Vehicle> {
   const rows = await db<Vehicle[]>(id ? "PATCH" : "POST",
     id ? "vehicles?id=eq." + encodeURIComponent(id) : "vehicles", v);

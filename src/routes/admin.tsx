@@ -1,14 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
-  ArrowLeft, ArrowRight, Camera, CarFront, Check, ChevronDown, CircleAlert,
+  AlertTriangle, ArrowLeft, ArrowRight, Camera, CarFront, Check, ChevronDown, CircleAlert,
   ClipboardList, Edit3, Eye, EyeOff, ImagePlus, LockKeyhole, LogOut, Menu, Plus,
   RefreshCw, Save, Search, ShieldCheck, Sun, Moon, Trash2, UsersRound, X,
 } from "lucide-react";
 import {
-  addPhoto, currentSession, deletePhoto, deleteVehicle, listPhotos, listVehicles,
+  ADMIN_PAGE_SIZE, addPhoto, currentSession, deletePhoto, deleteVehicle, getAdminStats,
+  listPhotosForVehicles, listVehiclePage,
   myRole, photoUrl, removeStoredPhotos, saveVehicle, signIn, signOut, updatePhoto, uploadPhoto,
-  type AdminRole, type Session, type Vehicle, type VehicleDraft, type VehiclePhoto,
+  type AdminRole, type AdminStats, type Session, type Vehicle, type VehicleDraft, type VehiclePhoto,
   type VehicleStatus,
 } from "../lib/skinaoAdminApi";
 import "../admin.css";
@@ -75,9 +76,18 @@ function AdminPanel() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [photos, setPhotos] = useState<VehiclePhoto[]>([]);
+  const [adminPage, setAdminPage] = useState(0);
+  const [pageTotal, setPageTotal] = useState(0);
+  const [adminHasMore, setAdminHasMore] = useState(false);
+  const [stats, setStats] = useState<AdminStats>({ total: 0, published: 0, reserved: 0, sold: 0, demos: 0 });
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const refreshRunRef = useRef(0);
   const [loading, setLoading] = useState(false);
   const [working, setWorking] = useState(false);
   const [feedback, setFeedback] = useState<Status | null>(null);
+  const [pendingUnpublish, setPendingUnpublish] = useState<Vehicle | null>(null);
+  const confirmCancelRef = useRef<HTMLButtonElement | null>(null);
+  const confirmDialogRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<VehicleDraft>(emptyDraft);
@@ -100,19 +110,40 @@ function AdminPanel() {
     return () => { active = false; };
   }, []);
   useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 350);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+  useEffect(() => {
     if (session && role) void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, role]);
+  }, [session?.user.id, role, adminPage, debouncedSearch]);
 
   async function refresh() {
+    const run = ++refreshRunRef.current;
     setLoading(true);
     try {
-      const [items, pictures] = await Promise.all([listVehicles(), listPhotos()]);
-      setVehicles(items);
+      const [pageData, summary] = await Promise.all([
+        listVehiclePage(adminPage, debouncedSearch), getAdminStats(),
+      ]);
+      if (run !== refreshRunRef.current) return;
+      if (adminPage > 0 && pageData.total <= adminPage * ADMIN_PAGE_SIZE) {
+        setAdminPage(Math.max(0, Math.ceil(pageData.total / ADMIN_PAGE_SIZE) - 1));
+        return;
+      }
+      const pictures = await listPhotosForVehicles(pageData.vehicles.map(v => v.id));
+      if (run !== refreshRunRef.current) return;
+      setVehicles(pageData.vehicles);
       setPhotos(pictures);
+      setPageTotal(pageData.total);
+      setAdminHasMore(pageData.hasMore);
+      setStats(summary);
     } catch (e) {
-      setFeedback({ text: e instanceof Error ? e.message : "Falha ao consultar o estoque.", error: true });
-    } finally { setLoading(false); }
+      if (run === refreshRunRef.current) {
+        setFeedback({ text: e instanceof Error ? e.message : "Falha ao consultar o estoque.", error: true });
+      }
+    } finally {
+      if (run === refreshRunRef.current) setLoading(false);
+    }
   }
   async function logIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -134,6 +165,7 @@ function AdminPanel() {
   }
   async function logOut() {
     await signOut();
+    refreshRunRef.current++;
     setSession(null); setRole(null); setVehicles([]); setPhotos([]);
     setView("inventory"); setFeedback(null); setMenuOpen(false);
   }
@@ -197,19 +229,15 @@ function AdminPanel() {
         await saveVehicle({ ...toDraft(item), is_published: true }, item.id);
       }
       setNewPhotos([]); setEditingId(null); setView("inventory");
+      setAdminPage(0);
       setFeedback({ text: failures ? "Veículo salvo, mas " + failures + " foto(s) falharam. Revise as imagens." :
         "Veículo salvo com sucesso." , error: failures > 0 });
       await refresh();
     } catch (e) { setFeedback({ text: e instanceof Error ? e.message : "Não foi possível salvar.", error: true }); }
     finally { setWorking(false); }
   }
-  async function changePublish(item: Vehicle) {
+  async function applyPublication(item: Vehicle) {
     if (working) return;
-    if (item.is_published && !window.confirm(
-      `Deseja realmente despublicar ${item.brand} ${item.model}?
-
-O veículo deixará de aparecer no site, mas continuará cadastrado no painel e poderá ser publicado novamente.`
-    )) return;
     if (!item.is_published && !orderPhotos(photos, item.id).length) {
       setFeedback({ text: "Inclua uma fotografia antes de publicar.", error: true });
       return;
@@ -222,6 +250,40 @@ O veículo deixará de aparecer no site, mas continuará cadastrado no painel e 
     } catch (e) { setFeedback({ text: e instanceof Error ? e.message : "Erro ao atualizar publicação.", error: true }); }
     finally { setWorking(false); }
   }
+  function changePublish(item: Vehicle) {
+    if (working) return;
+    if (item.is_published) setPendingUnpublish(item);
+    else void applyPublication(item);
+  }
+  // Trap keyboard focus within the confirmation dialog; Escape/backdrop cancel safely.
+  useEffect(() => {
+    if (!pendingUnpublish) return;
+    const previousFocus = document.activeElement;
+    const oldOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    confirmCancelRef.current?.focus();
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setPendingUnpublish(null);
+      } else if (event.key === "Tab") {
+        const buttons = confirmDialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
+        if (!buttons?.length) return;
+        const first = buttons[0], last = buttons[buttons.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault(); last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault(); first.focus();
+        }
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = oldOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+      if (previousFocus instanceof HTMLElement) previousFocus.focus();
+    };
+  }, [pendingUnpublish]);
   async function removeItem(item: Vehicle) {
     if (!window.confirm("Excluir definitivamente " + item.brand + " " + item.model + " e suas fotografias?")) return;
     setWorking(true); setFeedback(null);
@@ -293,13 +355,12 @@ O veículo deixará de aparecer no site, mas continuará cadastrado no painel e 
       setFeedback({ text: e instanceof Error ? e.message : "Erro ao excluir foto.", error: true });
     } finally { setWorking(false); }
   }
-  const published = vehicles.filter(v => v.is_published && v.status !== "sold").length;
-  const reserved = vehicles.filter(v => v.status === "reserved").length;
-  const sold = vehicles.filter(v => v.status === "sold").length;
-  const demoCount = vehicles.filter(v => v.is_demo).length;
+  const published = stats.published;
+  const reserved = stats.reserved;
+  const sold = stats.sold;
+  const demoCount = stats.demos;
   const editingPhotos = editingId ? orderPhotos(photos, editingId) : [];
-  const searched = vehicles.filter(v =>
-    (v.brand + " " + v.model + " " + v.version).toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR")));
+  const searched = vehicles;
 
   if (checking) return <main className="ska ska-centered" data-ska-theme={adminTheme}><span className="ska-spinner"/> Validando sua sessão...</main>;
   if (!session || !role) return (
@@ -379,7 +440,7 @@ O veículo deixará de aparecer no site, mas continuará cadastrado no painel e 
             </div>
             <div className="ska-stats">
               {[
-                {title:"Total de veículos",number:vehicles.length,icon:<CarFront size={21}/>},
+                {title:"Total de veículos",number:stats.total,icon:<CarFront size={21}/>},
                 {title:"No site",number:published,icon:<Check size={21}/>},
                 {title:"Reservados",number:reserved,icon:<ClipboardList size={21}/>},
                 {title:"Vendidos",number:sold,icon:<CarFront size={21}/>},
@@ -388,7 +449,7 @@ O veículo deixará de aparecer no site, mas continuará cadastrado no painel e 
             <div className="ska-section-title"><h2>Veículos cadastrados</h2>
               <button type="button" onClick={() => void refresh()} disabled={loading}><RefreshCw size={18}/> Atualizar</button>
             </div>
-            <label className="ska-search"><Search size={19}/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar marca, modelo ou versão..."/></label>
+            <label className="ska-search"><Search size={19}/><input value={search} onChange={e => { setSearch(e.target.value); setAdminPage(0); }} placeholder="Buscar marca, modelo ou versão..."/></label>
             <div className="ska-inventory">
               {loading ? <div className="ska-empty">Carregando veículos...</div> :
                 searched.length ? searched.map(v => {
@@ -414,6 +475,15 @@ O veículo deixará de aparecer no site, mas continuará cadastrado no painel e 
                 }) : <div className="ska-empty"><CarFront size={33}/><h3>{search ? "Nenhum resultado" : "Seu estoque começa aqui"}</h3><p>{search ? "Experimente outra busca." : "Adicione o primeiro veículo para começar a utilizar o painel."}</p>{!search && <button className="ska-button ska-button--red" type="button" onClick={createNew}><Plus size={17}/> Cadastrar veículo</button>}</div>
               }
             </div>
+            {pageTotal > ADMIN_PAGE_SIZE && <nav className="ska-stock-pagination" aria-label="Páginas do estoque">
+              <button type="button" disabled={loading || adminPage === 0} onClick={() => setAdminPage(p => Math.max(0,p-1))}>
+                <ArrowLeft size={17}/> Anterior
+              </button>
+              <span>Página {adminPage + 1} de {Math.max(1, Math.ceil(pageTotal / ADMIN_PAGE_SIZE))} · {pageTotal} veículos</span>
+              <button type="button" disabled={loading || !adminHasMore} onClick={() => setAdminPage(p => p+1)}>
+                Próxima <ArrowRight size={17}/>
+              </button>
+            </nav>}
           </>}
           {view === "form" && <>
             <div className="ska-section-header"><div>
@@ -522,6 +592,28 @@ O veículo deixará de aparecer no site, mas continuará cadastrado no painel e 
           </>}
         </main>
       </div>
+      {pendingUnpublish && <div className="ska-confirm-overlay"
+        onMouseDown={event => { if (event.target === event.currentTarget) setPendingUnpublish(null); }}>
+        <div className="ska-confirm-dialog" ref={confirmDialogRef} role="alertdialog" aria-modal="true"
+          aria-labelledby="ska-unpublish-title" aria-describedby="ska-unpublish-description">
+          <button type="button" className="ska-confirm-close" aria-label="Fechar aviso"
+            onClick={() => setPendingUnpublish(null)}><X size={19}/></button>
+          <span className="ska-confirm-icon"><AlertTriangle size={25} aria-hidden="true"/></span>
+          <span className="ska-eyebrow">CONFIRMAR ALTERAÇÃO</span>
+          <h2 id="ska-unpublish-title">Despublicar veículo?</h2>
+          <p id="ska-unpublish-description">O anúncio de <strong>{pendingUnpublish.brand} {pendingUnpublish.model}</strong> deixará de aparecer no catálogo do site. Ele continuará salvo no painel e poderá ser publicado novamente quando desejar.</p>
+          <div className="ska-confirm-actions">
+            <button type="button" ref={confirmCancelRef} className="ska-button ska-button--outline"
+              onClick={() => setPendingUnpublish(null)}>Manter publicado</button>
+            <button type="button" className="ska-button ska-button--red"
+              onClick={() => {
+                const item = pendingUnpublish;
+                setPendingUnpublish(null);
+                void applyPublication(item);
+              }}><Check size={17}/> Sim, despublicar</button>
+          </div>
+        </div>
+      </div>}
     </div>
   );
 }

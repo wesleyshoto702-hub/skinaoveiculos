@@ -2226,3 +2226,24 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .stock-grid .vehicle-model-line { column-gap: 5px; }
   .stock-grid .vehicle-model-line .vehicle-year { font-size: 10px; }
 }
+
+/* Server-paginated public catalog: unobtrusive navigation and loading states. */
+.stock-pagination { display:flex; justify-content:center; align-items:center; gap:20px; padding:28px 0 0; }
+.stock-pagination button { display:inline-flex; align-items:center; justify-content:center; gap:5px;
+  min-width:118px; min-height:43px; border:1px solid #5f555a; background:#242124;
+  color:#f0edef; padding:9px 14px; border-radius:8px; font-size:12px; font-weight:750; }
+.stock-pagination button:not(:disabled):hover { border-color:#d93a57; background:#3a242c; }
+.stock-pagination button:disabled { opacity:.38; cursor:not-allowed; }
+.stock-pagination button:focus-visible { outline:2px solid #f04a65; outline-offset:2px; }
+.stock-pagination span { color:#bdb4b7; font-size:12px; font-weight:700; }
+.stock-catalog-loading { display:flex; justify-content:center; align-items:center; min-height:260px;
+  border:1px solid #383438; color:#bbb5ba; font-size:13px; letter-spacing:.035em; }
+.stock-catalog-error { background:#351d24; color:#f3c2cb; padding:15px 18px;
+  border-left:3px solid #d93350; font-size:12px; margin-bottom:20px; }
+.stock-catalog-error button { background:transparent; border:0; color:#fff; font-weight:800;
+  text-decoration:underline; margin-left:10px; cursor:pointer; }
+@media(max-width:640px) {
+  .stock-pagination { gap:10px; }
+  .stock-pagination button { min-width:94px; padding:10px 8px; font-size:11px; }
+  .stock-pagination span { font-size:11px; }
+}
