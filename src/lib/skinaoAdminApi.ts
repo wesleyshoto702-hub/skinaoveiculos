@@ -15,6 +15,7 @@ export type VehicleDraft = Omit<Vehicle, "id" | "created_at" | "updated_at" | "d
 export type VehiclePhoto = {
   id: string; vehicle_id: string; storage_path: string; alt_text: string;
   sort_order: number; is_cover: boolean; external_url?: string | null;
+  crop_x?: number; crop_y?: number; crop_zoom?: number; crop_rotation?: number;
 };
 type User = { id: string; email?: string };
 export type Session = {
@@ -188,11 +189,20 @@ export const deletePhoto = (id: string) =>
   db<void>("DELETE", "vehicle_images?id=eq." + encodeURIComponent(id));
 /** Change only image presentation metadata; the database authorizes administrators via RLS. */
 export async function updatePhoto(
-  id: string, changes: Partial<Pick<VehiclePhoto, "is_cover" | "sort_order">>,
+  id: string, changes: Partial<Pick<VehiclePhoto, "sort_order" | "crop_x" | "crop_y" | "crop_zoom" | "crop_rotation">>,
 ): Promise<VehiclePhoto> {
   const rows = await db<VehiclePhoto[]>("PATCH", "vehicle_images?id=eq." + encodeURIComponent(id), changes);
   if (!rows[0]) throw new Error("Não foi possível atualizar esta fotografia.");
   return rows[0];
+}
+/** Atomically clears the old cover before setting a new one; keeps the one-cover unique index intact. */
+export async function setCoverPhoto(id: string): Promise<void> {
+  const response = await fetch(BASE + "/rest/v1/rpc/skinao_set_vehicle_cover", {
+    method: "POST",
+    headers: await secureHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ p_photo_id: id }),
+  });
+  await result(response);
 }
 export function photoUrl(path: string, externalUrl?: string | null) {
   // Existing illustrative images were hosted on Unsplash, not in Supabase Storage.

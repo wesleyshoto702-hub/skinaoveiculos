@@ -5,6 +5,7 @@ import { HeroBackdropCars } from "../components/HeroBackdropCars";
 import { BusinessHours } from "../components/BusinessHours";
 import { formatBrazilAmount, formatBrazilWhatsApp } from "../lib/formInputMasks";
 import { CATALOG_PAGE_SIZE, loadCatalogFacets, loadPublicVehiclesPage, type CatalogFacets } from "../lib/skinaoPublicCatalog";
+import { adjustedImageStyle, type PhotoAdjustments } from "../lib/skinaoPhotoAdjust";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { ChevronLeft, ChevronRight, Instagram, Menu, MessageCircle, Search, X } from "lucide-react";
 import logoAsset from "../assets/skinao-logo.png.asset.json";
@@ -28,6 +29,8 @@ type Vehicle = {
   badge?: string;
   photo: string;
   gallery: string[];
+  coverEdits?: PhotoAdjustments;
+  galleryEdits?: PhotoAdjustments[];
   features: string[];
 };
 
@@ -157,7 +160,7 @@ function VehicleCard({ vehicle, onDetails }: { vehicle: Vehicle; onDetails: (veh
   return (
     <article className="vehicle-card">
       <button type="button" className="vehicle-card-photo" onClick={() => onDetails(vehicle)} aria-label={"Ver detalhes de " + label}>
-        <img src={vehicle.photo} alt={(vehicle.isDemo ? "Imagem ilustrativa: " : "Foto: ") + label} loading="lazy" decoding="async" fetchPriority="low"/>
+        <img src={vehicle.photo} alt={(vehicle.isDemo ? "Imagem ilustrativa: " : "Foto: ") + label} loading="lazy" decoding="async" fetchPriority="low" style={vehicle.coverEdits ? adjustedImageStyle(vehicle.coverEdits) : undefined}/>
       </button>
       <div className="vehicle-card-body">
         <div className="vehicle-title">
@@ -200,12 +203,13 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
         <div className="dialog-top"><span>{vehicle.isDemo ? "CATÁLOGO DEMONSTRATIVO" : "ESTOQUE SKINÃO"}</span><button type="button" className="icon-button" onClick={onClose} aria-label="Fechar detalhes"><X size={23}/></button></div>
         <div className="dialog-content">
           <div className="dialog-gallery">
-            <div className="dialog-image"><img src={vehicle.gallery[currentIndex]} decoding="async" alt={(vehicle.isDemo ? "Foto ilustrativa " : "Foto ") + (currentIndex+1) + " de " + vehicle.model}/>
+            <div className="dialog-image"><img src={vehicle.gallery[currentIndex]} decoding="async" alt={(vehicle.isDemo ? "Foto ilustrativa " : "Foto ") + (currentIndex+1) + " de " + vehicle.model}
+              style={vehicle.galleryEdits?.[currentIndex] ? adjustedImageStyle(vehicle.galleryEdits[currentIndex]) : undefined}/>
               <button className="gallery-left" type="button" aria-label="Foto anterior" onClick={() => setPhotoIndex(currentIndex-1)}><ChevronLeft size={20}/></button>
               <button className="gallery-right" type="button" aria-label="Próxima foto" onClick={() => setPhotoIndex(currentIndex+1)}><ChevronRight size={20}/></button>
               <span className="gallery-count">{currentIndex+1} / {vehicle.gallery.length}</span>
             </div>
-            <div className="gallery-thumbs">{vehicle.gallery.map((photo, index) => <button type="button" className={index===currentIndex?"active":""} onClick={() => setPhotoIndex(index)} key={index} aria-label={"Selecionar foto " + (index+1)}><img src={photo} loading="lazy" alt=""/></button>)}</div>
+            <div className="gallery-thumbs">{vehicle.gallery.map((photo, index) => <button type="button" className={index===currentIndex?"active":""} onClick={() => setPhotoIndex(index)} key={index} aria-label={"Selecionar foto " + (index+1)}><img src={photo} loading="lazy" alt="" style={vehicle.galleryEdits?.[index] ? adjustedImageStyle(vehicle.galleryEdits[index]) : undefined}/></button>)}</div>
           </div>
           <div className="dialog-details">
             <p className="eyebrow">DETALHES DO VEÍCULO</p>

@@ -2247,3 +2247,10 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   .stock-pagination button { min-width:94px; padding:10px 8px; font-size:11px; }
   .stock-pagination span { font-size:11px; }
 }
+
+
+/* Photo adjustments are rendered from saved metadata; keep frames clipped everywhere. */
+.site-root .vehicle-card-photo, .site-root .dialog-image, .site-root .gallery-thumbs button { overflow:hidden; }
+.site-root .vehicle-card-photo img, .site-root .dialog-image img,
+.site-root .gallery-thumbs img { transform-origin:center center; }
+.site-root .gallery-thumbs img { width:100%;height:100%;object-fit:cover; }

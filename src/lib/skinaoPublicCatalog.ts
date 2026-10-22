@@ -1,4 +1,5 @@
 import { SKINAO_SUPABASE_URL as BASE, SKINAO_SUPABASE_PUBLIC_KEY as KEY } from "./skinaoAdminConfig";
+import { normalizeAdjustments, type PhotoAdjustments } from "./skinaoPhotoAdjust";
 
 /** Fetch 12 listings per page, and fetch only the photos for that page. */
 export const CATALOG_PAGE_SIZE = 12;
@@ -12,11 +13,13 @@ type InventoryRow = {
 type PhotoRow = {
   vehicle_id: string; storage_path: string; external_url: string | null;
   sort_order: number; is_cover: boolean;
+  crop_x: number; crop_y: number; crop_zoom: number; crop_rotation: number;
 };
 export type PublicVehicle = {
   id: string; brand: string; model: string; version: string; year: string;
   km: number; transmission: string; fuel: string; price: number; type: string;
   color: string; badge?: string; photo: string; gallery: string[]; features: string[];
+  coverEdits?: PhotoAdjustments; galleryEdits?: PhotoAdjustments[];
   isFeatured?: boolean; isDemo?: boolean;
 };
 export type CatalogFacets = {
@@ -90,7 +93,7 @@ async function photosForVisibleVehicles(ids: string[]): Promise<PhotoRow[]> {
   // Include only this page's IDs. Batch photo metadata to avoid Supabase's default 1000-row cap.
   for (let offset = 0; ; offset += PHOTO_BATCH_SIZE) {
     const p = new URLSearchParams({
-      select: "vehicle_id,storage_path,external_url,sort_order,is_cover",
+      select: "vehicle_id,storage_path,external_url,sort_order,is_cover,crop_x,crop_y,crop_zoom,crop_rotation",
       vehicle_id: "in.(" + ids.join(",") + ")",
       order: "vehicle_id.asc,is_cover.desc,sort_order.asc",
       limit: String(PHOTO_BATCH_SIZE),
@@ -128,12 +131,14 @@ export async function loadPublicVehiclesPage(
       const ordered = (byVehicle.get(row.id) ?? []).sort((a, b) =>
         Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order);
       const gallery = ordered.map(urlFor);
+      const galleryEdits = ordered.map(normalizeAdjustments);
       return {
         id: row.id, brand: row.brand, model: row.model, version: row.version,
         year: String(row.year), km: row.km, transmission: row.transmission,
         fuel: row.fuel, price: Number(row.price), type: row.type, color: row.color,
         badge: row.badge || undefined, photo: gallery[0] || "/favicon.png",
         gallery: gallery.length ? gallery : ["/favicon.png"],
+        coverEdits: galleryEdits[0], galleryEdits,
         features: row.features ?? [], isFeatured: row.is_featured, isDemo: row.is_demo,
       };
     }),

@@ -3,16 +3,18 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   AlertTriangle, ArrowLeft, ArrowRight, Camera, CarFront, Check, ChevronDown, CircleAlert,
   ClipboardList, Edit3, Eye, EyeOff, ImagePlus, LockKeyhole, LogOut, Menu, Plus,
-  RefreshCw, Save, Search, ShieldCheck, Sun, Moon, Trash2, UsersRound, X,
+  RefreshCw, Save, Search, ShieldCheck, Sun, Moon, Trash2, UsersRound, WandSparkles, X,
 } from "lucide-react";
 import {
   ADMIN_PAGE_SIZE, addPhoto, currentSession, deletePhoto, deleteVehicle, getAdminStats,
   listPhotosForVehicles, listVehiclePage,
-  myRole, photoUrl, removeStoredPhotos, saveVehicle, signIn, signOut, updatePhoto, uploadPhoto,
+  myRole, photoUrl, removeStoredPhotos, saveVehicle, setCoverPhoto, signIn, signOut, updatePhoto, uploadPhoto,
   type AdminRole, type AdminStats, type Session, type Vehicle, type VehicleDraft, type VehiclePhoto,
   type VehicleStatus,
 } from "../lib/skinaoAdminApi";
 import "../admin.css";
+import { PhotoEditor } from "../components/admin/PhotoEditor";
+import { adjustedImageStyle, type PhotoAdjustments } from "../lib/skinaoPhotoAdjust";
 
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
 type View = "inventory" | "form" | "team";
@@ -76,6 +78,7 @@ function AdminPanel() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [photos, setPhotos] = useState<VehiclePhoto[]>([]);
+  const [editingPhoto, setEditingPhoto] = useState<VehiclePhoto | null>(null);
   const [adminPage, setAdminPage] = useState(0);
   const [pageTotal, setPageTotal] = useState(0);
   const [adminHasMore, setAdminHasMore] = useState(false);
@@ -171,13 +174,13 @@ function AdminPanel() {
   }
   function createNew() {
     setDraft(emptyDraft()); setFeatureInput(""); setNewPhotos([]);
-    setEditingId(null); setView("form"); setFeedback(null);
+    setEditingId(null); setEditingPhoto(null); setView("form"); setFeedback(null);
     setMenuOpen(false);
   }
   function editItem(vehicle: Vehicle) {
     setDraft(toDraft(vehicle));
     setFeatureInput(vehicle.features.join(", "));
-    setNewPhotos([]); setEditingId(vehicle.id);
+    setNewPhotos([]); setEditingId(vehicle.id); setEditingPhoto(null);
     setView("form"); setFeedback(null); setMenuOpen(false);
   }
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -298,22 +301,30 @@ function AdminPanel() {
   }
   // These photo controls save immediately; the vehicle's text fields still use "Salvar veículo".
   async function setCoverPicture(photo: VehiclePhoto) {
-    if (working) return;
-    const current = orderPhotos(photos, photo.vehicle_id);
-    if (photo.is_cover && current.filter(p => p.is_cover).length === 1) return;
+    if (working || photo.is_cover) return;
     setWorking(true); setFeedback(null);
     try {
-      // Set the replacement first, so a failed upload never leaves the gallery coverless.
-      await updatePhoto(photo.id, { is_cover: true });
-      for (const old of current.filter(p => p.id !== photo.id && p.is_cover)) {
-        await updatePhoto(old.id, { is_cover: false });
-      }
+      // A single transactional RPC satisfies the unique "one cover per vehicle" index.
+      await setCoverPhoto(photo.id);
       await refresh();
-      setFeedback({ text: "Foto de capa atualizada no catálogo." });
+      setFeedback({ text: "Capa alterada com sucesso. A nova imagem já é a principal do catálogo." });
     } catch (e) {
+      setFeedback({ text: e instanceof Error ? e.message : "Não foi possível definir a capa.", error: true });
       await refresh();
-      setFeedback({ text: e instanceof Error ? e.message : "Falha ao alterar a capa.", error: true });
     } finally { setWorking(false); }
+  }
+  async function savePhotoEdits(photo: VehiclePhoto, edits: PhotoAdjustments) {
+    if (working) throw new Error("Aguarde a operação atual antes de ajustar uma foto.");
+    setWorking(true); setFeedback(null);
+    try {
+      await updatePhoto(photo.id, edits);
+      await refresh();
+      setFeedback({ text: "Enquadramento salvo. O catálogo exibirá o ajuste automaticamente." });
+    } catch (e) {
+      throw e instanceof Error ? e : new Error("Erro ao salvar o enquadramento.");
+    } finally {
+      setWorking(false);
+    }
   }
   async function movePicture(photo: VehiclePhoto, direction: -1 | 1) {
     if (working) return;
@@ -344,7 +355,7 @@ function AdminPanel() {
         ? orderPhotos(photos, photo.vehicle_id).find(p => p.id !== photo.id) : undefined;
       // Remove the database reference before the storage file to avoid broken public URLs.
       await deletePhoto(photo.id);
-      if (nextCover) await updatePhoto(nextCover.id, { is_cover: true });
+      if (nextCover) await setCoverPhoto(nextCover.id);
       try { await removeStoredPhotos([photo.storage_path]); } catch {
         // Orphaned storage can be cleaned up later; the public gallery is already consistent.
       }
@@ -455,7 +466,7 @@ function AdminPanel() {
                 searched.length ? searched.map(v => {
                   const first = orderPhotos(photos, v.id)[0];
                   return <div className="ska-vehicle-row" key={v.id}>
-                    <div className="ska-vehicle-thumb">{first ? <img src={photoUrl(first.storage_path, first.external_url)} alt={v.brand+" "+v.model}/> : <CarFront size={27}/>}</div>
+                    <div className="ska-vehicle-thumb">{first ? <img src={photoUrl(first.storage_path, first.external_url)} style={adjustedImageStyle(first)} alt={v.brand+" "+v.model}/> : <CarFront size={27}/>}</div>
                     <div className="ska-vehicle-copy">
                       <strong>{v.brand} {v.model}</strong><small>{v.version} · {v.year} · {v.km.toLocaleString("pt-BR")} km</small>
                       <b>{money(v.price)}</b>
@@ -526,16 +537,18 @@ function AdminPanel() {
               <h2>Fotografias</h2>
               {draft.is_demo && <p className="ska-feedback ska-feedback--demo">Este veículo foi importado como demonstração. Substitua as imagens ilustrativas por fotografias reais antes de convertê-lo em anúncio da loja.</p>}
               <p className="ska-muted">JPG, PNG, WebP ou AVIF, até 8 MB por foto. Ao enviar as primeiras imagens, a primeira será a capa.</p>
-              {editingId && editingPhotos.length > 0 && <p className="ska-muted">Escolha a capa e use as setas para organizar as outras imagens. A capa fica sempre em primeiro lugar. Essas alterações são salvas imediatamente.</p>}
+              {editingId && editingPhotos.length > 0 && <p className="ska-muted">Escolha a capa, arraste ou ajuste o enquadramento e use as setas para organizar as outras imagens. As alterações são salvas imediatamente.</p>}
               {editingId && <div className="ska-photo-grid">
                 {editingPhotos.map((p, index) => {
                   const previous = editingPhotos[index - 1];
                   return <div className={"ska-photo" + (p.is_cover ? " ska-photo--cover" : "")} key={p.id}>
                     <div className="ska-photo-preview">
-                      <img alt={p.alt_text} src={photoUrl(p.storage_path, p.external_url)}/>
+                      <img alt={p.alt_text} src={photoUrl(p.storage_path, p.external_url)} style={adjustedImageStyle(p)}/>
                       {(p.is_cover || p.external_url) && <span>{p.is_cover ? (p.external_url ? "CAPA · ILUSTRATIVA" : "CAPA") : "ILUSTRATIVA"}</span>}
                     </div>
                     <div className="ska-photo-controls">
+                      <button type="button" className="ska-edit-photo-button" disabled={working}
+                        onClick={() => setEditingPhoto(p)}><WandSparkles size={15}/> Ajustar imagem</button>
                       <button type="button" className={"ska-cover-button" + (p.is_cover ? " is-cover" : "")}
                         disabled={working || p.is_cover} aria-pressed={p.is_cover}
                         onClick={() => void setCoverPicture(p)} title={p.is_cover ? "Foto de capa atual" : "Definir como foto de capa"}>
@@ -553,6 +566,8 @@ function AdminPanel() {
                   </div>;
                 })}
               </div>}
+              {editingId && feedback && <div className={"ska-photo-inline-status" + (feedback.error ? " is-error" : "")}
+                role="status">{feedback.text}</div>}
               <label className="ska-upload"><ImagePlus size={26}/><span>Selecionar fotografias</span><small>{newPhotos.length ? newPhotos.length+" foto(s) selecionada(s)" : "Você pode selecionar vários arquivos"}</small>
                 <input type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif"
                   onChange={e => setNewPhotos(Array.from(e.target.files || []))}/></label>
@@ -592,6 +607,10 @@ function AdminPanel() {
           </>}
         </main>
       </div>
+      {editingPhoto && <PhotoEditor key={editingPhoto.id} photo={editingPhoto}
+        imageUrl={photoUrl(editingPhoto.storage_path, editingPhoto.external_url)}
+        onClose={() => setEditingPhoto(null)}
+        onSave={edits => savePhotoEdits(editingPhoto, edits)}/>}
       {pendingUnpublish && <div className="ska-confirm-overlay"
         onMouseDown={event => { if (event.target === event.currentTarget) setPendingUnpublish(null); }}>
         <div className="ska-confirm-dialog" ref={confirmDialogRef} role="alertdialog" aria-modal="true"
