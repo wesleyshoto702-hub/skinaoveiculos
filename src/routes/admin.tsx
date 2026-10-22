@@ -3,7 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowLeft, ArrowRight, Camera, CarFront, Check, ChevronDown, CircleAlert,
   ClipboardList, Edit3, ImagePlus, LockKeyhole, LogOut, Menu, Plus,
-  RefreshCw, Save, Search, ShieldCheck, Trash2, UsersRound, X,
+  RefreshCw, Save, Search, ShieldCheck, Sun, Moon, Trash2, UsersRound, X,
 } from "lucide-react";
 import {
   addPhoto, currentSession, deletePhoto, deleteVehicle, listPhotos, listVehicles,
@@ -16,6 +16,19 @@ import "../admin.css";
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
 type View = "inventory" | "form" | "team";
 type Status = { text: string; error?: boolean };
+type AdminTheme = "dark" | "light";
+const THEME_STORAGE_KEY = "skinao-admin-theme";
+
+function ThemeToggle({ theme, onToggle }: { theme: AdminTheme; onToggle: () => void }) {
+  const nextTheme = theme === "dark" ? "claro" : "escuro";
+  return (
+    <button type="button" className="ska-theme-toggle" onClick={onToggle}
+      title={`Ativar tema ${nextTheme}`} aria-label={`Ativar tema ${nextTheme}`}>
+      {theme === "dark" ? <Sun size={18} aria-hidden="true"/> : <Moon size={18} aria-hidden="true"/>}
+      <span>Tema {nextTheme}</span>
+    </button>
+  );
+}
 const money = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 const statusLabel: Record<VehicleStatus, string> = {
   available: "Disponível", reserved: "Reservado", sold: "Vendido",
@@ -37,6 +50,19 @@ const orderPhotos = (photos: VehiclePhoto[], vehicleId: string) =>
     Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order);
 
 function AdminPanel() {
+  // Initial render matches SSR; restore preference after hydration without changing the public site.
+  const [adminTheme, setAdminTheme] = useState<AdminTheme>("dark");
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
+      if (saved === "light" || saved === "dark") setAdminTheme(saved);
+    } catch { /* Private browsing may block storage; keep the default theme. */ }
+  }, []);
+  function toggleAdminTheme() {
+    const next: AdminTheme = adminTheme === "dark" ? "light" : "dark";
+    setAdminTheme(next);
+    try { window.localStorage.setItem(THEME_STORAGE_KEY, next); } catch { /* Theme still works for this visit. */ }
+  }
   const [checking, setChecking] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AdminRole | null>(null);
@@ -267,13 +293,14 @@ function AdminPanel() {
   const searched = vehicles.filter(v =>
     (v.brand + " " + v.model + " " + v.version).toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR")));
 
-  if (checking) return <main className="ska ska-centered"><span className="ska-spinner"/> Validando sua sessão...</main>;
+  if (checking) return <main className="ska ska-centered" data-ska-theme={adminTheme}><span className="ska-spinner"/> Validando sua sessão...</main>;
   if (!session || !role) return (
-    <main className="ska ska-login-page">
+    <main className="ska ska-login-page" data-ska-theme={adminTheme}>
       <a className="ska-back-link" href="/"><ArrowLeft size={17}/> Voltar ao site</a>
+      <ThemeToggle theme={adminTheme} onToggle={toggleAdminTheme}/>
       <div className="ska-login-card">
         <div className="ska-login-icon"><LockKeyhole size={29}/></div>
-        <span className="ska-eyebrow">ACESSO RESTRITO · SKINÃO VEÍCULOS</span>
+        <span className="ska-eyebrow">SKINÃO VEÍCULOS</span>
         <h1>SEU ESTOQUE.<br/><em>SOB CONTROLE.</em></h1>
         <p>Entre com a conta autorizada para gerenciar os veículos da loja.</p>
         <form onSubmit={logIn} className="ska-form">
@@ -286,13 +313,12 @@ function AdminPanel() {
             {authBusy ? "Verificando..." : "Entrar no painel"} <ArrowRight size={18}/>
           </button>
         </form>
-        <div className="ska-auth-footer"><ShieldCheck size={17}/> Acesso protegido por autenticação e permissões do Supabase.</div>
       </div>
     </main>
   );
 
   return (
-    <div className="ska ska-dashboard">
+    <div className="ska ska-dashboard" data-ska-theme={adminTheme}>
       <aside className={"ska-sidebar" + (menuOpen ? " ska-sidebar--open" : "")}>
         <div className="ska-sidebar-head">
           <span className="ska-brand">SKINÃO <strong>VEÍCULOS</strong></span>
@@ -314,7 +340,10 @@ function AdminPanel() {
         <header className="ska-topbar">
           <button type="button" className="ska-mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Menu size={23}/></button>
           <span>SKINÃO <strong>ADMIN</strong></span>
-          <div className="ska-session-badge"><span className="ska-online-dot"/><span>{session.user.email ?? "Administrador"}</span><b>{role === "owner" ? "PROPRIETÁRIO" : "EQUIPE"}</b></div>
+          <div className="ska-topbar-actions">
+            <ThemeToggle theme={adminTheme} onToggle={toggleAdminTheme}/>
+            <div className="ska-session-badge"><span className="ska-online-dot"/><span>{session.user.email ?? "Administrador"}</span><b>{role === "owner" ? "PROPRIETÁRIO" : "EQUIPE"}</b></div>
+          </div>
         </header>
         <main className="ska-content">
           {feedback && <div className={"ska-feedback" + (feedback.error ? " ska-feedback--error" : "")} role="status">
