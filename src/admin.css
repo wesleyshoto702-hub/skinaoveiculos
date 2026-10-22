@@ -1,0 +1,196 @@
+/* Skinão Administration — independent premium dashboard design. */
+.ska { --ska-bg:#090b0f; --ska-panel:#13161d; --ska-panel-2:#1a1e26; --ska-border:#292e38;
+  --ska-text:#f5f5f6; --ska-muted:#989eac; --ska-red:#e5324d; --ska-red-dark:#ac2039;
+  color:var(--ska-text); background:var(--ska-bg); font-family:"DM Sans",system-ui,sans-serif;
+  min-height:100vh; font-size:14px; line-height:1.5; }
+.ska * { box-sizing:border-box; }
+.ska button,.ska input,.ska textarea,.ska select { font:inherit; }
+.ska button { cursor:pointer; }
+.ska button:disabled { opacity:.55; cursor:not-allowed; }
+.ska a { color:inherit; text-decoration:none; }
+.ska em { font-style:normal; color:var(--ska-red); }
+.ska-centered { display:flex; align-items:center; justify-content:center; gap:16px; min-height:100vh; }
+.ska-spinner { width:22px; height:22px; border:2px solid #3b414b; border-top-color:var(--ska-red);
+  border-radius:50%; animation:ska-turn .9s linear infinite; }
+@keyframes ska-turn { to { transform:rotate(360deg); } }
+.ska-login-page { display:flex; align-items:center; justify-content:center; padding:72px 20px; overflow:hidden;
+  background: radial-gradient(ellipse at 50% -10%,rgba(188,22,48,.25),transparent 55%),#08090c; }
+.ska-back-link { position:absolute; top:30px; left:clamp(18px,5vw,72px); display:flex; align-items:center; gap:10px;
+  color:#c0c3cc!important; transition:color .2s; }
+.ska-back-link:hover { color:#fff!important; }
+.ska-login-card { width:min(100%,460px); background:linear-gradient(145deg,#171a21,#0f1116);
+  border:1px solid #333641; padding:clamp(26px,4.2vw,44px); border-radius:18px; box-shadow:0 32px 88px #0007; }
+.ska-login-icon { width:64px; height:64px; background:rgba(231,45,72,.12); border:1px solid #a53549;
+  color:var(--ska-red); display:grid; place-items:center; border-radius:16px; margin-bottom:25px; }
+.ska-eyebrow { color:var(--ska-red); letter-spacing:.21em; font-size:11px; font-weight:800; text-transform:uppercase; }
+.ska-login-card h1,.ska-section-header h1 { font:800 clamp(29px,3.1vw,42px)/1.03 "Barlow Condensed",sans-serif;
+  letter-spacing:.018em; text-transform:uppercase; margin:10px 0 14px; }
+.ska-login-card h1 { font-size:clamp(36px,6vw,50px); }
+.ska-login-card h1 em,.ska-section-header h1 em { color:var(--ska-red); }
+.ska-login-card>p { color:var(--ska-muted); margin-bottom:28px; }
+.ska-form { display:flex; flex-direction:column; gap:20px; }
+.ska-form label,.ska-edit-form label { display:flex; flex-direction:column; gap:8px; color:#c6cbd5;
+  font-size:12px; font-weight:700; }
+.ska-form input,.ska-edit-form input:not([type=checkbox]):not([type=file]),
+.ska-edit-form select,.ska-edit-form textarea,.ska-search input { width:100%; min-height:46px;
+  outline:none; border:1px solid #343844; border-radius:9px; background:#0b0e13;
+  color:#f4f5f7; padding:11px 13px; transition:border-color .2s,box-shadow .2s; }
+.ska-form input:focus,.ska-edit-form input:focus,.ska-edit-form select:focus,.ska-edit-form textarea:focus,.ska-search input:focus
+ { border-color:var(--ska-red); box-shadow:0 0 0 3px #e5324d24; }
+.ska-edit-form textarea { resize:vertical; min-height:100px; }
+.ska-button { display:inline-flex; gap:11px; align-items:center; justify-content:center; border-radius:9px;
+  min-height:44px; padding:12px 19px; font-size:13px; letter-spacing:.025em; font-weight:800;
+  transition:background .2s,transform .2s,border-color .2s; border:1px solid transparent; white-space:nowrap; }
+.ska-button:not(:disabled):hover { transform:translateY(-1px); }
+.ska-button--red { color:white; background:linear-gradient(125deg,var(--ska-red),#b71b34); border-color:#f04962; }
+.ska-button--red:hover { background:linear-gradient(125deg,#f14863,#c92740); }
+.ska-button--outline { color:#f7f7fa; border-color:#353945; background:#171b21; }
+.ska-button--outline:hover { border-color:#a44556; }
+.ska-auth-footer { display:flex; align-items:center; gap:9px; border-top:1px solid #32343e;
+  color:#9199a7; padding-top:25px; margin-top:25px; font-size:12px; }
+.ska-dashboard { display:flex; align-items:stretch; }
+.ska-sidebar { width:260px; min-height:100vh; position:sticky; top:0; height:100vh; flex-shrink:0;
+  background:#111318; border-right:1px solid #2a2e36; display:flex; flex-direction:column; padding:29px 17px 19px; }
+.ska-sidebar-head { padding:4px 15px 38px; position:relative; display:flex; flex-direction:column; gap:5px; }
+.ska-brand { font:800 25px "Barlow Condensed",sans-serif; letter-spacing:.04em; }
+.ska-brand strong { color:var(--ska-red); }
+.ska-sidebar-head small { color:#9297a1; font-size:9px; font-weight:700; letter-spacing:.17em; }
+.ska-nav { display:flex; flex-direction:column; gap:6px; }
+.ska-nav button,.ska-sidebar-footer a,.ska-sidebar-footer button { display:flex; align-items:center; gap:13px;
+  width:100%; padding:14px 16px; text-align:left; border:1px solid transparent; background:transparent; color:#a6abb6;
+  border-radius:9px; font-weight:650; }
+.ska-nav button:hover,.ska-nav button.is-active { color:#fff; background:#e6334c18; border-color:#b52a434b; }
+.ska-nav button.is-active svg { color:#f24a62; }
+.ska-sidebar-footer { display:flex; flex-direction:column; margin-top:auto; border-top:1px solid #2a2e36; padding-top:15px; }
+.ska-sidebar-footer a:hover,.ska-sidebar-footer button:hover { color:white; background:#20232a; }
+.ska-main { flex:1; min-width:0; }
+.ska-topbar { min-height:76px; padding:17px clamp(22px,4vw,60px); display:flex; align-items:center; justify-content:space-between;
+  border-bottom:1px solid #242830; background:#101217; }
+.ska-topbar>span { font:800 20px "Barlow Condensed",sans-serif; letter-spacing:.05em; }
+.ska-topbar>span strong { color:var(--ska-red); }
+.ska-session-badge { display:flex; align-items:center; gap:9px; font-size:12px; color:#c8cbd1; }
+.ska-session-badge b { background:#252a31; color:#c1c6d0; font-size:9px; letter-spacing:.07em;
+  padding:6px 9px; border-radius:6px; }
+.ska-online-dot { display:block; width:7px; height:7px; background:#52d5a0; border-radius:50%; box-shadow:0 0 0 3px #52d5a018; }
+.ska-content { max-width:1480px; padding:clamp(25px,4vw,58px); margin:0 auto; }
+.ska-section-header { display:flex; align-items:end; justify-content:space-between; gap:20px; margin-bottom:28px; }
+.ska-section-header h1 { margin:8px 0; }
+.ska-section-header p { color:var(--ska-muted); margin:8px 0 0; }
+.ska-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:15px; margin-bottom:38px; }
+.ska-stat { background:var(--ska-panel); border:1px solid var(--ska-border);
+  border-radius:12px; padding:21px; min-height:118px; display:flex; flex-direction:column; justify-content:space-between; }
+.ska-stat span { color:#abb0bb; display:flex; align-items:center; gap:10px; font-size:12px; font-weight:650; }
+.ska-stat svg { color:#d54359; }
+.ska-stat strong { font:800 38px "Barlow Condensed",sans-serif; line-height:1; }
+.ska-section-title { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:15px; }
+.ska-section-title h2,.ska-edit-form h2,.ska-team-card h2 { font-size:19px; font-weight:800; margin:0; }
+.ska-section-title button { border:0; background:transparent; display:flex; align-items:center; gap:8px;
+  color:#adb3bd; font-size:13px; }
+.ska-section-title button:hover { color:white; }
+.ska-search { display:flex; align-items:center; gap:12px; color:#9299a5; margin-bottom:16px;
+  border:1px solid #313641; background:#12151b; padding:0 15px; border-radius:10px; }
+.ska-search input { border:0; background:transparent; box-shadow:none!important; }
+.ska-inventory { border-radius:12px; border:1px solid var(--ska-border); overflow:hidden; background:var(--ska-panel); }
+.ska-vehicle-row { display:flex; align-items:center; padding:16px 19px; gap:18px; border-bottom:1px solid var(--ska-border); }
+.ska-vehicle-row:last-child { border-bottom:0; }
+.ska-vehicle-thumb { width:102px; height:75px; display:flex; align-items:center; justify-content:center; color:#88929f;
+  background:#20242b; border-radius:8px; overflow:hidden; flex-shrink:0; }
+.ska-vehicle-thumb img { width:100%;height:100%;object-fit:cover; }
+.ska-vehicle-copy { display:flex; flex:1; flex-direction:column; gap:3px; min-width:0; }
+.ska-vehicle-copy strong { font-size:15px; color:#f4f5f6; }
+.ska-vehicle-copy small { font-size:11px; color:#a6acb8; }
+.ska-vehicle-copy b { font-size:14px; color:white; }
+.ska-vehicle-state { display:flex; flex-direction:column; align-items:center; gap:8px; width:107px; flex-shrink:0; }
+.ska-vehicle-state small { color:var(--ska-muted); font-size:11px; }
+.ska-status { font-size:10px; font-weight:800; border-radius:20px; padding:5px 10px; letter-spacing:.025em; white-space:nowrap; }
+.ska-status--available { background:#154234; color:#8bdfb9; }
+.ska-status--reserved { background:#443414; color:#f1d086; }
+.ska-status--sold { background:#3c2a33; color:#d9a4b5; }
+.ska-actions { display:flex; align-items:center; flex-wrap:wrap; gap:7px; justify-content:flex-end; }
+.ska-actions button { display:grid; place-items:center; border:1px solid #3c424e; background:#222730;
+  min-height:36px; min-width:36px; padding:8px 10px; border-radius:7px; color:#dce0e8; font-size:11px; font-weight:750; }
+.ska-actions button:hover { color:white; border-color:#a14559; background:#3a2330; }
+.ska-actions button:last-child:hover { color:#ff7889; }
+.ska-empty { padding:60px 20px; min-height:225px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; gap:10px; color:#a3a9b6; }
+.ska-empty h3 { color:#f4f5f6; margin:6px 0 0; font-size:18px; }
+.ska-empty p { max-width:320px; }
+.ska-edit-form { background:var(--ska-panel); border:1px solid var(--ska-border);
+  border-radius:13px; max-width:980px; padding:clamp(21px,3vw,34px); display:flex; flex-direction:column; gap:22px; }
+.ska-field-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }
+.ska-edit-form h2 { font-size:20px; }
+.ska-edit-form select { appearance:auto; }
+.ska-muted { color:var(--ska-muted); margin:0; font-size:12px; }
+.ska-divider { border-bottom:1px solid #2c313a; margin:4px 0; }
+.ska-upload { min-height:145px; display:flex!important; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; gap:7px!important; background:#1a1d24; border:1px dashed #65636d; border-radius:10px;
+  position:relative; color:#d5d7de!important; cursor:pointer; }
+.ska-upload:hover { border-color:#dd3d58; background:#221f28; }
+.ska-upload svg { color:#e44960; }
+.ska-upload input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; }
+.ska-upload small { color:#9ca3af; }
+.ska-photo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px; }
+.ska-photo { height:120px; overflow:hidden; position:relative; background:#1b1c22; border:1px solid #363a44; border-radius:9px; }
+.ska-photo img { height:100%; width:100%; object-fit:cover; }
+.ska-photo>span { position:absolute; left:6px; bottom:6px; background:#c32745; padding:3px 8px;
+  color:white; border-radius:4px; font-size:10px; }
+.ska-photo button { position:absolute; right:5px;top:5px; width:29px;height:29px;display:grid;place-items:center;
+  border:0; background:#15161de0;color:#fafafa;border-radius:6px; }
+.ska-toggle { flex-direction:row!important; align-items:center; flex-wrap:wrap;gap:9px!important; }
+.ska-toggle input { width:17px; height:17px; accent-color:var(--ska-red); }
+.ska-toggle span { color:white; }
+.ska-toggle small { flex-basis:100%; margin-left:26px; color:#949cab; font-size:11px; }
+.ska-form-footer { display:flex; justify-content:flex-end; gap:12px; margin-top:8px; }
+.ska-feedback { display:flex; align-items:center; gap:11px; width:100%; background:#102b25;
+  color:#a8edce; border:1px solid #2b765e; padding:13px 17px; border-radius:10px; margin-bottom:22px;
+  font-size:12px; overflow-wrap:anywhere; }
+.ska-feedback--error { background:#321920;color:#ffb2bd;border-color:#984055; }
+.ska-feedback button { margin-left:auto; background:transparent; border:0; color:inherit; }
+.ska-team-card { max-width:700px; background:#161b21; border:1px solid #303641; border-radius:13px;
+  padding:25px; display:flex; align-items:center; gap:22px; margin:25px 0; }
+.ska-team-card p { color:#b2b8c3; margin:8px 0 15px; }
+.ska-team-icon { width:65px;height:65px;display:grid;place-items:center;flex-shrink:0;border-radius:14px;
+  background:#2e2331; color:#e6445c; }
+.ska-info { max-width:700px; border:1px solid #404452; background:#1a1d24; padding:25px;
+  border-radius:13px; color:#aab0bb; }
+.ska-info h3 { color:#f1f1f4; margin:0 0 9px; }
+.ska-info p { line-height:1.7; }
+.ska-mobile-menu,.ska-mobile-close,.ska-menu-backdrop { display:none; }
+@media (max-width:1100px) {
+  .ska-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .ska-field-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .ska-vehicle-state { width:88px; }
+}
+@media (max-width:790px) {
+  .ska-sidebar { position:fixed;left:0;top:0;bottom:0;z-index:101;width:min(82vw,280px);
+    transform:translateX(-102%);transition:transform .2s ease; }
+  .ska-sidebar--open { transform:translateX(0); }
+  .ska-mobile-close { display:block; position:absolute;right:0;top:0;background:transparent;border:0;color:white; }
+  .ska-menu-backdrop { display:block;position:fixed;inset:0;background:#000a;z-index:100;border:0; }
+  .ska-mobile-menu { display:grid;place-items:center;border:0;background:transparent;color:white; }
+  .ska-topbar { min-height:70px; }
+  .ska-session-badge b { display:none; }
+  .ska-section-header { align-items:flex-start; }
+}
+@media (max-width:570px) {
+  .ska-content { padding:22px 15px; }
+  .ska-section-header { flex-direction:column;align-items:flex-start;gap:15px; }
+  .ska-section-header h1 { font-size:32px; }
+  .ska-stats { gap:9px; }
+  .ska-stat { padding:15px;min-height:99px; }
+  .ska-stat strong { font-size:32px; }
+  .ska-stat span { font-size:11px;gap:7px; }
+  .ska-vehicle-row { padding:13px; flex-wrap:wrap; gap:11px; }
+  .ska-vehicle-thumb { width:72px;height:63px; }
+  .ska-vehicle-copy { flex:1; }
+  .ska-vehicle-state { width:auto; align-items:flex-start;margin-left:83px; }
+  .ska-actions { flex:1; }
+  .ska-field-grid { grid-template-columns:1fr; }
+  .ska-edit-form { gap:19px; }
+  .ska-session-badge>span:not(.ska-online-dot) { font-size:10px; max-width:130px;overflow:hidden;text-overflow:ellipsis; }
+  .ska-form-footer { flex-direction:column-reverse; }
+  .ska-form-footer .ska-button { width:100%; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .ska * { scroll-behavior:auto!important;animation:none!important;transition:none!important; }
+}
