@@ -4,6 +4,7 @@ import { LoadingScreen } from "../components/LoadingScreen";
 import { HeroBackdropCars } from "../components/HeroBackdropCars";
 import { BusinessHours } from "../components/BusinessHours";
 import { formatBrazilAmount, formatBrazilWhatsApp } from "../lib/formInputMasks";
+import { loadPublicVehicles } from "../lib/skinaoPublicCatalog";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { ChevronLeft, ChevronRight, Instagram, Menu, MessageCircle, Search, X } from "lucide-react";
 import logoAsset from "../assets/skinao-logo.png.asset.json";
@@ -11,7 +12,8 @@ import logoAsset from "../assets/skinao-logo.png.asset.json";
 export const Route = createFileRoute("/")({ component: Home });
 
 type Vehicle = {
-  id: number;
+  id: number | string;
+  isFeatured?: boolean;
   brand: string;
   model: string;
   version: string;
@@ -31,7 +33,7 @@ type Vehicle = {
 const image = (id: string, width = 900) =>
   "https://images.unsplash.com/" + id + "?auto=format&fit=crop&w=" + width + "&q=82";
 
-const vehicles: Vehicle[] = [
+const demoVehicles: Vehicle[] = [
   {
     id: 1, brand: "Volkswagen", model: "Polo", version: "1.0 TSI Comfortline",
     year: "2023", km: 28600, transmission: "Automático", fuel: "Flex",
@@ -375,6 +377,16 @@ function HeroScroll({ onSceneReady }: { onSceneReady: () => void }) {
 
 function Home() {
   const [showLoading, setShowLoading] = useState(true);
+  const [liveVehicles, setLiveVehicles] = useState<Vehicle[] | null>(null);
+  // The existing demo remains visible until at least one real advertisement is published.
+  useEffect(() => {
+    let mounted = true;
+    loadPublicVehicles().then(items => {
+      if (mounted && items.length) setLiveVehicles(items);
+    }).catch(error => console.warn("Não foi possível carregar o catálogo Skinão:", error));
+    return () => { mounted = false; };
+  }, []);
+  const vehicles = liveVehicles ?? demoVehicles;
   const [heroReady, setHeroReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerVisible, setHeaderVisible] = useState(false);
@@ -448,7 +460,7 @@ function Home() {
       (!brand || vehicle.brand === brand) && (!type || vehicle.type === type) &&
       (!transmission || vehicle.transmission === transmission) &&
       (!maxPrice || vehicle.price <= Number(maxPrice));
-  }).sort((a,b) => order==="low" ? a.price-b.price : order==="high" ? b.price-a.price : order==="new" ? Number(b.year)-Number(a.year) : a.id-b.id);
+  }).sort((a,b) => order==="low" ? a.price-b.price : order==="high" ? b.price-a.price : order==="new" ? Number(b.year)-Number(a.year) : (Number(Boolean(b.isFeatured)) - Number(Boolean(a.isFeatured))) || String(a.id).localeCompare(String(b.id)));
   const resetFilters = () => { setQuery(""); setBrand(""); setType(""); setTransmission(""); setMaxPrice(""); setOrder("featured"); };
 
   const sendFinance = (event: FormEvent<HTMLFormElement>) => {
@@ -486,9 +498,9 @@ function Home() {
 
         <section className="stock-section section-pad" id="estoque">
           <div className="container">
-            <div className="stock-heading-row"><SectionTitle eyebrow="CATÁLOGO DEMONSTRATIVO" title="CONHEÇA OS" accent="MODELOS." description="Explore os exemplos, compare informações e escolha o que deseja consultar com a loja."/>
+            <div className="stock-heading-row"><SectionTitle eyebrow={liveVehicles ? "ESTOQUE SKINÃO" : "CATÁLOGO DEMONSTRATIVO"} title={liveVehicles ? "NOSSO" : "CONHEÇA OS"} accent={liveVehicles ? "ESTOQUE." : "MODELOS."} description={liveVehicles ? "Veja nossos veículos e fale com a equipe Skinão para confirmar os detalhes." : "Explore os exemplos, compare informações e escolha o que deseja consultar com a loja."}/>
             </div>
-            <div className="demo-notice"><p><strong>Catálogo de demonstração.</strong> As fotos, modelos, especificações e os preços abaixo são ilustrativos; não representam veículos disponíveis. Confirme o estoque atual diretamente com a Skinão.</p></div>
+            {!liveVehicles && <div className="demo-notice"><p><strong>Catálogo de demonstração.</strong> As fotos, modelos, especificações e os preços abaixo são ilustrativos; não representam veículos disponíveis. Confirme o estoque atual diretamente com a Skinão.</p></div>}
             <div className="stock-filters" role="search" aria-label="Buscar veículos">
               <label className="search-field"><Search size={19}/><input aria-label="Buscar por modelo ou marca" placeholder="Qual carro você procura?" value={query} onChange={event=>setQuery(event.target.value)}/></label>
               <label className="select-field"><span className="sr-only">Marca</span><select aria-label="Filtrar por marca" value={brand} onChange={event=>setBrand(event.target.value)}><option value="">Todas as marcas</option>{Array.from(new Set(vehicles.map(v=>v.brand))).sort().map(b=><option key={b} value={b}>{b}</option>)}</select></label>
@@ -525,7 +537,7 @@ function Home() {
             <form className="finance-form" onSubmit={sendFinance}><span className="form-kicker">CONSULTA PELO WHATSAPP</span><h3>CONTE O QUE PROCURA.</h3><p>Ao continuar, você poderá revisar a mensagem no WhatsApp antes de enviar.</p>
               <label>SEU NOME <input required maxLength={100} value={finance.name} placeholder="Como podemos te chamar?" onChange={e=>setFinance({...finance,name:e.target.value})}/></label>
               <label>WHATSAPP COM DDD <input required type="tel" inputMode="tel" minLength={15} maxLength={15} pattern="[(][0-9]{2}[)] [0-9]{5}-[0-9]{4}" title="Informe DDD e celular com 9 dígitos" autoComplete="tel-national" value={finance.phone} placeholder="(35) 99999-9999" onChange={e=>setFinance({...finance,phone:formatBrazilWhatsApp(e.target.value)})}/></label>
-              <label>VEÍCULO DE INTERESSE <select value={finance.model} onChange={e=>setFinance({...finance,model:e.target.value})}><option value="">Ainda estou escolhendo</option>{vehicles.map(v=><option key={v.id} value={v.brand+" "+v.model}>{v.brand} {v.model} (exemplo)</option>)}</select></label>
+              <label>VEÍCULO DE INTERESSE <select value={finance.model} onChange={e=>setFinance({...finance,model:e.target.value})}><option value="">Ainda estou escolhendo</option>{vehicles.map(v=><option key={v.id} value={v.brand+" "+v.model}>{v.brand} {v.model}{liveVehicles ? "" : " (exemplo)"}</option>)}</select></label>
               <label>ENTRADA PRETENDIDA
                 <span className="finance-entry-control">
                   <span className="finance-entry-prefix" aria-hidden="true">R$</span>
@@ -584,7 +596,7 @@ function Home() {
         </section>
       </main>
 
-      <footer className="site-footer"><div className="container footer-top"><Brand compact/><div><p>VEÍCULOS MULTIMARCAS<br/>LAVRAS · MINAS GERAIS</p></div><a href="#inicio" className="back-top" aria-label="Voltar ao início">VOLTAR AO INÍCIO</a></div><div className="container footer-bottom"><span>© {new Date().getFullYear()} SKINÃO VEÍCULOS. TODOS OS DIREITOS RESERVADOS.</span><span>CATÁLOGO ILUSTRATIVO · CONSULTAR DISPONIBILIDADE</span><a href={instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Skinão Veículos"><Instagram size={18}/></a></div></footer>
+      <footer className="site-footer"><div className="container footer-top"><Brand compact/><div><p>VEÍCULOS MULTIMARCAS<br/>LAVRAS · MINAS GERAIS</p></div><a href="#inicio" className="back-top" aria-label="Voltar ao início">VOLTAR AO INÍCIO</a></div><div className="container footer-bottom"><span>© {new Date().getFullYear()} SKINÃO VEÍCULOS. TODOS OS DIREITOS RESERVADOS.</span><span>{liveVehicles ? "ESTOQUE SUJEITO À DISPONIBILIDADE" : "CATÁLOGO ILUSTRATIVO · CONSULTAR DISPONIBILIDADE"}</span><a href={instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Skinão Veículos"><Instagram size={18}/></a></div></footer>
       {selected && <VehicleModal key={selected.id} vehicle={selected} onClose={closeDetails}/>}
       </div>
     </>
