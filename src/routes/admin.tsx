@@ -25,11 +25,11 @@ function emptyDraft(): VehicleDraft {
     brand: "", model: "", version: "", year: new Date().getFullYear(), km: 0,
     transmission: "Manual", fuel: "Flex", type: "Hatch", color: "",
     price: 0, description: "", features: [], badge: null, status: "available",
-    is_published: false, is_featured: false,
+    is_published: false, is_featured: false, is_demo: false,
   };
 }
 function toDraft(v: Vehicle): VehicleDraft {
-  const { id: _id, created_at: _created, updated_at: _updated, ...data } = v;
+  const { id: _id, created_at: _created, updated_at: _updated, demo_source_id: _source, ...data } = v;
   return data;
 }
 const orderPhotos = (photos: VehiclePhoto[], vehicleId: string) =>
@@ -127,7 +127,17 @@ function AdminPanel() {
       setFeedback({ text: "Preencha marca, modelo e preço válido.", error: true });
       return;
     }
-    const existingPhotos = editingId ? orderPhotos(photos, editingId).length : 0;
+    const existingVehiclePhotos = editingId ? orderPhotos(photos, editingId) : [];
+    const existingPhotos = existingVehiclePhotos.length;
+    const wasDemo = vehicles.find(v => v.id === editingId)?.is_demo ?? false;
+    if (wasDemo && !draft.is_demo && existingVehiclePhotos.some(p => Boolean(p.external_url))) {
+      setFeedback({ text: "Antes de converter este exemplo, exclua as fotos ilustrativas e adicione fotos reais.", error: true });
+      return;
+    }
+    if (wasDemo && !draft.is_demo && !existingPhotos && !newPhotos.length) {
+      setFeedback({ text: "Adicione fotos reais antes de converter este exemplo.", error: true });
+      return;
+    }
     if (draft.is_published && !existingPhotos && !newPhotos.length) {
       setFeedback({ text: "Inclua uma fotografia antes de publicar o anúncio.", error: true });
       return;
@@ -204,6 +214,7 @@ function AdminPanel() {
   const published = vehicles.filter(v => v.is_published && v.status !== "sold").length;
   const reserved = vehicles.filter(v => v.status === "reserved").length;
   const sold = vehicles.filter(v => v.status === "sold").length;
+  const demoCount = vehicles.filter(v => v.is_demo).length;
   const searched = vehicles.filter(v =>
     (v.brand + " " + v.model + " " + v.version).toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR")));
 
@@ -264,7 +275,7 @@ function AdminPanel() {
           {view === "inventory" && <>
             <div className="ska-section-header">
               <div><span className="ska-eyebrow">VISÃO GERAL</span><h1>GESTÃO DE <em>ESTOQUE.</em></h1>
-                <p>Cadastre, atualize e publique veículos em poucos cliques.</p></div>
+                <p>Cadastre, atualize e publique veículos em poucos cliques. {demoCount ? demoCount + " modelos ilustrativos importados do site." : ""}</p></div>
               <button className="ska-button ska-button--red" type="button" onClick={createNew}><Plus size={18}/> Adicionar veículo</button>
             </div>
             <div className="ska-stats">
@@ -284,10 +295,11 @@ function AdminPanel() {
                 searched.length ? searched.map(v => {
                   const first = orderPhotos(photos, v.id)[0];
                   return <div className="ska-vehicle-row" key={v.id}>
-                    <div className="ska-vehicle-thumb">{first ? <img src={photoUrl(first.storage_path)} alt={v.brand+" "+v.model}/> : <CarFront size={27}/>}</div>
+                    <div className="ska-vehicle-thumb">{first ? <img src={photoUrl(first.storage_path, first.external_url)} alt={v.brand+" "+v.model}/> : <CarFront size={27}/>}</div>
                     <div className="ska-vehicle-copy">
                       <strong>{v.brand} {v.model}</strong><small>{v.version} · {v.year} · {v.km.toLocaleString("pt-BR")} km</small>
                       <b>{money(v.price)}</b>
+                      {v.is_demo && <span className="ska-status ska-status--demo">EXEMPLO DO SITE</span>}
                     </div>
                     <div className="ska-vehicle-state"><span className={"ska-status ska-status--"+v.status}>{statusLabel[v.status]}</span>
                       <small>{v.is_published ? "Publicado" : "Rascunho"}</small>
@@ -343,11 +355,13 @@ function AdminPanel() {
               <label>Opcionais (separe por vírgulas)<input value={featureInput} onChange={e => setFeatureInput(e.target.value)} placeholder="Ar-condicionado, Direção elétrica, Airbags"/></label>
               <div className="ska-divider"/>
               <h2>Fotografias</h2>
+              {draft.is_demo && <p className="ska-feedback ska-feedback--demo">Este veículo foi importado como demonstração. Substitua as imagens ilustrativas por fotografias reais antes de convertê-lo em anúncio da loja.</p>}
               <p className="ska-muted">Formatos JPG, PNG, WebP e AVIF. Até 8 MB por foto. A primeira imagem será a capa.</p>
               {editingId && <div className="ska-photo-grid">
                 {orderPhotos(photos, editingId).map(p => <div className="ska-photo" key={p.id}>
-                  <img alt={p.alt_text} src={photoUrl(p.storage_path)}/>
-                  {p.is_cover && <span>CAPA</span>}
+                  <img alt={p.alt_text} src={photoUrl(p.storage_path, p.external_url)}/>
+                  {p.is_cover && <span>{p.external_url ? "CAPA · ILUSTRATIVA" : "CAPA"}</span>}
+                  {!p.is_cover && p.external_url && <span>ILUSTRATIVA</span>}
                   <button type="button" disabled={working} onClick={() => void removePicture(p)} aria-label="Excluir imagem"><Trash2 size={16}/></button>
                 </div>)}
               </div>}
@@ -356,6 +370,14 @@ function AdminPanel() {
                   onChange={e => setNewPhotos(Array.from(e.target.files || []))}/></label>
               <div className="ska-divider"/>
               <h2>Publicação</h2>
+              {editingId && vehicles.find(v => v.id === editingId)?.is_demo && (
+                <label className="ska-toggle">
+                  <input type="checkbox" checked={!draft.is_demo}
+                    onChange={e => setDraft(d => ({ ...d, is_demo: !e.target.checked }))}/>
+                  <span>Converter este exemplo em veículo real da loja</span>
+                  <small>Confira os dados, exclua as fotos ilustrativas e envie fotos reais antes de converter.</small>
+                </label>
+              )}
               <label className="ska-toggle"><input type="checkbox" checked={draft.is_published}
                 onChange={e => setDraft(d => ({ ...d, is_published:e.target.checked }))}/>
                 <span>Publicar anúncio no site</span><small>Desmarcado, o veículo permanece como rascunho.</small>

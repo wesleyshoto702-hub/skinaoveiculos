@@ -194,3 +194,7 @@
 @media (prefers-reduced-motion:reduce) {
   .ska * { scroll-behavior:auto!important;animation:none!important;transition:none!important; }
 }
+
+/* Catalog imports are demonstrative until a staff member verifies the real stock. */
+.ska-status--demo { background:#253b57; color:#afd4ff; padding:4px 8px; font-size:9px; letter-spacing:.04em; align-self:flex-start; }
+.ska-feedback--demo { background:#182c45; border-color:#345f91; color:#c6dfff; margin-bottom:0; }

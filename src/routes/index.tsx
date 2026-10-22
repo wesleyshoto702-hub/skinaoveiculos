@@ -14,6 +14,7 @@ export const Route = createFileRoute("/")({ component: Home });
 type Vehicle = {
   id: number | string;
   isFeatured?: boolean;
+  isDemo?: boolean;
   brand: string;
   model: string;
   version: string;
@@ -82,7 +83,7 @@ const demoVehicles: Vehicle[] = [
     gallery: [image("photo-1494905998402-395d579af36f", 1400), image("photo-1519641471654-76ce0107ad1b", 1400)],
     features: ["Tração 4x4", "Cabine dupla", "Controle de tração", "Multimídia", "Piloto automático"],
   },
-];
+].map(v => ({ ...v, isDemo: true }));
 
 const money = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(value);
 const kilometers = (value: number) => new Intl.NumberFormat("pt-BR").format(value) + " km";
@@ -168,7 +169,7 @@ function VehicleCard({ vehicle, onDetails }: { vehicle: Vehicle; onDetails: (veh
             </div>
           </div>
           <div className="vehicle-title-meta">
-            <strong className="vehicle-title-price" aria-label={"Preço ilustrativo: " + money(vehicle.price)}>{money(vehicle.price)}</strong>
+            <strong className="vehicle-title-price" aria-label={(vehicle.isDemo ? "Preço ilustrativo: " : "Preço: ") + money(vehicle.price)}>{money(vehicle.price)}</strong>
           </div>
         </div>
         <p className="vehicle-version">{vehicle.version}</p>
@@ -196,10 +197,10 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
   return (
     <div className="modal-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
       <section className="vehicle-dialog" role="dialog" aria-modal="true" aria-labelledby="vehicle-modal-title">
-        <div className="dialog-top"><span>CATÁLOGO DEMONSTRATIVO</span><button type="button" className="icon-button" onClick={onClose} aria-label="Fechar detalhes"><X size={23}/></button></div>
+        <div className="dialog-top"><span>{vehicle.isDemo ? "CATÁLOGO DEMONSTRATIVO" : "ESTOQUE SKINÃO"}</span><button type="button" className="icon-button" onClick={onClose} aria-label="Fechar detalhes"><X size={23}/></button></div>
         <div className="dialog-content">
           <div className="dialog-gallery">
-            <div className="dialog-image"><img src={vehicle.gallery[currentIndex]} alt={"Foto ilustrativa " + (currentIndex+1) + " de " + vehicle.model}/>
+            <div className="dialog-image"><img src={vehicle.gallery[currentIndex]} alt={(vehicle.isDemo ? "Foto ilustrativa " : "Foto ") + (currentIndex+1) + " de " + vehicle.model}/>
               <button className="gallery-left" type="button" aria-label="Foto anterior" onClick={() => setPhotoIndex(currentIndex-1)}><ChevronLeft size={20}/></button>
               <button className="gallery-right" type="button" aria-label="Próxima foto" onClick={() => setPhotoIndex(currentIndex+1)}><ChevronRight size={20}/></button>
               <span className="gallery-count">{currentIndex+1} / {vehicle.gallery.length}</span>
@@ -210,7 +211,7 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
             <p className="eyebrow">DETALHES DO VEÍCULO</p>
             <h2 id="vehicle-modal-title">{vehicle.brand} <strong>{vehicle.model}</strong></h2>
             <p className="dialog-version">{vehicle.version}</p>
-            <div className="dialog-price"><small>PREÇO DEMONSTRATIVO</small><strong>{money(vehicle.price)}</strong></div>
+            <div className="dialog-price"><small>{vehicle.isDemo ? "PREÇO DEMONSTRATIVO" : "PREÇO DO ANÚNCIO"}</small><strong>{money(vehicle.price)}</strong></div>
             <div className="dialog-stats">
               <div><span>Ano<strong>{vehicle.year}</strong></span></div>
               <div><span>Quilometragem<strong>{kilometers(vehicle.km)}</strong></span></div>
@@ -219,8 +220,8 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
             </div>
             <h3>Itens e diferenciais</h3>
             <div className="feature-list">{vehicle.features.map(feature => <span key={feature}>{feature}</span>)}</div>
-            <p className="dialog-disclaimer">Este veículo é um exemplo de layout. Modelo, imagens, valores, características e disponibilidade não representam o estoque real da Skinão Veículos.</p>
-            <button type="button" className="btn btn-red dialog-contact" onClick={() => whatsApp("Olá! Gostaria de saber quais veículos semelhantes a " + vehicle.brand + " " + vehicle.model + " estão disponíveis na Skinão Veículos.")}><MessageCircle size={19}/> CONSULTAR MODELOS SEMELHANTES</button>
+            {vehicle.isDemo && <p className="dialog-disclaimer">Este veículo é um exemplo de layout. Modelo, imagens, valores, características e disponibilidade não representam o estoque real da Skinão Veículos.</p>}
+            <button type="button" className="btn btn-red dialog-contact" onClick={() => whatsApp(vehicle.isDemo ? "Olá! Gostaria de saber quais veículos semelhantes a " + vehicle.brand + " " + vehicle.model + " estão disponíveis na Skinão Veículos." : "Olá! Gostaria de saber mais sobre o " + vehicle.brand + " " + vehicle.model + " anunciado no site da Skinão Veículos.")}><MessageCircle size={19}/> {vehicle.isDemo ? "CONSULTAR MODELOS SEMELHANTES" : "CONSULTAR ESTE VEÍCULO"}</button>
             {!waNumber && <p className="contact-config-note">O número oficial do WhatsApp ainda precisa ser configurado para direcionar a mensagem à loja.</p>}
           </div>
         </div>
@@ -382,11 +383,12 @@ function Home() {
   useEffect(() => {
     let mounted = true;
     loadPublicVehicles().then(items => {
-      if (mounted && items.length) setLiveVehicles(items);
+      if (mounted) setLiveVehicles(items);
     }).catch(error => console.warn("Não foi possível carregar o catálogo Skinão:", error));
     return () => { mounted = false; };
   }, []);
   const vehicles = liveVehicles ?? demoVehicles;
+  const isDemoCatalog = liveVehicles === null || liveVehicles.some(v => v.isDemo);
   const [heroReady, setHeroReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerVisible, setHeaderVisible] = useState(false);
@@ -498,9 +500,9 @@ function Home() {
 
         <section className="stock-section section-pad" id="estoque">
           <div className="container">
-            <div className="stock-heading-row"><SectionTitle eyebrow={liveVehicles ? "ESTOQUE SKINÃO" : "CATÁLOGO DEMONSTRATIVO"} title={liveVehicles ? "NOSSO" : "CONHEÇA OS"} accent={liveVehicles ? "ESTOQUE." : "MODELOS."} description={liveVehicles ? "Veja nossos veículos e fale com a equipe Skinão para confirmar os detalhes." : "Explore os exemplos, compare informações e escolha o que deseja consultar com a loja."}/>
+            <div className="stock-heading-row"><SectionTitle eyebrow={isDemoCatalog ? "CATÁLOGO DEMONSTRATIVO" : "ESTOQUE SKINÃO"} title={isDemoCatalog ? "CONHEÇA OS" : "NOSSO"} accent={isDemoCatalog ? "MODELOS." : "ESTOQUE."} description={isDemoCatalog ? "Explore os exemplos, compare informações e escolha o que deseja consultar com a loja." : "Veja nossos veículos e fale com a equipe Skinão para confirmar os detalhes."}/>
             </div>
-            {!liveVehicles && <div className="demo-notice"><p><strong>Catálogo de demonstração.</strong> As fotos, modelos, especificações e os preços abaixo são ilustrativos; não representam veículos disponíveis. Confirme o estoque atual diretamente com a Skinão.</p></div>}
+            {isDemoCatalog && <div className="demo-notice"><p><strong>Catálogo de demonstração.</strong> As fotos, modelos, especificações e os preços abaixo são ilustrativos; não representam veículos disponíveis. Confirme o estoque atual diretamente com a Skinão.</p></div>}
             <div className="stock-filters" role="search" aria-label="Buscar veículos">
               <label className="search-field"><Search size={19}/><input aria-label="Buscar por modelo ou marca" placeholder="Qual carro você procura?" value={query} onChange={event=>setQuery(event.target.value)}/></label>
               <label className="select-field"><span className="sr-only">Marca</span><select aria-label="Filtrar por marca" value={brand} onChange={event=>setBrand(event.target.value)}><option value="">Todas as marcas</option>{Array.from(new Set(vehicles.map(v=>v.brand))).sort().map(b=><option key={b} value={b}>{b}</option>)}</select></label>
@@ -508,7 +510,7 @@ function Home() {
               <label className="select-field"><span className="sr-only">Câmbio</span><select aria-label="Filtrar por câmbio" value={transmission} onChange={event=>setTransmission(event.target.value)}><option value="">Qualquer câmbio</option><option>Automático</option><option>Manual</option></select></label>
               <label className="select-field"><span className="sr-only">Preço máximo</span><select aria-label="Filtrar por preço máximo" value={maxPrice} onChange={event=>setMaxPrice(event.target.value)}><option value="">Qualquer preço</option><option value="80000">Até R$ 80 mil</option><option value="100000">Até R$ 100 mil</option><option value="120000">Até R$ 120 mil</option><option value="160000">Até R$ 160 mil</option></select></label>
             </div>
-            <div className="results-bar"><span><strong>{matches.length.toString().padStart(2,"0")}</strong> MODELOS DE EXEMPLO</span>
+            <div className="results-bar"><span><strong>{matches.length.toString().padStart(2,"0")}</strong> {isDemoCatalog ? "MODELOS DE EXEMPLO" : "VEÍCULOS DISPONÍVEIS"}</span>
               <div className="results-actions"><button type="button" onClick={resetFilters} className="clear-filters">LIMPAR FILTROS</button>
                 <select aria-label="Ordenar veículos" value={order} onChange={event=>setOrder(event.target.value)}><option value="featured">Ordenar: destaques</option><option value="low">Menor preço</option><option value="high">Maior preço</option><option value="new">Mais recentes</option></select></div>
             </div>
@@ -537,7 +539,7 @@ function Home() {
             <form className="finance-form" onSubmit={sendFinance}><span className="form-kicker">CONSULTA PELO WHATSAPP</span><h3>CONTE O QUE PROCURA.</h3><p>Ao continuar, você poderá revisar a mensagem no WhatsApp antes de enviar.</p>
               <label>SEU NOME <input required maxLength={100} value={finance.name} placeholder="Como podemos te chamar?" onChange={e=>setFinance({...finance,name:e.target.value})}/></label>
               <label>WHATSAPP COM DDD <input required type="tel" inputMode="tel" minLength={15} maxLength={15} pattern="[(][0-9]{2}[)] [0-9]{5}-[0-9]{4}" title="Informe DDD e celular com 9 dígitos" autoComplete="tel-national" value={finance.phone} placeholder="(35) 99999-9999" onChange={e=>setFinance({...finance,phone:formatBrazilWhatsApp(e.target.value)})}/></label>
-              <label>VEÍCULO DE INTERESSE <select value={finance.model} onChange={e=>setFinance({...finance,model:e.target.value})}><option value="">Ainda estou escolhendo</option>{vehicles.map(v=><option key={v.id} value={v.brand+" "+v.model}>{v.brand} {v.model}{liveVehicles ? "" : " (exemplo)"}</option>)}</select></label>
+              <label>VEÍCULO DE INTERESSE <select value={finance.model} onChange={e=>setFinance({...finance,model:e.target.value})}><option value="">Ainda estou escolhendo</option>{vehicles.map(v=><option key={v.id} value={v.brand+" "+v.model}>{v.brand} {v.model}{isDemoCatalog ? " (exemplo)" : ""}</option>)}</select></label>
               <label>ENTRADA PRETENDIDA
                 <span className="finance-entry-control">
                   <span className="finance-entry-prefix" aria-hidden="true">R$</span>
@@ -553,7 +555,7 @@ function Home() {
 
         <section className="about-section section-pad" id="sobre">
           <div className="container about-grid"><div className="about-image"><img src={image("photo-1503376780353-7e6692767b70",1200)} loading="lazy" alt="Fotografia ilustrativa de um automóvel esportivo"/></div>
-            <div className="about-copy"><SectionTitle eyebrow="A LOJA" title="SKINÃO VEÍCULOS"/><p>A Skinão Veículos é uma loja multimarcas em Lavras, Minas Gerais.</p><p>Este site é uma prévia do espaço digital da loja. Os veículos apresentados são ilustrativos; entre em contato para consultar modelos e disponibilidade.</p></div>
+            <div className="about-copy"><SectionTitle eyebrow="A LOJA" title="SKINÃO VEÍCULOS"/><p>A Skinão Veículos é uma loja multimarcas em Lavras, Minas Gerais.</p><p>{isDemoCatalog ? "Este site é uma prévia do espaço digital da loja. Os veículos apresentados são ilustrativos; entre em contato para consultar modelos e disponibilidade." : "Conheça os veículos anunciados no nosso catálogo. Consulte a Skinão Veículos para confirmar condições e disponibilidade."}</p></div>
           </div>
         </section>
 
@@ -596,7 +598,7 @@ function Home() {
         </section>
       </main>
 
-      <footer className="site-footer"><div className="container footer-top"><Brand compact/><div><p>VEÍCULOS MULTIMARCAS<br/>LAVRAS · MINAS GERAIS</p></div><a href="#inicio" className="back-top" aria-label="Voltar ao início">VOLTAR AO INÍCIO</a></div><div className="container footer-bottom"><span>© {new Date().getFullYear()} SKINÃO VEÍCULOS. TODOS OS DIREITOS RESERVADOS.</span><span>{liveVehicles ? "ESTOQUE SUJEITO À DISPONIBILIDADE" : "CATÁLOGO ILUSTRATIVO · CONSULTAR DISPONIBILIDADE"}</span><a href={instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Skinão Veículos"><Instagram size={18}/></a></div></footer>
+      <footer className="site-footer"><div className="container footer-top"><Brand compact/><div><p>VEÍCULOS MULTIMARCAS<br/>LAVRAS · MINAS GERAIS</p></div><a href="#inicio" className="back-top" aria-label="Voltar ao início">VOLTAR AO INÍCIO</a></div><div className="container footer-bottom"><span>© {new Date().getFullYear()} SKINÃO VEÍCULOS. TODOS OS DIREITOS RESERVADOS.</span><span>{isDemoCatalog ? "CATÁLOGO ILUSTRATIVO · CONSULTAR DISPONIBILIDADE" : "ESTOQUE SUJEITO À DISPONIBILIDADE"}</span><a href={instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram Skinão Veículos"><Instagram size={18}/></a></div></footer>
       {selected && <VehicleModal key={selected.id} vehicle={selected} onClose={closeDetails}/>}
       </div>
     </>

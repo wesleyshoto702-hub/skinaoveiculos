@@ -8,12 +8,13 @@ export type Vehicle = {
   km: number; transmission: string; fuel: string; type: string; color: string;
   price: number; description: string; features: string[]; badge: string | null;
   status: VehicleStatus; is_published: boolean; is_featured: boolean;
+  is_demo: boolean; demo_source_id: number | null;
   created_at: string; updated_at: string;
 };
-export type VehicleDraft = Omit<Vehicle, "id" | "created_at" | "updated_at">;
+export type VehicleDraft = Omit<Vehicle, "id" | "created_at" | "updated_at" | "demo_source_id">;
 export type VehiclePhoto = {
   id: string; vehicle_id: string; storage_path: string; alt_text: string;
-  sort_order: number; is_cover: boolean;
+  sort_order: number; is_cover: boolean; external_url?: string | null;
 };
 type User = { id: string; email?: string };
 export type Session = {
@@ -128,7 +129,9 @@ export const deleteVehicle = (id: string) =>
 export const addPhoto = (row: Omit<VehiclePhoto, "id">) => db("POST", "vehicle_images", row);
 export const deletePhoto = (id: string) =>
   db<void>("DELETE", "vehicle_images?id=eq." + encodeURIComponent(id));
-export function photoUrl(path: string) {
+export function photoUrl(path: string, externalUrl?: string | null) {
+  // Existing illustrative images were hosted on Unsplash, not in Supabase Storage.
+  if (externalUrl?.startsWith("https://images.unsplash.com/photo-")) return externalUrl;
   return BASE + "/storage/v1/object/public/vehicle-images/" +
     path.split("/").map(encodeURIComponent).join("/");
 }
@@ -148,11 +151,13 @@ export async function uploadPhoto(vehicleId: string, photo: File): Promise<strin
   return path;
 }
 export async function removeStoredPhotos(paths: string[]): Promise<void> {
-  if (!paths.length) return;
+  // Illustrative references have no corresponding object in Supabase Storage.
+  const storagePaths = paths.filter(path => path.startsWith("vehicles/"));
+  if (!storagePaths.length) return;
   const response = await fetch(BASE + "/storage/v1/object/vehicle-images", {
     method: "DELETE",
     headers: await secureHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ prefixes: paths }),
+    body: JSON.stringify({ prefixes: storagePaths }),
   });
   await result(response);
 }
