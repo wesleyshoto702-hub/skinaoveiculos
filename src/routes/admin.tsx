@@ -6,7 +6,7 @@ import {
   RefreshCw, Save, Search, ShieldCheck, Sun, Moon, Trash2, UsersRound, WandSparkles, X,
 } from "lucide-react";
 import {
-  ADMIN_PAGE_SIZE, addPhoto, currentSession, deletePhoto, deleteVehicle, getAdminStats,
+  ADMIN_PAGE_SIZE, addPhoto, currentSession, deletePhoto, getAdminStats,
   listPhotosForVehicles, listVehiclePage,
   myRole, photoUrl, removeStoredPhotos, saveVehicle, setCoverPhoto, signIn, signOut, updatePhoto, uploadPhoto,
   type AdminRole, type AdminStats, type Session, type Vehicle, type VehicleDraft, type VehiclePhoto,
@@ -287,18 +287,6 @@ function AdminPanel() {
       if (previousFocus instanceof HTMLElement) previousFocus.focus();
     };
   }, [pendingUnpublish]);
-  async function removeItem(item: Vehicle) {
-    if (!window.confirm("Excluir definitivamente " + item.brand + " " + item.model + " e suas fotografias?")) return;
-    setWorking(true); setFeedback(null);
-    try {
-      const paths = orderPhotos(photos, item.id).map(p => p.storage_path);
-      await deleteVehicle(item.id);
-      if (paths.length) { try { await removeStoredPhotos(paths); } catch { /* clean-up can be retried */ } }
-      await refresh();
-      setFeedback({ text: "Veículo excluído do catálogo." });
-    } catch (e) { setFeedback({ text: e instanceof Error ? e.message : "Erro ao excluir.", error: true }); }
-    finally { setWorking(false); }
-  }
   // These photo controls save immediately; the vehicle's text fields still use "Salvar veículo".
   async function setCoverPicture(photo: VehiclePhoto) {
     if (working || photo.is_cover) return;
@@ -480,7 +468,6 @@ function AdminPanel() {
                         {v.is_published ? "Despublicar" : "Publicar"}
                       </button>
                       <button type="button" onClick={() => editItem(v)} title="Editar" aria-label={"Editar "+v.model}><Edit3 size={18}/></button>
-                      <button type="button" disabled={working} onClick={() => void removeItem(v)} title="Excluir" aria-label={"Excluir "+v.model}><Trash2 size={18}/></button>
                     </div>
                   </div>;
                 }) : <div className="ska-empty"><CarFront size={33}/><h3>{search ? "Nenhum resultado" : "Seu estoque começa aqui"}</h3><p>{search ? "Experimente outra busca." : "Adicione o primeiro veículo para começar a utilizar o painel."}</p>{!search && <button className="ska-button ska-button--red" type="button" onClick={createNew}><Plus size={17}/> Cadastrar veículo</button>}</div>
