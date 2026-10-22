@@ -29,6 +29,18 @@
 .ska-login-card h1 em,.ska-section-header h1 em { color:var(--ska-red); }
 .ska-login-card>p { color:var(--ska-muted); margin-bottom:28px; }
 .ska-form { display:flex; flex-direction:column; gap:20px; }
+.ska-password-control { display:flex; flex-direction:column; gap:8px; }
+.ska-password-field { position:relative; }
+.ska-password-field input { padding-right:52px!important; }
+.ska-password-visibility {
+  position:absolute; right:7px; top:50%; transform:translateY(-50%);
+  display:grid; place-items:center; width:36px; height:36px;
+  background:transparent; border:0; border-radius:7px; color:#adb5c4;
+}
+.ska-password-visibility:hover { color:#fff; background:#ffffff15; }
+.ska-password-visibility:focus-visible { outline:2px solid var(--ska-red); outline-offset:1px; }
+.ska[data-ska-theme="light"] .ska-password-visibility { color:#586679; }
+.ska[data-ska-theme="light"] .ska-password-visibility:hover { color:#9c1d36; background:#fdebf0; }
 .ska-form label,.ska-edit-form label { display:flex; flex-direction:column; gap:8px; color:#c6cbd5;
   font-size:12px; font-weight:700; }
 .ska-form input,.ska-edit-form input:not([type=checkbox]):not([type=file]),

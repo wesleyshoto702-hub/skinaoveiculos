@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowLeft, ArrowRight, Camera, CarFront, Check, ChevronDown, CircleAlert,
-  ClipboardList, Edit3, ImagePlus, LockKeyhole, LogOut, Menu, Plus,
+  ClipboardList, Edit3, Eye, EyeOff, ImagePlus, LockKeyhole, LogOut, Menu, Plus,
   RefreshCw, Save, Search, ShieldCheck, Sun, Moon, Trash2, UsersRound, X,
 } from "lucide-react";
 import {
@@ -68,6 +68,7 @@ function AdminPanel() {
   const [role, setRole] = useState<AdminRole | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
   const [view, setView] = useState<View>("inventory");
@@ -125,6 +126,7 @@ function AdminPanel() {
         throw new Error("Sua conta não está autorizada a administrar a Skinão.");
       }
       setPassword("");
+      setShowPassword(false);
       setSession(signed);
       setRole(membership);
     } catch (e) { setAuthError(e instanceof Error ? e.message : "Falha ao entrar."); }
@@ -202,6 +204,12 @@ function AdminPanel() {
     finally { setWorking(false); }
   }
   async function changePublish(item: Vehicle) {
+    if (working) return;
+    if (item.is_published && !window.confirm(
+      `Deseja realmente despublicar ${item.brand} ${item.model}?
+
+O veículo deixará de aparecer no site, mas continuará cadastrado no painel e poderá ser publicado novamente.`
+    )) return;
     if (!item.is_published && !orderPhotos(photos, item.id).length) {
       setFeedback({ text: "Inclua uma fotografia antes de publicar.", error: true });
       return;
@@ -306,8 +314,21 @@ function AdminPanel() {
         <form onSubmit={logIn} className="ska-form">
           <label>E-mail<input type="email" autoComplete="username" required value={email}
             onChange={e => setEmail(e.target.value)} placeholder="seuemail@exemplo.com"/></label>
-          <label>Senha<input type="password" autoComplete="current-password" required
-            value={password} onChange={e => setPassword(e.target.value)} placeholder="Sua senha"/></label>
+          <div className="ska-password-control">
+            <label htmlFor="ska-admin-password">Senha</label>
+            <div className="ska-password-field">
+              <input id="ska-admin-password" type={showPassword ? "text" : "password"}
+                autoComplete="current-password" required value={password}
+                onChange={e => setPassword(e.target.value)} placeholder="Sua senha"/>
+              <button type="button" className="ska-password-visibility"
+                onClick={() => setShowPassword(visible => !visible)}
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                aria-pressed={showPassword}
+                title={showPassword ? "Ocultar senha" : "Mostrar senha"}>
+                {showPassword ? <EyeOff size={18} aria-hidden="true"/> : <Eye size={18} aria-hidden="true"/>}
+              </button>
+            </div>
+          </div>
           {authError && <p className="ska-feedback ska-feedback--error" role="alert">{authError}</p>}
           <button className="ska-button ska-button--red" type="submit" disabled={authBusy}>
             {authBusy ? "Verificando..." : "Entrar no painel"} <ArrowRight size={18}/>
