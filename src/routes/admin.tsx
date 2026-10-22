@@ -2,19 +2,20 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   AlertTriangle, ArrowLeft, ArrowRight, Camera, CarFront, Check, ChevronDown, CircleAlert,
-  ClipboardList, Edit3, Eye, EyeOff, ImagePlus, LockKeyhole, LogOut, Menu, Plus,
-  RefreshCw, Save, Search, ShieldCheck, Sun, Moon, Trash2, UsersRound, WandSparkles, X,
+  ClipboardList, Crop, Edit3, Eye, EyeOff, ImagePlus, LockKeyhole, LogOut, Menu, Plus,
+  RefreshCw, RotateCcw, Save, Search, ShieldCheck, Sun, Moon, Trash2, UsersRound, WandSparkles, X,
 } from "lucide-react";
 import {
   ADMIN_PAGE_SIZE, addPhoto, currentSession, deletePhoto, getAdminStats,
   listPhotosForVehicles, listVehiclePage,
-  myRole, photoUrl, removeStoredPhotos, saveVehicle, setCoverPhoto, signIn, signOut, updatePhoto, uploadPhoto,
+  myRole, photoUrl, displayPhotoUrl, removeStoredPhotos, saveVehicle, setCoverPhoto, signIn, signOut, updatePhoto, uploadPhoto,
   type AdminRole, type AdminStats, type Session, type Vehicle, type VehicleDraft, type VehiclePhoto,
   type VehicleStatus,
 } from "../lib/skinaoAdminApi";
 import "../admin.css";
 import { PhotoEditor } from "../components/admin/PhotoEditor";
-import { adjustedImageStyle, type PhotoAdjustments } from "../lib/skinaoPhotoAdjust";
+import { PhotoCropper } from "../components/admin/PhotoCropper";
+import { adjustedImageStyle, DEFAULT_PHOTO_ADJUSTMENTS, type PhotoAdjustments } from "../lib/skinaoPhotoAdjust";
 
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
 type View = "inventory" | "form" | "team";
@@ -79,6 +80,7 @@ function AdminPanel() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [photos, setPhotos] = useState<VehiclePhoto[]>([]);
   const [editingPhoto, setEditingPhoto] = useState<VehiclePhoto | null>(null);
+  const [croppingPhoto, setCroppingPhoto] = useState<VehiclePhoto | null>(null);
   const [adminPage, setAdminPage] = useState(0);
   const [pageTotal, setPageTotal] = useState(0);
   const [adminHasMore, setAdminHasMore] = useState(false);
@@ -174,13 +176,13 @@ function AdminPanel() {
   }
   function createNew() {
     setDraft(emptyDraft()); setFeatureInput(""); setNewPhotos([]);
-    setEditingId(null); setEditingPhoto(null); setView("form"); setFeedback(null);
+    setEditingId(null); setEditingPhoto(null); setCroppingPhoto(null); setView("form"); setFeedback(null);
     setMenuOpen(false);
   }
   function editItem(vehicle: Vehicle) {
     setDraft(toDraft(vehicle));
     setFeatureInput(vehicle.features.join(", "));
-    setNewPhotos([]); setEditingId(vehicle.id); setEditingPhoto(null);
+    setNewPhotos([]); setEditingId(vehicle.id); setEditingPhoto(null); setCroppingPhoto(null);
     setView("form"); setFeedback(null); setMenuOpen(false);
   }
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -314,6 +316,48 @@ function AdminPanel() {
       setWorking(false);
     }
   }
+  /** Save a derived cropped copy. Upload happens only after the preview AND confirmation. */
+  async function saveCroppedPhoto(photo: VehiclePhoto, file: File) {
+    if (working) throw new Error("Aguarde a operação atual terminar.");
+    setWorking(true); setFeedback(null);
+    let uploaded: string | null = null;
+    let changed = false;
+    try {
+      uploaded = await uploadPhoto(photo.vehicle_id, file);
+      await updatePhoto(photo.id, {
+        cropped_storage_path: uploaded, ...DEFAULT_PHOTO_ADJUSTMENTS,
+      });
+      changed = true;
+      await refresh();
+      setFeedback({ text: "Fotografia recortada com sucesso. A imagem original foi preservada." });
+    } catch (error) {
+      if (!changed && uploaded) {
+        try { await removeStoredPhotos([uploaded]); } catch { /* storage cleanup can be retried */ }
+      }
+      throw error instanceof Error ? error : new Error("Não foi possível aplicar o recorte.");
+    } finally {
+      setWorking(false);
+    }
+    if (photo.cropped_storage_path && photo.cropped_storage_path !== uploaded) {
+      try { await removeStoredPhotos([photo.cropped_storage_path]); } catch { /* old crop may be cleaned later */ }
+    }
+  }
+
+  async function restoreOriginalPhoto(photo: VehiclePhoto) {
+    if (working || !photo.cropped_storage_path) return;
+    setWorking(true); setFeedback(null);
+    try {
+      await updatePhoto(photo.id, {
+        cropped_storage_path: null, ...DEFAULT_PHOTO_ADJUSTMENTS,
+      });
+      await refresh();
+      setFeedback({ text: "Imagem original restaurada no catálogo." });
+      try { await removeStoredPhotos([photo.cropped_storage_path]); } catch { /* orphan variant is harmless */ }
+    } catch (error) {
+      setFeedback({ text: error instanceof Error ? error.message : "Falha ao restaurar imagem.", error: true });
+    } finally { setWorking(false); }
+  }
+
   async function movePicture(photo: VehiclePhoto, direction: -1 | 1) {
     if (working) return;
     const ordered = orderPhotos(photos, photo.vehicle_id);
@@ -344,7 +388,7 @@ function AdminPanel() {
       // Remove the database reference before the storage file to avoid broken public URLs.
       await deletePhoto(photo.id);
       if (nextCover) await setCoverPhoto(nextCover.id);
-      try { await removeStoredPhotos([photo.storage_path]); } catch {
+      try { await removeStoredPhotos([photo.storage_path, ...(photo.cropped_storage_path ? [photo.cropped_storage_path] : [])]); } catch {
         // Orphaned storage can be cleaned up later; the public gallery is already consistent.
       }
       await refresh();
@@ -454,7 +498,7 @@ function AdminPanel() {
                 searched.length ? searched.map(v => {
                   const first = orderPhotos(photos, v.id)[0];
                   return <div className="ska-vehicle-row" key={v.id}>
-                    <div className="ska-vehicle-thumb">{first ? <img src={photoUrl(first.storage_path, first.external_url)} style={adjustedImageStyle(first)} alt={v.brand+" "+v.model}/> : <CarFront size={27}/>}</div>
+                    <div className="ska-vehicle-thumb">{first ? <img src={displayPhotoUrl(first)} style={adjustedImageStyle(first)} alt={v.brand+" "+v.model}/> : <CarFront size={27}/>}</div>
                     <div className="ska-vehicle-copy">
                       <strong>{v.brand} {v.model}</strong><small>{v.version} · {v.year} · {v.km.toLocaleString("pt-BR")} km</small>
                       <b>{money(v.price)}</b>
@@ -530,10 +574,14 @@ function AdminPanel() {
                   const previous = editingPhotos[index - 1];
                   return <div className={"ska-photo" + (p.is_cover ? " ska-photo--cover" : "")} key={p.id}>
                     <div className="ska-photo-preview">
-                      <img alt={p.alt_text} src={photoUrl(p.storage_path, p.external_url)} style={adjustedImageStyle(p)}/>
+                      <img alt={p.alt_text} src={displayPhotoUrl(p)} style={adjustedImageStyle(p)}/>
                       {(p.is_cover || p.external_url) && <span>{p.is_cover ? (p.external_url ? "CAPA · ILUSTRATIVA" : "CAPA") : "ILUSTRATIVA"}</span>}
                     </div>
                     <div className="ska-photo-controls">
+                      <button type="button" className="ska-crop-photo-button" disabled={working}
+                        onClick={() => setCroppingPhoto(p)}><Crop size={15}/> Recortar foto</button>
+                      {p.cropped_storage_path && <button type="button" className="ska-restore-photo-button" disabled={working}
+                        onClick={() => void restoreOriginalPhoto(p)}><RotateCcw size={15}/> Restaurar original</button>}
                       <button type="button" className="ska-edit-photo-button" disabled={working}
                         onClick={() => setEditingPhoto(p)}><WandSparkles size={15}/> Ajustar imagem</button>
                       <button type="button" className={"ska-cover-button" + (p.is_cover ? " is-cover" : "")}
@@ -594,8 +642,12 @@ function AdminPanel() {
           </>}
         </main>
       </div>
+      {croppingPhoto && <PhotoCropper key={croppingPhoto.id} photo={croppingPhoto}
+        originalUrl={photoUrl(croppingPhoto.storage_path, croppingPhoto.external_url)}
+        onClose={() => setCroppingPhoto(null)}
+        onConfirm={file => saveCroppedPhoto(croppingPhoto, file)}/>}
       {editingPhoto && <PhotoEditor key={editingPhoto.id} photo={editingPhoto}
-        imageUrl={photoUrl(editingPhoto.storage_path, editingPhoto.external_url)}
+        imageUrl={displayPhotoUrl(editingPhoto)}
         onClose={() => setEditingPhoto(null)}
         onSave={edits => savePhotoEdits(editingPhoto, edits)}/>}
       {pendingUnpublish && <div className="ska-confirm-overlay"

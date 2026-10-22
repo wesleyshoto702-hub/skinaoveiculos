@@ -14,6 +14,7 @@ type PhotoRow = {
   vehicle_id: string; storage_path: string; external_url: string | null;
   sort_order: number; is_cover: boolean;
   crop_x: number; crop_y: number; crop_zoom: number; crop_rotation: number;
+  cropped_storage_path: string | null;
 };
 export type PublicVehicle = {
   id: string; brand: string; model: string; version: string; year: string;
@@ -30,11 +31,15 @@ export type CatalogFilters = {
 };
 export type CatalogPage = { vehicles: PublicVehicle[]; total: number; hasMore: boolean };
 
-const urlFor = (photo: PhotoRow) =>
-  photo.external_url?.startsWith("https://images.unsplash.com/photo-")
+const urlFor = (photo: PhotoRow) => {
+  const cropped = photo.cropped_storage_path;
+  if (cropped) return BASE + "/storage/v1/object/public/vehicle-images/" +
+    cropped.split("/").map(encodeURIComponent).join("/");
+  return photo.external_url?.startsWith("https://images.unsplash.com/photo-")
     ? photo.external_url
     : BASE + "/storage/v1/object/public/vehicle-images/" +
       photo.storage_path.split("/").map(encodeURIComponent).join("/");
+};
 
 const api = async (path: string, extraHeaders: Record<string, string> = {}): Promise<Response> => {
   const response = await fetch(BASE + "/rest/v1/" + path, {
@@ -93,7 +98,7 @@ async function photosForVisibleVehicles(ids: string[]): Promise<PhotoRow[]> {
   // Include only this page's IDs. Batch photo metadata to avoid Supabase's default 1000-row cap.
   for (let offset = 0; ; offset += PHOTO_BATCH_SIZE) {
     const p = new URLSearchParams({
-      select: "vehicle_id,storage_path,external_url,sort_order,is_cover,crop_x,crop_y,crop_zoom,crop_rotation",
+      select: "vehicle_id,storage_path,external_url,sort_order,is_cover,crop_x,crop_y,crop_zoom,crop_rotation,cropped_storage_path",
       vehicle_id: "in.(" + ids.join(",") + ")",
       order: "vehicle_id.asc,is_cover.desc,sort_order.asc",
       limit: String(PHOTO_BATCH_SIZE),

@@ -16,6 +16,7 @@ export type VehiclePhoto = {
   id: string; vehicle_id: string; storage_path: string; alt_text: string;
   sort_order: number; is_cover: boolean; external_url?: string | null;
   crop_x?: number; crop_y?: number; crop_zoom?: number; crop_rotation?: number;
+  cropped_storage_path?: string | null;
 };
 type User = { id: string; email?: string };
 export type Session = {
@@ -189,7 +190,7 @@ export const deletePhoto = (id: string) =>
   db<void>("DELETE", "vehicle_images?id=eq." + encodeURIComponent(id));
 /** Change only image presentation metadata; the database authorizes administrators via RLS. */
 export async function updatePhoto(
-  id: string, changes: Partial<Pick<VehiclePhoto, "sort_order" | "crop_x" | "crop_y" | "crop_zoom" | "crop_rotation">>,
+  id: string, changes: Partial<Pick<VehiclePhoto, "sort_order" | "crop_x" | "crop_y" | "crop_zoom" | "crop_rotation" | "cropped_storage_path">>,
 ): Promise<VehiclePhoto> {
   const rows = await db<VehiclePhoto[]>("PATCH", "vehicle_images?id=eq." + encodeURIComponent(id), changes);
   if (!rows[0]) throw new Error("Não foi possível atualizar esta fotografia.");
@@ -209,6 +210,12 @@ export function photoUrl(path: string, externalUrl?: string | null) {
   if (externalUrl?.startsWith("https://images.unsplash.com/photo-")) return externalUrl;
   return BASE + "/storage/v1/object/public/vehicle-images/" +
     path.split("/").map(encodeURIComponent).join("/");
+}
+/** A saved crop is a separate Storage object; original source and demo URL are never overwritten. */
+export function displayPhotoUrl(photo: VehiclePhoto): string {
+  return photo.cropped_storage_path
+    ? photoUrl(photo.cropped_storage_path)
+    : photoUrl(photo.storage_path, photo.external_url);
 }
 const allowed: Record<string, string> = {
   "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif",
