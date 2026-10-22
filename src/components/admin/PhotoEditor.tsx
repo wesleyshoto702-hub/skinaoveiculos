@@ -1,15 +1,17 @@
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { Check, Crop, Monitor, RotateCcw, RotateCw, Smartphone, X } from "lucide-react";
 import type { VehiclePhoto } from "../../lib/skinaoAdminApi";
 import {
   adjustedImageStyle, DEFAULT_PHOTO_ADJUSTMENTS,
   normalizeAdjustments, type PhotoAdjustments,
 } from "../../lib/skinaoPhotoAdjust";
+import { panPhoto, pointerCenter, pointerDistance, wheelZoomFactor, zoomPhoto, type PhotoPoint } from "../../lib/skinaoPhotoGestures";
 
 type Props = {
   photo: VehiclePhoto; imageUrl: string;
   onClose: () => void; onSave: (adjustments: PhotoAdjustments) => Promise<void>;
 };
+type Gesture = { start: PhotoAdjustments; center: PhotoPoint; distance: number };
 
 export function PhotoEditor({ photo, imageUrl, onClose, onSave }: Props) {
   const [edit, setEdit] = useState<PhotoAdjustments>(() => normalizeAdjustments(photo));
@@ -18,7 +20,31 @@ export function PhotoEditor({ photo, imageUrl, onClose, onSave }: Props) {
   const [error, setError] = useState("");
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const drag = useRef<{ x: number; y: number } | null>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const editRef = useRef<PhotoAdjustments>(edit);
+  const pointersRef = useRef(new Map<number, PhotoPoint>());
+  const gestureRef = useRef<Gesture | null>(null);
+
+  function updateEdit(next: PhotoAdjustments) {
+    const normalized = normalizeAdjustments(next);
+    editRef.current = normalized;
+    setEdit(normalized);
+  }
+
+  // Native wheel handler is explicitly non-passive: the page must not scroll while zooming the photo.
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const wheel = (event: WheelEvent) => {
+      if (saving || pointersRef.current.size > 0) return;
+      event.preventDefault();
+      const next = zoomPhoto(editRef.current, wheelZoomFactor(event.deltaY, event.deltaMode, frame.clientHeight));
+      editRef.current = next;
+      setEdit(next);
+    };
+    frame.addEventListener("wheel", wheel, { passive: false });
+    return () => frame.removeEventListener("wheel", wheel);
+  }, [saving]);
 
   useEffect(() => {
     const previousFocus = document.activeElement;
@@ -51,27 +77,72 @@ export function PhotoEditor({ photo, imageUrl, onClose, onSave }: Props) {
   }, [onClose, saving]);
 
   const change = (key: keyof PhotoAdjustments, value: number) =>
-    setEdit(prev => normalizeAdjustments({ ...prev, [key]: value }));
-  const moveStart = (event: PointerEvent<HTMLDivElement>) => {
-    if (saving) return;
+    updateEdit({ ...editRef.current, [key]: value });
+
+  function startGesture() {
+    const active = [...pointersRef.current.values()];
+    if (active.length === 0) { gestureRef.current = null; return; }
+    const center = active.length > 1 ? pointerCenter(active[0], active[1]) : active[0];
+    const distance = active.length > 1 ? pointerDistance(active[0], active[1]) : 0;
+    gestureRef.current = { start: editRef.current, center, distance };
+  }
+
+  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (saving || (event.pointerType === "mouse" && event.button !== 0)) return;
+    event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    drag.current = { x: event.clientX, y: event.clientY };
-  };
-  const move = (event: PointerEvent<HTMLDivElement>) => {
-    if (!drag.current || saving) return;
-    const { width, height } = event.currentTarget.getBoundingClientRect();
-    const dx = (event.clientX - drag.current.x) * 100 / Math.max(1, width);
-    const dy = (event.clientY - drag.current.y) * 100 / Math.max(1, height);
-    drag.current = { x: event.clientX, y: event.clientY };
-    setEdit(prev => normalizeAdjustments({
-      ...prev, crop_x: prev.crop_x + dx * 1.2, crop_y: prev.crop_y + dy * 1.2,
-    }));
-  };
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    // Changing between one-finger drag and two-finger pinch establishes a new baseline.
+    startGesture();
+  }
+
+  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (saving || !pointersRef.current.has(event.pointerId)) return;
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const start = gestureRef.current;
+    if (!start) return;
+    const active = [...pointersRef.current.values()];
+    const center = active.length > 1 ? pointerCenter(active[0], active[1]) : active[0];
+    const width = event.currentTarget.clientWidth;
+    const height = event.currentTarget.clientHeight;
+    const zoomed = active.length > 1 && start.distance > 0
+      ? zoomPhoto(start.start, pointerDistance(active[0], active[1]) / start.distance)
+      : start.start;
+    updateEdit(panPhoto(zoomed, center.x - start.center.x, center.y - start.center.y, width, height));
+  }
+
+  function onPointerEnd(event: PointerEvent<HTMLDivElement>) {
+    if (!pointersRef.current.delete(event.pointerId)) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    startGesture();
+  }
+
+  function onEditorKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (saving) return;
+    const current = editRef.current;
+    if (event.key === "+" || event.key === "=") {
+      event.preventDefault(); updateEdit(zoomPhoto(current, 1.1));
+    } else if (event.key === "-") {
+      event.preventDefault(); updateEdit(zoomPhoto(current, 1 / 1.1));
+    } else {
+      const delta: Record<string, [number, number]> = {
+        ArrowLeft: [-3, 0], ArrowRight: [3, 0], ArrowUp: [0, -3], ArrowDown: [0, 3],
+      };
+      const movement = delta[event.key];
+      if (movement) {
+        event.preventDefault();
+        updateEdit({ ...current, crop_x: current.crop_x + movement[0], crop_y: current.crop_y + movement[1] });
+      }
+    }
+  }
+
   async function save() {
     if (saving) return;
     setSaving(true); setError("");
     try {
-      await onSave(normalizeAdjustments(edit));
+      await onSave(normalizeAdjustments(editRef.current));
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível salvar os ajustes.");
@@ -89,7 +160,7 @@ export function PhotoEditor({ photo, imageUrl, onClose, onSave }: Props) {
           <div>
             <span className="ska-eyebrow"><Crop size={14} aria-hidden="true"/> FOTOGRAFIAS</span>
             <h2 id="ska-photo-editor-title">Ajustar imagem</h2>
-            <p id="ska-photo-editor-desc">Arraste a foto dentro do enquadramento. O arquivo original será preservado.</p>
+            <p id="ska-photo-editor-desc">Ajuste diretamente na foto: arraste para mover, use a roda do mouse ou a pinça para ampliar. O arquivo original será preservado.</p>
           </div>
           <button type="button" ref={closeRef} className="ska-photo-editor-close"
             onClick={onClose} disabled={saving} aria-label="Fechar editor"><X size={21}/></button>
@@ -103,17 +174,19 @@ export function PhotoEditor({ photo, imageUrl, onClose, onSave }: Props) {
                 aria-pressed={preview === "mobile"} onClick={() => setPreview("mobile")}><Smartphone size={16}/> Mobile</button>
             </div>
             <div className="ska-photo-editor-frame-wrap">
-              <div className={"ska-photo-editor-frame ska-photo-editor-frame--" + preview}
-                onPointerDown={moveStart} onPointerMove={move}
-                onPointerUp={() => { drag.current = null; }}
-                onPointerCancel={() => { drag.current = null; }}
-                aria-label="Área de recorte. Arraste para mover a fotografia">
+              <div ref={frameRef} className={"ska-photo-editor-frame ska-photo-editor-frame--" + preview}
+                onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+                onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd}
+                onLostPointerCapture={onPointerEnd}
+                onDoubleClick={() => { if (!saving) updateEdit(zoomPhoto(editRef.current, editRef.current.crop_zoom >= 250 ? 100 / editRef.current.crop_zoom : 1.25)); }}
+                onKeyDown={onEditorKeyDown} tabIndex={0} role="group"
+                aria-label="Prévia editável. Arraste para mover, roda do mouse ou gesto de pinça para zoom. Use as setas e as teclas mais e menos no teclado.">
                 <img src={imageUrl} alt={photo.alt_text || "Prévia da fotografia"}
                   draggable={false} style={adjustedImageStyle(edit)}/>
                 <span className="ska-photo-editor-grid" aria-hidden="true"/>
               </div>
             </div>
-            <p className="ska-photo-editor-hint">Arraste a imagem para ajustar a posição. A área visível será usada no catálogo.</p>
+            <p className="ska-photo-editor-hint"><strong>Computador:</strong> arraste para mover; use a roda do mouse ou dê dois cliques para ampliar. <strong>Celular:</strong> arraste com um dedo e amplie com dois dedos (pinça).</p>
           </div>
           <div className="ska-photo-editor-sliders">
             <label>Zoom <strong>{edit.crop_zoom}%</strong>
@@ -137,7 +210,7 @@ export function PhotoEditor({ photo, imageUrl, onClose, onSave }: Props) {
               </button>
             </div>
             <button type="button" className="ska-photo-editor-reset"
-              onClick={() => setEdit({ ...DEFAULT_PHOTO_ADJUSTMENTS })}>
+              onClick={() => updateEdit({ ...DEFAULT_PHOTO_ADJUSTMENTS })}>
               <RotateCcw size={16}/> Restaurar enquadramento original
             </button>
           </div>

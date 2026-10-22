@@ -446,7 +446,10 @@
 .ska-photo-editor-frame:active { cursor:grabbing; }
 .ska-photo-editor-frame--mobile { width:min(100%,300px);aspect-ratio:1.38; }
 .ska-photo-editor-frame img { height:100%;width:100%;display:block;
-  object-fit:cover;pointer-events:none;user-select:none; }
+  object-fit:cover;pointer-events:none;user-select:none;-webkit-user-select:none;
+  transition:none!important;will-change:transform,object-position; }
+.ska-photo-editor-frame { overscroll-behavior:contain;-webkit-user-select:none;user-select:none; }
+.ska-photo-editor-frame:focus-visible { outline:2px solid var(--ska-red);outline-offset:4px; }
 .ska-photo-editor-grid { position:absolute;inset:0;pointer-events:none;opacity:.62;
   background:linear-gradient(90deg,transparent 33.25%,#ffffff80 33.3%,transparent 33.4%,transparent 66.5%,#ffffff80 66.6%,transparent 66.7%),
     linear-gradient(0deg,transparent 33.25%,#ffffff80 33.3%,transparent 33.4%,transparent 66.5%,#ffffff80 66.6%,transparent 66.7%);
