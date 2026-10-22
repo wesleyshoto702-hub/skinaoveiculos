@@ -127,10 +127,16 @@ function AdminPanel() {
       setFeedback({ text: "Preencha marca, modelo e preço válido.", error: true });
       return;
     }
+    const existingPhotos = editingId ? orderPhotos(photos, editingId).length : 0;
+    if (draft.is_published && !existingPhotos && !newPhotos.length) {
+      setFeedback({ text: "Inclua uma fotografia antes de publicar o anúncio.", error: true });
+      return;
+    }
     setWorking(true); setFeedback(null);
     try {
+      const requestedPublication = draft.is_published;
       const item = await saveVehicle({
-        ...draft, brand: draft.brand.trim(), model: draft.model.trim(),
+        ...draft, is_published: false, brand: draft.brand.trim(), model: draft.model.trim(),
         features: featureInput.split(",").map(f => f.trim()).filter(Boolean),
       }, editingId || undefined);
       let numberOfImages = orderPhotos(photos, item.id).length;
@@ -149,6 +155,9 @@ function AdminPanel() {
           if (path) { try { await removeStoredPhotos([path]); } catch { /* report below */ } }
         }
       }
+      if (requestedPublication && numberOfImages > 0) {
+        await saveVehicle({ ...toDraft(item), is_published: true }, item.id);
+      }
       setNewPhotos([]); setEditingId(null); setView("inventory");
       setFeedback({ text: failures ? "Veículo salvo, mas " + failures + " foto(s) falharam. Revise as imagens." :
         "Veículo salvo com sucesso." , error: failures > 0 });
@@ -157,6 +166,10 @@ function AdminPanel() {
     finally { setWorking(false); }
   }
   async function changePublish(item: Vehicle) {
+    if (!item.is_published && !orderPhotos(photos, item.id).length) {
+      setFeedback({ text: "Inclua uma fotografia antes de publicar.", error: true });
+      return;
+    }
     setWorking(true); setFeedback(null);
     try {
       await saveVehicle({ ...toDraft(item), is_published: !item.is_published }, item.id);
