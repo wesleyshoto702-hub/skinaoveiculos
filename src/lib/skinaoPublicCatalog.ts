@@ -6,7 +6,7 @@ export const CATALOG_PAGE_SIZE = 12;
 const PHOTO_BATCH_SIZE = 500;
 
 type InventoryRow = {
-  id: string; brand: string; model: string; version: string; year: number; km: number;
+  id: string; brand: string; model: string; version: string; description: string | null; year: number; km: number;
   transmission: string; fuel: string; price: number; type: string; color: string;
   badge: string | null; status: string; features: string[]; is_featured: boolean; is_demo: boolean;
 };
@@ -19,7 +19,7 @@ type PhotoRow = {
 export type PublicVehicle = {
   id: string; brand: string; model: string; version: string; year: string;
   km: number; transmission: string; fuel: string; price: number; type: string;
-  color: string; badge?: string; photo: string; gallery: string[]; features: string[];
+  color: string; badge?: string; description?: string; photo: string; gallery: string[]; features: string[];
   coverEdits?: PhotoAdjustments; galleryEdits?: PhotoAdjustments[];
   isFeatured?: boolean; isDemo?: boolean;
 };
@@ -73,7 +73,7 @@ const sortFor = (order: string) => {
 
 function buildVehicleParams(filters: CatalogFilters, page: number, isDemo: boolean): URLSearchParams {
   const p = new URLSearchParams({
-    select: "id,brand,model,version,year,km,transmission,fuel,price,type,color,badge,status,features,is_featured,is_demo",
+    select: "id,brand,model,version,description,year,km,transmission,fuel,price,type,color,badge,status,features,is_featured,is_demo",
     is_published: "eq.true",
     status: "in.(available,reserved)",
     is_demo: "eq." + String(isDemo),
@@ -139,6 +139,7 @@ export async function loadPublicVehiclesPage(
       const galleryEdits = ordered.map(normalizeAdjustments);
       return {
         id: row.id, brand: row.brand, model: row.model, version: row.version,
+        description: row.description?.trim() || undefined,
         year: String(row.year), km: row.km, transmission: row.transmission,
         fuel: row.fuel, price: Number(row.price), type: row.type, color: row.color,
         badge: row.badge || undefined, photo: gallery[0] || "/favicon.png",

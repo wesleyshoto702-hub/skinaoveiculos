@@ -31,6 +31,7 @@ type Vehicle = {
   gallery: string[];
   coverEdits?: PhotoAdjustments;
   galleryEdits?: PhotoAdjustments[];
+  description?: string;
   features: string[];
 };
 
@@ -222,6 +223,10 @@ function VehicleModal({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => v
               <div><span>Câmbio<strong>{vehicle.transmission}</strong></span></div>
               <div><span>Combustível<strong>{vehicle.fuel}</strong></span></div>
             </div>
+            {vehicle.description?.trim() && <section className="dialog-vehicle-description" aria-label="Descrição do veículo">
+              <h3>Descrição do veículo</h3>
+              <p>{vehicle.description.trim()}</p>
+            </section>}
             <h3>Itens e diferenciais</h3>
             <div className="feature-list">{vehicle.features.map(feature => <span key={feature}>{feature}</span>)}</div>
             {vehicle.isDemo && <p className="dialog-disclaimer">Este veículo é um exemplo de layout. Modelo, imagens, valores, características e disponibilidade não representam o estoque real da Skinão Veículos.</p>}

@@ -11,7 +11,7 @@ const emptyFilters: CatalogFilters = {
 const car = (id: string) => ({
   id, brand: "Volkswagen", model: "Polo", version: "TSI", year: 2024, km: 24000,
   transmission: "Automático", fuel: "Flex", price: 80000, type: "Hatch", color: "Preto",
-  badge: null, status: "available", features: [], is_featured: false, is_demo: true,
+  badge: null, status: "available", description: "  Teste de descrição do anúncio  ", features: [], is_featured: false, is_demo: true,
 });
 
 afterEach(() => vi.unstubAllGlobals());
@@ -58,6 +58,7 @@ describe("public vehicle catalog", () => {
     expect(result.vehicles).toHaveLength(CATALOG_PAGE_SIZE);
     expect(result.total).toBe(32);
     expect(result.hasMore).toBe(true);
+    expect(result.vehicles[0].description).toBe("Teste de descrição do anúncio");
     expect(result.vehicles[0].gallery).toHaveLength(2);
     expect(result.vehicles[0].gallery[0]).toContain("/front.jpg");
     const listings = called[0].searchParams;
@@ -66,6 +67,7 @@ describe("public vehicle catalog", () => {
     expect(listings.get("brand")).toBe("eq.Volkswagen");
     expect(listings.get("transmission")).toBe("eq.Automático");
     expect(listings.get("price")).toBe("lte.100000");
+    expect(listings.get("select")).toContain("description");
     expect(listings.get("order")).toBe("price.asc,id.asc");
     expect(listings.get("or")).toContain("brand.ilike.*Polo*");
     expect(called[1].searchParams.get("vehicle_id")).not.toContain("vehicle-12");

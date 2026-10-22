@@ -529,6 +529,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 .dialog-stats svg { color: var(--accent-bright); flex: none; }
 .dialog-stats strong { display: block; color: white; font-size: 13px; margin-top: 4px; }
 .dialog-details h3 { font-size: 25px; margin: 29px 0 14px; }
+.dialog-vehicle-description { margin-top: 25px; padding-top: 3px; }
+.dialog-vehicle-description h3 { margin: 18px 0 11px; }
+.dialog-vehicle-description p { font-size: 13px; line-height: 1.85; color: #c1c2c6; white-space: pre-line; overflow-wrap: anywhere; margin: 0; }
 .feature-list { display: flex; flex-wrap: wrap; gap: 9px; }
 .feature-list span { font-size: 11px; background: #1e1f23; padding: 9px 10px; display: inline-flex; gap: 8px; align-items: center; color: #c1c2c6; }
 .feature-list svg { color: var(--accent-bright); }
