@@ -1,13 +1,13 @@
 import type { Transport, Statement } from "./skinaoNeonTransport.server";
-import { assertPublication, PUBLIC_WHERE, publicVehicle } from "./skinaoInventoryRules";
+import { assertPublication, PUBLIC_WHERE, DEMO_WHERE, publicVehicle } from "./skinaoInventoryRules";
 import type { Vehicle, VehicleDraft, VehiclePhoto } from "./skinaoInventoryTypes";
 import type { CatalogFilters } from "./skinaoPublicCatalog";
 
 const VEHICLE_COLUMNS = "id,brand,model,version,year,km,transmission,fuel,type,color,price,description,features,badge,status,is_published,is_featured,is_demo,demo_source_id,created_at,updated_at";
 const PHOTO_COLUMNS = "id,vehicle_id,storage_path,alt_text,sort_order,is_cover,external_url,crop_x,crop_y,crop_zoom,crop_rotation,cropped_storage_path";
-export function catalogStatement(f: CatalogFilters, page: number, size = 12) {
+export function catalogStatement(f: CatalogFilters, page: number, size = 12, isDemo = false) {
   const params: unknown[] = [];
-  const conditions = [PUBLIC_WHERE];
+  const conditions = [isDemo ? DEMO_WHERE : PUBLIC_WHERE];
   const bind = (value: unknown) => { params.push(value); return "$" + params.length; };
   if (f.query.trim()) {
     const term = bind("%" + f.query.trim().replace(/[\\%_]/g, "\\$&") + "%");
@@ -30,8 +30,8 @@ export function repository(run: Transport) {
     return v;
   };
   return { rows, photos, getVehicle,
-    async catalog(f: CatalogFilters, page: number, base: string) {
-      const results = await run(catalogStatement(f,page), false);
+    async catalog(f: CatalogFilters, page: number, base: string, isDemo = false) {
+      const results = await run(catalogStatement(f,page,12,isDemo), false);
       const total = Number(results[0]?.rows[0]?.total ?? 0);
       const vehicles = (results[1]?.rows ?? []) as unknown as Vehicle[];
       const pictures = await photos(vehicles.map(v=>v.id));
