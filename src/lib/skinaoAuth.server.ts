@@ -36,3 +36,17 @@ export async function requireAdmin(secret: string | undefined) {
     throw new Error("Sua sessão expirou ou foi revogada. Faça login novamente.");
   return session;
 }
+
+/** Only the principal administrator can create or manage staff accounts. */
+export async function requireOwner(secret: string | undefined) {
+  const session = await requireAdmin(secret);
+  const actorId = session.data.adminId;
+  if (!actorId) throw new Error("Acesso não autorizado.");
+  const result = await neonTransport([{
+    query:"SELECT role FROM skinao_admin_users WHERE id=$1 AND is_active=true",
+    params:[actorId],
+  }], false);
+  if (result[0]?.rows[0]?.role !== "owner")
+    throw new Error("Apenas o administrador principal pode gerenciar a equipe.");
+  return session;
+}
