@@ -579,3 +579,44 @@
   padding:13px 16px; color:var(--ska-muted); font-size:12px; }
 .ska-sidebar-footer .ska-local-mode svg { color:var(--ska-red); }
 @media (max-width:600px) { .ska-local-notice { padding:12px; } }
+
+/* Prominent Neon connection entry point: the editor opens without a login screen. */
+.ska .ska-connection-panel {
+  display:flex; align-items:center; justify-content:space-between; gap:22px;
+  padding:21px 24px; margin:0 0 24px;
+  border:1px solid #70404b; border-radius:16px;
+  background:linear-gradient(125deg,rgba(229,50,77,.15),rgba(20,24,32,.94));
+}
+.ska .ska-connection-copy { flex:1; min-width:0; }
+.ska .ska-connection-copy strong {
+  display:block; font-size:17px; font-weight:800; line-height:1.35; color:var(--ska-text);
+}
+.ska .ska-connection-copy p {
+  margin:6px 0 0; font-size:13px; line-height:1.5; color:var(--ska-muted);
+}
+.ska .ska-connection-action { flex-shrink:0; font-weight:700; min-height:44px; padding:11px 18px; }
+.ska .ska-connection-form {
+  margin:-10px 0 25px; padding:20px 24px; border-radius:0 0 14px 14px;
+  border:1px solid var(--ska-border); background:var(--ska-panel);
+}
+.ska .ska-connection-form label { display:block; margin-bottom:9px; font-weight:700; }
+.ska .ska-connection-form p { margin:0; color:var(--ska-muted); }
+.ska .ska-connection-form-row { display:flex; flex-wrap:wrap; align-items:stretch; gap:12px; }
+.ska .ska-connection-form-row input {
+  flex:1 1 240px; min-width:0; padding:12px 14px;
+  border:1px solid var(--ska-border); border-radius:10px;
+  color:var(--ska-text); background:var(--ska-panel-2);
+}
+.ska .ska-connection-form-row input:focus-visible { outline:2px solid var(--ska-red); outline-offset:2px; }
+.ska[data-ska-theme="light"] .ska-connection-panel {
+  background:linear-gradient(120deg,rgba(229,50,77,.09),#fff);
+  border-color:#e5b5be;
+}
+@media (max-width:720px) {
+  .ska .ska-connection-panel { flex-direction:column; align-items:stretch; gap:15px; padding:18px; }
+  .ska .ska-connection-action { width:100%; justify-content:center; }
+  .ska .ska-connection-form { padding:16px; }
+  .ska .ska-connection-form-row { flex-direction:column; }
+  .ska .ska-connection-form-row input { flex-basis:auto; width:100%; }
+  .ska .ska-connection-form-row button { width:100%; }
+}
