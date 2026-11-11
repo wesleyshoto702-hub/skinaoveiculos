@@ -18,6 +18,18 @@ export async function listPhotosForVehicles(ids: string[]): Promise<VehiclePhoto
   return photos;
 }
 export const saveVehicle = (draft: VehicleDraft, id?: string): Promise<Vehicle> => remote ? request({ action:"save",draft,...(id ? {id} : {}) }) : local.saveVehicle(draft,id);
+export async function deleteVehicle(id: string): Promise<{ cleanupFailed:number }> {
+  if (remote) return request({ action:"deleteVehicle", id });
+  // Local-only deletion also cleans up related photographs and browser image blobs.
+  const pictures = await local.listPhotosForVehicles([id]);
+  const paths = [...new Set(pictures.flatMap(p => [
+    p.storage_path, ...(p.cropped_storage_path ? [p.cropped_storage_path] : []),
+  ]))];
+  for (const picture of pictures) await local.deletePhoto(picture.id);
+  await local.deleteVehicle(id);
+  await local.removeStoredPhotos(paths);
+  return { cleanupFailed:0 };
+}
 export const addPhoto = (photo: Omit<VehiclePhoto,"id">): Promise<VehiclePhoto> => remote ? request({ action:"addPhoto",photo }) : local.addPhoto(photo);
 export const deletePhoto = (id: string) => remote ? request<void>({ action:"deletePhoto",id }) : local.deletePhoto(id);
 export const setCoverPhoto = (id: string) => remote ? request<void>({ action:"cover",id }) : local.setCoverPhoto(id);
