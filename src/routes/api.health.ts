@@ -9,7 +9,7 @@ export const Route = createFileRoute("/api/health")({
         let database = false;
         let storage = false;
         const authSteps: Record<string,boolean> = {
-          requestContext:false, userRead:false, passwordFunction:false, rateWrite:false,
+          requestContext:false, userRead:false, passwordFunction:false, rateWrite:false, rateConflict:false, passwordLookup:false, sessionRead:false,
         };
         try {
           const { getRequest } = await import("@tanstack/react-start/server");
@@ -34,6 +34,34 @@ export const Route = createFileRoute("/api/health")({
             ],true);
             authSteps.rateWrite = Number(results[0]?.rows[0]?.attempt_count)===1
               && results[1]?.rows[0]?.fingerprint===fingerprint;
+            const conflictFingerprint=randomBytes(32).toString("hex");
+            try {
+              const insert = `INSERT INTO skinao_admin_login_limits (fingerprint,attempt_count,window_started)
+                 VALUES ($1,1,now())
+                 ON CONFLICT (fingerprint) DO UPDATE
+                   SET attempt_count = CASE
+                     WHEN skinao_admin_login_limits.window_started < now() - interval '15 minutes' THEN 1
+                     ELSE skinao_admin_login_limits.attempt_count + 1 END,
+                     window_started = CASE
+                     WHEN skinao_admin_login_limits.window_started < now() - interval '15 minutes' THEN now()
+                     ELSE skinao_admin_login_limits.window_started END
+                 RETURNING attempt_count`;
+              const first = await neonTransport([{query:insert,params:[conflictFingerprint]}],true);
+              const second = await neonTransport([{query:insert,params:[conflictFingerprint]}],true);
+              authSteps.rateConflict=Number(first[0]?.rows[0]?.attempt_count)===1
+                && Number(second[0]?.rows[0]?.attempt_count)===2;
+            } finally {
+              await neonTransport([{query:"DELETE FROM skinao_admin_login_limits WHERE fingerprint=$1",params:[conflictFingerprint]}],true);
+            }
+            const lookup = await neonTransport([{
+              query:"SELECT id,username,role,credential_version, (password_hash=crypt($2,password_hash)) AS valid FROM skinao_admin_users WHERE username=$1 AND is_active=true LIMIT 1",
+              params:["adsestudos11@gmail.com", "dummy-pass-that-is-not-correct"],
+            }],false);
+            authSteps.passwordLookup=lookup[0]?.rows.length===1 && lookup[0]?.rows[0]?.valid===false;
+            const { adminSession } = await import("../lib/skinaoAuth.server");
+            const session = await adminSession(process.env["SKINAO_SESSION_SECRET"] || "not-a-real-secret");
+            authSteps.sessionRead=Boolean(session && typeof session.update==="function");
+
           } catch {}
         }
 
