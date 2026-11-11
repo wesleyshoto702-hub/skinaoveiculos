@@ -646,3 +646,9 @@
   .ska .ska-actions button.ska-publish-action { min-width:72px; }
   .ska .ska-actions button.ska-unpublish-action { min-width:94px; }
 }
+
+.ska .ska-stock-hint {
+  display:flex; align-items:center; gap:8px;
+  margin:0 0 13px; font-size:12px; line-height:1.5; color:var(--ska-muted);
+}
+.ska .ska-stock-hint svg { flex-shrink:0; color:var(--ska-red); }
