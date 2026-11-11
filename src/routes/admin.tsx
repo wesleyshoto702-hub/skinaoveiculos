@@ -2,14 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   AlertTriangle, ArrowLeft, ArrowRight, Camera, CarFront, Check, ChevronDown, CircleAlert,
-  ClipboardList, Crop, Edit3, Eye, EyeOff, ImagePlus, LockKeyhole, LogOut, Menu, Plus,
-  RefreshCw, RotateCcw, Save, Search, ShieldCheck, Sun, Moon, Trash2, UsersRound, WandSparkles, X,
+  ClipboardList, Crop, Edit3, HardDrive, ImagePlus, Menu, Plus,
+  RefreshCw, RotateCcw, Save, Search, Sun, Moon, Trash2, WandSparkles, X,
 } from "lucide-react";
 import {
-  ADMIN_PAGE_SIZE, addPhoto, currentSession, deletePhoto, getAdminStats,
+  ADMIN_PAGE_SIZE, addPhoto, deletePhoto, getAdminStats,
   listPhotosForVehicles, listVehiclePage,
-  myRole, photoUrl, displayPhotoUrl, removeStoredPhotos, saveVehicle, setCoverPhoto, signIn, signOut, updatePhoto, uploadPhoto,
-  type AdminRole, type AdminStats, type Session, type Vehicle, type VehicleDraft, type VehiclePhoto,
+  photoUrl, displayPhotoUrl, removeStoredPhotos, saveVehicle, setCoverPhoto, updatePhoto, uploadPhoto,
+  type AdminStats, type Vehicle, type VehicleDraft, type VehiclePhoto,
   type VehicleStatus,
 } from "../lib/skinaoAdminApi";
 import "../admin.css";
@@ -18,7 +18,7 @@ import { PhotoCropper } from "../components/admin/PhotoCropper";
 import { adjustedImageStyle, DEFAULT_PHOTO_ADJUSTMENTS, type PhotoAdjustments } from "../lib/skinaoPhotoAdjust";
 
 export const Route = createFileRoute("/admin")({ component: AdminPanel });
-type View = "inventory" | "form" | "team";
+type View = "inventory" | "form" | "storage";
 type Status = { text: string; error?: boolean };
 type AdminTheme = "dark" | "light";
 const THEME_STORAGE_KEY = "skinao-admin-theme";
@@ -67,14 +67,6 @@ function AdminPanel() {
     setAdminTheme(next);
     try { window.localStorage.setItem(THEME_STORAGE_KEY, next); } catch { /* Theme still works for this visit. */ }
   }
-  const [checking, setChecking] = useState(true);
-  const [session, setSession] = useState<Session | null>(null);
-  const [role, setRole] = useState<AdminRole | null>(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [authBusy, setAuthBusy] = useState(false);
-  const [authError, setAuthError] = useState("");
   const [view, setView] = useState<View>("inventory");
   const [menuOpen, setMenuOpen] = useState(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -100,28 +92,13 @@ function AdminPanel() {
   const [featureInput, setFeatureInput] = useState("");
 
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const current = await currentSession();
-        const membership = current ? await myRole(current.user.id) : null;
-        if (!active) return;
-        setSession(current);
-        setRole(membership);
-      } catch {
-        if (active) { setSession(null); setRole(null); }
-      } finally { if (active) setChecking(false); }
-    })();
-    return () => { active = false; };
-  }, []);
-  useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search), 350);
     return () => window.clearTimeout(timer);
   }, [search]);
   useEffect(() => {
-    if (session && role) void refresh();
+    void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, role, adminPage, debouncedSearch]);
+  }, [adminPage, debouncedSearch]);
 
   async function refresh() {
     const run = ++refreshRunRef.current;
@@ -149,30 +126,6 @@ function AdminPanel() {
     } finally {
       if (run === refreshRunRef.current) setLoading(false);
     }
-  }
-  async function logIn(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (authBusy) return;
-    setAuthBusy(true); setAuthError("");
-    try {
-      const signed = await signIn(email.trim().toLowerCase(), password);
-      const membership = await myRole(signed.user.id);
-      if (!membership) {
-        await signOut();
-        throw new Error("Sua conta não está autorizada a administrar a Skinão.");
-      }
-      setPassword("");
-      setShowPassword(false);
-      setSession(signed);
-      setRole(membership);
-    } catch (e) { setAuthError(e instanceof Error ? e.message : "Falha ao entrar."); }
-    finally { setAuthBusy(false); }
-  }
-  async function logOut() {
-    await signOut();
-    refreshRunRef.current++;
-    setSession(null); setRole(null); setVehicles([]); setPhotos([]);
-    setView("inventory"); setFeedback(null); setMenuOpen(false);
   }
   function createNew() {
     setDraft(emptyDraft()); setFeatureInput(""); setNewPhotos([]);
@@ -251,7 +204,7 @@ function AdminPanel() {
     try {
       await saveVehicle({ ...toDraft(item), is_published: !item.is_published }, item.id);
       await refresh();
-      setFeedback({ text: item.is_published ? "Anúncio retirado do site." : "Anúncio publicado no site." });
+      setFeedback({ text: item.is_published ? "Publicação local desmarcada." : "Veículo marcado como publicado neste navegador (não no site)." });
     } catch (e) { setFeedback({ text: e instanceof Error ? e.message : "Erro ao atualizar publicação.", error: true }); }
     finally { setWorking(false); }
   }
@@ -297,7 +250,7 @@ function AdminPanel() {
       // A single transactional RPC satisfies the unique "one cover per vehicle" index.
       await setCoverPhoto(photo.id);
       await refresh();
-      setFeedback({ text: "Capa alterada com sucesso. A nova imagem já é a principal do catálogo." });
+      setFeedback({ text: "Capa alterada com sucesso no estoque local." });
     } catch (e) {
       setFeedback({ text: e instanceof Error ? e.message : "Não foi possível definir a capa.", error: true });
       await refresh();
@@ -309,7 +262,7 @@ function AdminPanel() {
     try {
       await updatePhoto(photo.id, edits);
       await refresh();
-      setFeedback({ text: "Enquadramento salvo. O catálogo exibirá o ajuste automaticamente." });
+      setFeedback({ text: "Enquadramento salvo neste navegador." });
     } catch (e) {
       throw e instanceof Error ? e : new Error("Erro ao salvar o enquadramento.");
     } finally {
@@ -351,7 +304,7 @@ function AdminPanel() {
         cropped_storage_path: null, ...DEFAULT_PHOTO_ADJUSTMENTS,
       });
       await refresh();
-      setFeedback({ text: "Imagem original restaurada no catálogo." });
+      setFeedback({ text: "Imagem original restaurada no estoque local." });
       try { await removeStoredPhotos([photo.cropped_storage_path]); } catch { /* orphan variant is harmless */ }
     } catch (error) {
       setFeedback({ text: error instanceof Error ? error.message : "Falha ao restaurar imagem.", error: true });
@@ -373,7 +326,7 @@ function AdminPanel() {
       await Promise.all(changed.map((item, index) =>
         item.sort_order !== index ? updatePhoto(item.id, { sort_order: index }) : Promise.resolve()));
       await refresh();
-      setFeedback({ text: "Ordem das fotografias atualizada no catálogo." });
+      setFeedback({ text: "Ordem das fotografias atualizada no estoque local." });
     } catch (e) {
       await refresh();
       setFeedback({ text: e instanceof Error ? e.message : "Falha ao reorganizar fotos.", error: true });
@@ -392,7 +345,7 @@ function AdminPanel() {
         // Orphaned storage can be cleaned up later; the public gallery is already consistent.
       }
       await refresh();
-      setFeedback({ text: "Fotografia excluída do catálogo." });
+      setFeedback({ text: "Fotografia excluída do estoque local." });
     } catch (e) {
       await refresh();
       setFeedback({ text: e instanceof Error ? e.message : "Erro ao excluir foto.", error: true });
@@ -405,43 +358,6 @@ function AdminPanel() {
   const editingPhotos = editingId ? orderPhotos(photos, editingId) : [];
   const searched = vehicles;
 
-  if (checking) return <main className="ska ska-centered" data-ska-theme={adminTheme}><span className="ska-spinner"/> Validando sua sessão...</main>;
-  if (!session || !role) return (
-    <main className="ska ska-login-page" data-ska-theme={adminTheme}>
-      <a className="ska-back-link" href="/"><ArrowLeft size={17}/> Voltar ao site</a>
-      <ThemeToggle theme={adminTheme} onToggle={toggleAdminTheme}/>
-      <div className="ska-login-card">
-        <div className="ska-login-icon"><LockKeyhole size={29}/></div>
-        <span className="ska-eyebrow">SKINÃO VEÍCULOS</span>
-        <h1>SEU ESTOQUE.<br/><em>SOB CONTROLE.</em></h1>
-        <p>Entre com a conta autorizada para gerenciar os veículos da loja.</p>
-        <form onSubmit={logIn} className="ska-form">
-          <label>E-mail<input type="email" autoComplete="username" required value={email}
-            onChange={e => setEmail(e.target.value)} placeholder="seuemail@exemplo.com"/></label>
-          <div className="ska-password-control">
-            <label htmlFor="ska-admin-password">Senha</label>
-            <div className="ska-password-field">
-              <input id="ska-admin-password" type={showPassword ? "text" : "password"}
-                autoComplete="current-password" required value={password}
-                onChange={e => setPassword(e.target.value)} placeholder="Sua senha"/>
-              <button type="button" className="ska-password-visibility"
-                onClick={() => setShowPassword(visible => !visible)}
-                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                aria-pressed={showPassword}
-                title={showPassword ? "Ocultar senha" : "Mostrar senha"}>
-                {showPassword ? <EyeOff size={18} aria-hidden="true"/> : <Eye size={18} aria-hidden="true"/>}
-              </button>
-            </div>
-          </div>
-          {authError && <p className="ska-feedback ska-feedback--error" role="alert">{authError}</p>}
-          <button className="ska-button ska-button--red" type="submit" disabled={authBusy}>
-            {authBusy ? "Verificando..." : "Entrar no painel"} <ArrowRight size={18}/>
-          </button>
-        </form>
-      </div>
-    </main>
-  );
-
   return (
     <div className="ska ska-dashboard" data-ska-theme={adminTheme}>
       <aside className={"ska-sidebar" + (menuOpen ? " ska-sidebar--open" : "")}>
@@ -453,11 +369,11 @@ function AdminPanel() {
         <nav className="ska-nav" aria-label="Navegação administrativa">
           <button className={view === "inventory" ? "is-active" : ""} onClick={() => { setView("inventory"); setMenuOpen(false); }}><ClipboardList size={19}/> Estoque</button>
           <button className={view === "form" ? "is-active" : ""} onClick={createNew}><Plus size={19}/> Novo veículo</button>
-          <button className={view === "team" ? "is-active" : ""} onClick={() => { setView("team"); setMenuOpen(false); }}><UsersRound size={19}/> Equipe</button>
+          <button className={view === "storage" ? "is-active" : ""} onClick={() => { setView("storage"); setMenuOpen(false); }}><HardDrive size={19}/> Armazenamento</button>
         </nav>
         <div className="ska-sidebar-footer">
           <a href="/" target="_blank" rel="noopener noreferrer"><ArrowLeft size={18}/> Visualizar site</a>
-          <button type="button" onClick={() => void logOut()}><LogOut size={18}/> Sair do painel</button>
+          <span className="ska-local-mode"><HardDrive size={17}/> Painel sem login</span>
         </div>
       </aside>
       {menuOpen && <button type="button" className="ska-menu-backdrop" aria-label="Fechar menu" onClick={() => setMenuOpen(false)}/>}
@@ -467,10 +383,15 @@ function AdminPanel() {
           <span>SKINÃO <strong>ADMIN</strong></span>
           <div className="ska-topbar-actions">
             <ThemeToggle theme={adminTheme} onToggle={toggleAdminTheme}/>
-            <div className="ska-session-badge"><span className="ska-online-dot"/><span>{session.user.email ?? "Administrador"}</span><b>{role === "owner" ? "PROPRIETÁRIO" : "EQUIPE"}</b></div>
+            <div className="ska-session-badge"><span className="ska-online-dot"/><span>Este navegador</span><b>MODO LOCAL</b></div>
           </div>
         </header>
         <main className="ska-content">
+          <div className="ska-local-notice" role="note">
+            <HardDrive size={19} aria-hidden="true"/>
+            <span><strong>Administração local, sem login.</strong> Dados e fotografias ficam somente neste navegador.
+              Alterações e anúncios não são enviados ao site público ou a outros dispositivos.</span>
+          </div>
           {feedback && <div className={"ska-feedback" + (feedback.error ? " ska-feedback--error" : "")} role="status">
             {feedback.error ? <CircleAlert size={19}/> : <Check size={19}/>} {feedback.text}
             <button type="button" onClick={() => setFeedback(null)} aria-label="Fechar aviso"><X size={16}/></button>
@@ -478,13 +399,13 @@ function AdminPanel() {
           {view === "inventory" && <>
             <div className="ska-section-header">
               <div><span className="ska-eyebrow">VISÃO GERAL</span><h1>GESTÃO DE <em>ESTOQUE.</em></h1>
-                <p>Cadastre, atualize e publique veículos em poucos cliques. {demoCount ? demoCount + " modelos ilustrativos importados do site." : ""}</p></div>
+                <p>Cadastre e organize veículos neste navegador, mesmo sem banco de dados. {demoCount ? demoCount + " modelos ilustrativos importados do site." : ""}</p></div>
               <button className="ska-button ska-button--red" type="button" onClick={createNew}><Plus size={18}/> Adicionar veículo</button>
             </div>
             <div className="ska-stats">
               {[
                 {title:"Total de veículos",number:stats.total,icon:<CarFront size={21}/>},
-                {title:"No site",number:published,icon:<Check size={21}/>},
+                {title:"Marcados como publicados",number:published,icon:<Check size={21}/>},
                 {title:"Reservados",number:reserved,icon:<ClipboardList size={21}/>},
                 {title:"Vendidos",number:sold,icon:<CarFront size={21}/>},
               ].map(s => <div className="ska-stat" key={s.title}><span>{s.icon}{s.title}</span><strong>{s.number}</strong></div>)}
@@ -505,11 +426,11 @@ function AdminPanel() {
                       {v.is_demo && <span className="ska-status ska-status--demo">EXEMPLO DO SITE</span>}
                     </div>
                     <div className="ska-vehicle-state"><span className={"ska-status ska-status--"+v.status}>{statusLabel[v.status]}</span>
-                      <small>{v.is_published ? "Publicado" : "Rascunho"}</small>
+                      <small>{v.is_published ? "Marcado como publicado (local)" : "Rascunho"}</small>
                     </div>
                     <div className="ska-actions">
-                      <button type="button" disabled={working} onClick={() => void changePublish(v)} title={v.is_published ? "Retirar publicação" : "Publicar"}>
-                        {v.is_published ? "Despublicar" : "Publicar"}
+                      <button type="button" disabled={working} onClick={() => void changePublish(v)} title={v.is_published ? "Desmarcar publicação local" : "Marcar publicação local"}>
+                        {v.is_published ? "Desmarcar" : "Marcar publicado"}
                       </button>
                       <button type="button" onClick={() => editItem(v)} title="Editar" aria-label={"Editar "+v.model}><Edit3 size={18}/></button>
                     </div>
@@ -531,7 +452,7 @@ function AdminPanel() {
             <div className="ska-section-header"><div>
               <span className="ska-eyebrow">GERENCIAR ANÚNCIO</span>
               <h1>{editingId ? "EDITAR" : "NOVO"} <em>VEÍCULO.</em></h1>
-              <p>Informações exibidas no catálogo público quando o anúncio for publicado.</p>
+              <p>Cadastro armazenado neste navegador. Para exibir no site público, será necessário conectar um backend no futuro.</p>
             </div><button type="button" className="ska-button ska-button--outline" onClick={() => setView("inventory")}><ArrowLeft size={17}/> Voltar</button></div>
             <form onSubmit={save} className="ska-edit-form">
               <h2>Informações do veículo</h2>
@@ -618,7 +539,7 @@ function AdminPanel() {
               )}
               <label className="ska-toggle"><input type="checkbox" checked={draft.is_published}
                 onChange={e => setDraft(d => ({ ...d, is_published:e.target.checked }))}/>
-                <span>Publicar anúncio no site</span><small>Desmarcado, o veículo permanece como rascunho.</small>
+                <span>Marcar como publicado (apenas local)</span><small>Esta opção ainda não publica o anúncio no site público.</small>
               </label>
               <label className="ska-toggle"><input type="checkbox" checked={draft.is_featured}
                 onChange={e => setDraft(d => ({ ...d, is_featured:e.target.checked }))}/>
@@ -628,17 +549,21 @@ function AdminPanel() {
                 <button type="submit" disabled={working} className="ska-button ska-button--red"><Save size={18}/>{working?"Salvando...":"Salvar veículo"}</button></div>
             </form>
           </>}
-          {view === "team" && <>
-            <div className="ska-section-header"><div><span className="ska-eyebrow">CONTROLE DE ACESSO</span>
-              <h1>GERENCIAR <em>EQUIPE.</em></h1><p>Segurança e permissões da administração.</p></div></div>
-            <div className="ska-team-card"><div className="ska-team-icon"><ShieldCheck size={29}/></div>
-              <div><h2>{role === "owner" ? "Administrador principal" : "Funcionário autorizado"}</h2>
-                <p>{session.user.email}</p><span className="ska-status ska-status--available">{role === "owner" ? "PROPRIETÁRIO" : "FUNCIONÁRIO"}</span></div></div>
-            {role === "owner" ? <div className="ska-info">
-              <h3>Autorização de funcionários</h3><p>Por enquanto, apenas sua conta tem acesso.
-                As permissões de funcionário já estão previstas no banco. O convite e a revogação
-                de outras contas precisam de uma rotina administrativa segura antes da liberação.</p>
-            </div> : <div className="ska-info"><p>Somente o proprietário pode autorizar e revogar funcionários.</p></div>}
+          {view === "storage" && <>
+            <div className="ska-section-header"><div><span className="ska-eyebrow">DADOS DO PAINEL</span>
+              <h1>ARMAZENAMENTO <em>LOCAL.</em></h1>
+              <p>O login e a ligação de administração com o antigo Supabase foram removidos.</p></div></div>
+            <div className="ska-info">
+              <h3>Como o painel funciona agora</h3>
+              <p>Os veículos e as fotografias são salvos no armazenamento IndexedDB deste navegador.
+                É possível criar e editar cadastros sem conta e sem banco de dados remoto.</p>
+              <p>Esses cadastros não sincronizam com outros navegadores ou celulares e não aparecem
+                automaticamente no site público. Limpar os dados do navegador ou usar modo anônimo
+                pode apagar os cadastros. Faça cópias dos arquivos importantes.</p>
+              <p><strong>Atenção:</strong> qualquer pessoa com o endereço /admin pode abrir seu próprio
+                painel local. Antes de publicar alterações reais para visitantes, será necessário
+                reintroduzir um backend com autenticação e permissões seguras.</p>
+            </div>
           </>}
         </main>
       </div>
@@ -659,7 +584,7 @@ function AdminPanel() {
           <span className="ska-confirm-icon"><AlertTriangle size={25} aria-hidden="true"/></span>
           <span className="ska-eyebrow">CONFIRMAR ALTERAÇÃO</span>
           <h2 id="ska-unpublish-title">Despublicar veículo?</h2>
-          <p id="ska-unpublish-description">O anúncio de <strong>{pendingUnpublish.brand} {pendingUnpublish.model}</strong> deixará de aparecer no catálogo do site. Ele continuará salvo no painel e poderá ser publicado novamente quando desejar.</p>
+          <p id="ska-unpublish-description">O veículo <strong>{pendingUnpublish.brand} {pendingUnpublish.model}</strong> deixará de estar marcado como publicado neste navegador. Nada será alterado no site público.</p>
           <div className="ska-confirm-actions">
             <button type="button" ref={confirmCancelRef} className="ska-button ska-button--outline"
               onClick={() => setPendingUnpublish(null)}>Manter publicado</button>
