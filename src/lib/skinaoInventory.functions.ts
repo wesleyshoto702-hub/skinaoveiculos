@@ -110,8 +110,18 @@ export const inventoryRequest = createServerFn({ method:"POST" }).inputValidator
       }
       case "save": return result(await repo.save(data.draft,data.id ?? crypto.randomUUID()));
       case "deleteVehicle": {
-        // Existing UI does not expose this; keep the API safe for unpublished, photo-free drafts.
-        await repo.rows("DELETE FROM vehicles WHERE id=$1 AND NOT is_published AND NOT EXISTS (SELECT 1 FROM vehicle_images WHERE vehicle_id=$1) RETURNING id",[data.id],true);
+        // A exclusão é autenticada; as fotos são removidas por CASCADE e os
+        // objetos físicos só depois, evitando deixar referências quebradas.
+        const photos = await repo.photos([data.id]);
+        const deleted = await repo.rows<{ id:string }>(
+          "DELETE FROM vehicles WHERE id=$1 RETURNING id", [data.id], true);
+        if (!deleted.length) throw new Error("Veículo não encontrado.");
+        const paths = [...new Set(photos.flatMap(p =>
+          [p.storage_path, ...(p.cropped_storage_path ? [p.cropped_storage_path] : [])]))];
+        for (const path of paths) {
+          try { await s3().remove(path); }
+          catch (error) { console.error("Orphaned vehicle photo", error); }
+        }
         return result(null);
       }
       case "addPhoto": {
