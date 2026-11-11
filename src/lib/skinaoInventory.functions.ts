@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
@@ -48,6 +49,46 @@ export const lockInventory = createServerFn({ method:"POST" }).handler(async () 
   if (secret) await (await adminSession(secret)).clear();
   return { ok:true };
 });
+/**
+ * A one-time invite lets the shop owner onboard another browser without
+ * revealing the permanent admin key or permitting unauthenticated writes.
+ * Links expire after 24 hours and can be redeemed exactly once.
+ */
+export const createAdminInvite = createServerFn({ method:"POST" }).handler(async () => {
+  await requireAdmin(process.env["SKINAO_ADMIN_ACCESS_KEY"], process.env["SKINAO_SESSION_SECRET"]);
+  const repo = repository(neonTransport);
+  const recent = await repo.rows<{ total:string }>(
+    "SELECT count(*) AS total FROM skinao_admin_invites WHERE created_at > now() - interval '1 hour'"
+  );
+  if (Number(recent[0]?.total) >= 8)
+    throw new Error("Limite de convites atingido. Tente novamente em uma hora.");
+  const token = randomBytes(32).toString("hex");
+  const hash = createHash("sha256").update(token).digest("hex");
+  await repo.rows(
+    "INSERT INTO skinao_admin_invites(token_hash,expires_at) VALUES ($1,now() + interval '24 hours') RETURNING id",
+    [hash], true
+  );
+  return { token, expiresInHours:24 };
+});
+
+export const redeemAdminInvite = createServerFn({ method:"POST" })
+  .inputValidator(z.object({ token:z.string().regex(/^[a-f0-9]{64}$/) }))
+  .handler(async ({ data }) => {
+    const key = process.env["SKINAO_ADMIN_ACCESS_KEY"];
+    const secret = process.env["SKINAO_SESSION_SECRET"];
+    if (!key || !secret || !process.env["DATABASE_URL"]) return { ok:false };
+    const hash = createHash("sha256").update(data.token).digest("hex");
+    // This UPDATE is atomic, so even concurrent requests cannot redeem twice.
+    const consumed = await repository(neonTransport).rows<{ id:string }>(
+      "UPDATE skinao_admin_invites SET used_at=now() WHERE token_hash=$1 AND used_at IS NULL AND expires_at > now() RETURNING id",
+      [hash], true
+    );
+    if (!consumed.length) return { ok:false };
+    const session = await adminSession(secret);
+    await session.update({ unlocked:true, revision:authRevision(key) });
+    return { ok:true };
+  });
+
 export const publicCatalog = createServerFn({ method:"GET" }).inputValidator(z.object({ filters, page })).handler(async ({ data }) => {
   if (!neonTransportReady || !process.env['DATABASE_URL']) return { fallback:true, vehicles:[], total:0, hasMore:false };
   try {
@@ -91,7 +132,7 @@ const requestSchema = z.discriminatedUnion("action",[
   z.object({ action:z.literal("stats") }),
   z.object({ action:z.literal("photos"), ids:z.array(uuid).max(20) }),
   z.object({ action:z.literal("save"), id:uuid.optional(), draft:draftSchema }),
-
+  z.object({ action:z.literal("deleteVehicle"), id:uuid }),
   z.object({ action:z.literal("addPhoto"), photo:photoSchema }),
   z.object({ action:z.literal("deletePhoto"), id:uuid }),
   z.object({ action:z.literal("cover"), id:uuid }),
@@ -135,6 +176,28 @@ export const inventoryRequest = createServerFn({ method:"POST" }).inputValidator
           cropped_url:p.cropped_storage_path ? imageUrl(p.cropped_storage_path,base) : null })));
       }
       case "save": return result(await repo.save(data.draft,data.id ?? crypto.randomUUID()));
+      case "deleteVehicle": {
+        const existing = await repo.getVehicle(data.id);
+        const oldPhotos = await repo.photos([existing.id]);
+        // Vehicle photos are deleted in PostgreSQL by ON DELETE CASCADE.
+        const deleted = await repo.rows<{ id:string }>(
+          "DELETE FROM vehicles WHERE id=$1 RETURNING id", [data.id], true
+        );
+        if (!deleted.length) throw new Error("Veículo não encontrado. Atualize o estoque.");
+        // Never attempt to delete illustrative external photos from our S3 bucket.
+        const ownPaths = [...new Set(oldPhotos.flatMap(p => [
+          ...(p.external_url ? [] : [p.storage_path]),
+          ...(p.cropped_storage_path ? [p.cropped_storage_path] : []),
+        ]))];
+        let cleanupFailed = 0;
+        // Limit concurrency so removing a photo-heavy vehicle does not overload S3.
+        for (let i=0; i<ownPaths.length; i+=5) {
+          const results = await Promise.allSettled(ownPaths.slice(i,i+5).map(path => s3().remove(path)));
+          cleanupFailed += results.filter(r=>r.status==="rejected").length;
+        }
+        if (cleanupFailed) console.error("Some orphaned vehicle photos could not be removed", { vehicleId:data.id, cleanupFailed });
+        return result({ cleanupFailed });
+      }
       case "addPhoto": {
         if (data.photo.external_url) throw new Error("Fotografias ilustrativas não podem ser adicionadas ao estoque real.");
         safeStoragePath(data.photo.storage_path,data.photo.vehicle_id);
