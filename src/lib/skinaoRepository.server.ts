@@ -47,9 +47,11 @@ export function repository(run: Transport) {
       const params = [id,...keys.map(k=>draft[k])];
       const values = params.map((_,i)=>'$'+(i+1)).join(',');
       const publishing = params.length+1; params.push(draft.is_published as never);
+      const demo = params.length+1; params.push(draft.is_demo as never);
       const result = await rows<Vehicle>(`INSERT INTO vehicles (id,${columns},created_at,updated_at)
-        SELECT ${values},now(),now() WHERE NOT $${publishing}::boolean OR EXISTS
-        (SELECT 1 FROM vehicle_images WHERE vehicle_id=$1 AND external_url IS NULL)
+        SELECT ${values},now(),now() WHERE NOT ${publishing}::boolean OR EXISTS
+        (SELECT 1 FROM vehicle_images WHERE vehicle_id=$1 AND
+         (${demo}::boolean OR external_url IS NULL))
         ON CONFLICT(id) DO UPDATE SET ${keys.map(k=>'"'+k+'"=EXCLUDED."'+k+'"').join(',')},updated_at=now()
         RETURNING ${VEHICLE_COLUMNS}`, params, true);
       if (!result[0]) throw new Error("Publicação recusada: inclua fotos reais.");
