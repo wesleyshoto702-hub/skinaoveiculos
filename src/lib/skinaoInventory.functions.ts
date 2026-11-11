@@ -129,6 +129,8 @@ export const inventoryRequest = createServerFn({ method:"POST" }).inputValidator
       case "photos": {
         const base = process.env['SKINAO_IMAGES_PUBLIC_URL'] ?? "https://br-wandering-mountain-besgf38z.storage.c-9.us-east-2.aws.neon.tech/vehicle-images";
         return result((await repo.photos(data.ids)).map(p=>({...p,
+          crop_x:Number(p.crop_x), crop_y:Number(p.crop_y),
+          crop_zoom:Number(p.crop_zoom), crop_rotation:Number(p.crop_rotation),
           public_url:p.external_url?.startsWith("https://images.unsplash.com/photo-") ? p.external_url : imageUrl(p.storage_path,base),
           cropped_url:p.cropped_storage_path ? imageUrl(p.cropped_storage_path,base) : null })));
       }
