@@ -19,7 +19,7 @@ const changesSchema = z.object({ sort_order:z.number().int().min(0).max(1000).op
   crop_rotation:z.union([z.literal(0),z.literal(90),z.literal(180),z.literal(270)]).optional(),
   cropped_storage_path:z.string().max(300).nullable().optional() });
 
-export const getInventoryMode = createServerFn({ method:"GET" }).handler(async () => {
+export const getInventoryMode = createServerFn({ method:"POST" }).handler(async () => {
   const secret = process.env["SKINAO_SESSION_SECRET"];
   const configured = neonTransportReady && Boolean(process.env["DATABASE_URL"]);
   let unlocked = false;
@@ -87,8 +87,8 @@ export const loginInventory = createServerFn({ method:"POST" }).inputValidator(s
       // Passwords are bcrypt hashes in Neon (pgcrypto); only server-side
       // parameterized queries can perform this verification.
       // The response never includes the stored hash or account ID.
-      const accounts = await repo.rows<{ id:string; credential_version:number; valid:boolean }>(
-        `SELECT id,credential_version, (password_hash=crypt($2,password_hash)) AS valid
+      const accounts = await repo.rows<{ id:string; username:string; role:"owner"|"staff"; credential_version:number; valid:boolean }>(
+        `SELECT id,username,role,credential_version, (password_hash=crypt($2,password_hash)) AS valid
           FROM skinao_admin_users WHERE username=$1 AND is_active=true LIMIT 1`,
         [data.username.trim().toLowerCase(), data.password]
       );
@@ -101,7 +101,8 @@ export const loginInventory = createServerFn({ method:"POST" }).inputValidator(s
         adminId:account.id,
         credentialVersion:Number(account.credential_version),
       });
-      return { ok:true, reason:"success" as const };
+      return { ok:true, reason:"success" as const,
+        account:{ username:account.username, role:account.role } };
     } catch (error) {
       console.error("Admin login unavailable", error);
       return { ok:false, reason:"unavailable" as const };
