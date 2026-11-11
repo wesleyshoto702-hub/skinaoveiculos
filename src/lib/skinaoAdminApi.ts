@@ -29,5 +29,9 @@ export async function uploadPhoto(vehicleId: string, file: File) {
   return uploadInventoryPhoto({ data });
 }
 export const removeStoredPhotos = (paths: string[]) => remote ? request<void>({ action:"removeStored",paths }) : local.removeStoredPhotos(paths);
-export function photoUrl(path: string, externalUrl?: string|null) { return remote ? urls.get(path) ?? "/favicon.png" : local.photoUrl(path,externalUrl); }
+export function photoUrl(path: string, externalUrl?: string|null) {
+  if (!remote) return local.photoUrl(path, externalUrl);
+  if (externalUrl?.startsWith("https://images.unsplash.com/photo-")) return externalUrl;
+  return urls.get(path) ?? "/favicon.png";
+}
 export function displayPhotoUrl(photo: VehiclePhoto) { return photoUrl(photo.cropped_storage_path || photo.storage_path,photo.cropped_storage_path ? null : photo.external_url); }
