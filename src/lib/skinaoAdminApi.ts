@@ -1,7 +1,9 @@
-import { SKINAO_SUPABASE_URL as BASE, SKINAO_SUPABASE_PUBLIC_KEY as KEY } from "./skinaoAdminConfig";
-
-/** The public key is not an administrator credential. Supabase RLS enforces access. */
-export type AdminRole = "owner" | "staff";
+/**
+ * Local-only inventory adapter.
+ * No authentication, Supabase calls, or public write access.
+ * Inventory and image Blobs are stored in this browser's IndexedDB.
+ * This DOES NOT publish vehicles to the public website or synchronize devices.
+ */
 export type VehicleStatus = "available" | "reserved" | "sold";
 export type Vehicle = {
   id: string; brand: string; model: string; version: string; year: number;
@@ -18,204 +20,157 @@ export type VehiclePhoto = {
   crop_x?: number; crop_y?: number; crop_zoom?: number; crop_rotation?: number;
   cropped_storage_path?: string | null;
 };
-type User = { id: string; email?: string };
-export type Session = {
-  access_token: string; refresh_token: string; expires_at: number; user: User;
-};
-type AuthResult = Partial<Session> & { expires_in?: number };
-const STORE = "skinao-admin-v1";
-const getStored = (): Session | null => {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = sessionStorage.getItem(STORE);
-    if (!raw) return null;
-    const v = JSON.parse(raw) as Session;
-    return v.access_token && v.refresh_token && v.user?.id && v.expires_at ? v : null;
-  } catch { return null; }
-};
-const persist = (session: Session | null) => {
-  if (typeof window === "undefined") return;
-  if (!session) sessionStorage.removeItem(STORE);
-  else sessionStorage.setItem(STORE, JSON.stringify(session));
-};
-async function result(response: Response): Promise<any> {
-  const body = await response.text();
-  let parsed: any = {};
-  if (body) { try { parsed = JSON.parse(body); } catch { parsed = { message: body }; } }
-  if (!response.ok) throw new Error(String(parsed.msg || parsed.message || parsed.error_description || parsed.error || "Falha no Supabase."));
-  return parsed;
-}
-function asSession(v: AuthResult): Session {
-  if (!v.access_token || !v.refresh_token || !v.user?.id) throw new Error("Sessão inválida.");
-  return { access_token: v.access_token, refresh_token: v.refresh_token,
-    expires_at: v.expires_at || Math.floor(Date.now() / 1000) + (v.expires_in || 3600),
-    user: v.user };
-}
-async function auth(path: string, body: unknown): Promise<AuthResult> {
-  return result(await fetch(BASE + "/auth/v1/" + path, {
-    method: "POST",
-    headers: { apikey: KEY, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  }));
-}
-export async function signIn(email: string, password: string) {
-  const session = asSession(await auth("token?grant_type=password", { email, password }));
-  persist(session);
-  return session;
-}
-export async function signUp(email: string, password: string) {
-  const data = await auth("signup", { email, password });
-  if (data.access_token) { persist(asSession(data)); return true; }
-  return false; // A confirmation email is required.
-}
-let refreshPending: Promise<Session | null> | null = null;
-export async function currentSession(): Promise<Session | null> {
-  const existing = getStored();
-  if (!existing) return null;
-  if (existing.expires_at > Date.now() / 1000 + 60) return existing;
-  if (refreshPending) return refreshPending;
-  refreshPending = (async () => {
-    try {
-      const fresh = asSession(await auth("token?grant_type=refresh_token", {
-        refresh_token: existing.refresh_token,
-      }));
-      persist(fresh);
-      return fresh;
-    } catch {
-      persist(null);
-      return null;
-    } finally { refreshPending = null; }
-  })();
-  return refreshPending;
-}
-export async function signOut() {
-  const previous = getStored();
-  persist(null);
-  if (!previous) return;
-  try {
-    await fetch(BASE + "/auth/v1/logout", {
-      method: "POST", headers: { apikey: KEY, Authorization: "Bearer " + previous.access_token },
-    });
-  } catch { /* Local session has already been cleared. */ }
-}
-async function secureHeaders(extra: Record<string, string> = {}) {
-  const session = await currentSession();
-  if (!session) throw new Error("Sessão expirada. Entre novamente.");
-  return { apikey: KEY, Authorization: "Bearer " + session.access_token, ...extra };
-}
-async function db<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const response = await fetch(BASE + "/rest/v1/" + path, {
-    method,
-    headers: await secureHeaders({ "Content-Type": "application/json",
-      ...(method === "POST" || method === "PATCH" ? { Prefer: "return=representation" } : {}) }),
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  });
-  return result(response) as Promise<T>;
-}
-export async function myRole(id: string): Promise<AdminRole | null> {
-  const rows = await db<Array<{ role: AdminRole }>>(
-    "GET", "admin_users?select=role&user_id=eq." + encodeURIComponent(id),
-  );
-  return rows[0]?.role ?? null;
-}
-/** The admin panel also uses server pagination, avoiding a 1000-row ceiling. */
-export const ADMIN_PAGE_SIZE = 20;
 export type AdminStats = { total: number; published: number; reserved: number; sold: number; demos: number };
 export type AdminPage = { vehicles: Vehicle[]; total: number; hasMore: boolean };
+export const ADMIN_PAGE_SIZE = 20;
+
+type StoreName = "vehicles" | "photos" | "images";
+const DATABASE_NAME = "skinao-admin-local-v1";
+const previewUrls = new Map<string, string>();
+
+function openDatabase(): Promise<IDBDatabase> {
+  if (typeof indexedDB === "undefined") {
+    return Promise.reject(new Error("Este navegador não disponibiliza armazenamento local (IndexedDB)."));
+  }
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DATABASE_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains("vehicles")) db.createObjectStore("vehicles", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("photos")) db.createObjectStore("photos", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("images")) db.createObjectStore("images");
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(new Error("Não foi possível abrir o estoque local. Verifique as permissões do navegador."));
+    request.onblocked = () => reject(new Error("Feche outras abas do painel e tente novamente."));
+  });
+}
+
+async function storeRequest<T>(
+  name: StoreName, mode: IDBTransactionMode,
+  operation: (store: IDBObjectStore) => IDBRequest,
+): Promise<T> {
+  const db = await openDatabase();
+  return new Promise<T>((resolve, reject) => {
+    const transaction = db.transaction(name, mode);
+    let value: T;
+    const request = operation(transaction.objectStore(name));
+    request.onsuccess = () => { value = request.result as T; };
+    transaction.oncomplete = () => { db.close(); resolve(value); };
+    transaction.onerror = () => { db.close(); reject(transaction.error ?? new Error("Não foi possível salvar os dados locais.")); };
+    transaction.onabort = () => { db.close(); reject(transaction.error ?? new Error("Operação local cancelada.")); };
+  });
+}
+const all = <T>(name: StoreName) => storeRequest<T[]>(name, "readonly", store => store.getAll());
+const get = <T>(name: StoreName, id: string) =>
+  storeRequest<T | undefined>(name, "readonly", store => store.get(id));
+const put = (name: StoreName, record: unknown, key?: string) =>
+  storeRequest<IDBValidKey>(name, "readwrite", store =>
+    key ? store.put(record, key) : store.put(record));
+const remove = (name: StoreName, id: string) =>
+  storeRequest<undefined>(name, "readwrite", store => store.delete(id));
 
 export async function listVehiclePage(page: number, search: string): Promise<AdminPage> {
-  const params = new URLSearchParams({
-    select: "*", order: "created_at.desc,id.asc",
-    limit: String(ADMIN_PAGE_SIZE + 1), offset: String(Math.max(0, page) * ADMIN_PAGE_SIZE),
-  });
-  const term = search.trim().slice(0, 100).replace(/[,()*%".\\]/g, " ").replace(/\s+/g, " ").trim();
-  if (term) params.set("or", "(brand.ilike.*" + term + "*,model.ilike.*" + term + "*,version.ilike.*" + term + "*)");
-  const response = await fetch(BASE + "/rest/v1/vehicles?" + params, {
-    headers: await secureHeaders({ Prefer: "count=exact" }),
-  });
-  const rows = await result(response) as Vehicle[];
-  const range = response.headers.get("content-range")?.split("/")[1];
-  const count = range !== undefined && range !== "*" ? Number(range) : NaN;
-  const hasMore = Number.isFinite(count)
-    ? (page + 1) * ADMIN_PAGE_SIZE < count : rows.length > ADMIN_PAGE_SIZE;
+  const term = search.trim().toLocaleLowerCase("pt-BR");
+  const matching = (await all<Vehicle>("vehicles"))
+    .filter(vehicle => !term || [vehicle.brand, vehicle.model, vehicle.version]
+      .some(value => value.toLocaleLowerCase("pt-BR").includes(term)))
+    .sort((a, b) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id));
+  const offset = Math.max(0, page) * ADMIN_PAGE_SIZE;
   return {
-    vehicles: rows.slice(0, ADMIN_PAGE_SIZE), hasMore,
-    total: Number.isFinite(count) ? count : page * ADMIN_PAGE_SIZE + Math.min(rows.length, ADMIN_PAGE_SIZE) + (hasMore ? 1 : 0),
+    total: matching.length,
+    vehicles: matching.slice(offset, offset + ADMIN_PAGE_SIZE),
+    hasMore: offset + ADMIN_PAGE_SIZE < matching.length,
   };
+}
+
+async function cacheLocalImages(paths: string[]): Promise<void> {
+  await Promise.all([...new Set(paths.filter(p => p.startsWith("local/")))].map(async path => {
+    if (previewUrls.has(path)) return;
+    const image = await get<Blob>("images", path);
+    if (image) previewUrls.set(path, URL.createObjectURL(image));
+  }));
 }
 export async function listPhotosForVehicles(ids: string[]): Promise<VehiclePhoto[]> {
   if (!ids.length) return [];
-  const resultRows: VehiclePhoto[] = [];
-  for (let offset = 0; ; offset += 500) {
-    const params = new URLSearchParams({
-      select: "*", vehicle_id: "in.(" + ids.join(",") + ")",
-      order: "vehicle_id.asc,is_cover.desc,sort_order.asc", limit: "500", offset: String(offset),
-    });
-    const rows = await db<VehiclePhoto[]>("GET", "vehicle_images?" + params);
-    resultRows.push(...rows);
-    if (rows.length < 500) break;
-  }
-  return resultRows;
+  const selected = new Set(ids);
+  const photos = (await all<VehiclePhoto>("photos"))
+    .filter(photo => selected.has(photo.vehicle_id))
+    .sort((a, b) => a.vehicle_id.localeCompare(b.vehicle_id) ||
+      Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order);
+  await cacheLocalImages(photos.flatMap(photo =>
+    [photo.storage_path, ...(photo.cropped_storage_path ? [photo.cropped_storage_path] : [])]));
+  return photos;
 }
-/** Accurate inventory totals without downloading every vehicle into the browser. */
-async function countVehicles(filter: string): Promise<number> {
-  const response = await fetch(BASE + "/rest/v1/vehicles?select=id" + filter, {
-    method: "HEAD", headers: await secureHeaders({ Prefer: "count=exact" }),
-  });
-  if (!response.ok) throw new Error("Não foi possível consultar os totais do estoque.");
-  const raw = response.headers.get("content-range")?.split("/")[1] ?? "0";
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
+
 export async function getAdminStats(): Promise<AdminStats> {
-  const [total, published, reserved, sold, demos] = await Promise.all([
-    countVehicles(""),
-    countVehicles("&is_published=eq.true&status=in.(available,reserved)"),
-    countVehicles("&status=eq.reserved"),
-    countVehicles("&status=eq.sold"),
-    countVehicles("&is_demo=eq.true"),
-  ]);
-  return { total, published, reserved, sold, demos };
+  const vehicles = await all<Vehicle>("vehicles");
+  return {
+    total: vehicles.length,
+    published: vehicles.filter(v => v.is_published && v.status !== "sold").length,
+    reserved: vehicles.filter(v => v.status === "reserved").length,
+    sold: vehicles.filter(v => v.status === "sold").length,
+    demos: vehicles.filter(v => v.is_demo).length,
+  };
 }
-export async function saveVehicle(v: VehicleDraft, id?: string): Promise<Vehicle> {
-  const rows = await db<Vehicle[]>(id ? "PATCH" : "POST",
-    id ? "vehicles?id=eq." + encodeURIComponent(id) : "vehicles", v);
-  if (!rows[0]) throw new Error("Veículo não foi salvo.");
-  return rows[0];
+export async function saveVehicle(draft: VehicleDraft, id?: string): Promise<Vehicle> {
+  const previous = id ? await get<Vehicle>("vehicles", id) : undefined;
+  if (id && !previous) throw new Error("O veículo não foi encontrado neste navegador.");
+  const now = new Date().toISOString();
+  const vehicle: Vehicle = {
+    ...draft, id: id ?? crypto.randomUUID(), demo_source_id: previous?.demo_source_id ?? null,
+    created_at: previous?.created_at ?? now, updated_at: now,
+  };
+  await put("vehicles", vehicle);
+  return vehicle;
 }
-export const deleteVehicle = (id: string) =>
-  db<void>("DELETE", "vehicles?id=eq." + encodeURIComponent(id));
-export const addPhoto = (row: Omit<VehiclePhoto, "id">) => db("POST", "vehicle_images", row);
-export const deletePhoto = (id: string) =>
-  db<void>("DELETE", "vehicle_images?id=eq." + encodeURIComponent(id));
-/** Change only image presentation metadata; the database authorizes administrators via RLS. */
+export const deleteVehicle = (id: string) => remove("vehicles", id);
+
+export async function addPhoto(photo: Omit<VehiclePhoto, "id">): Promise<VehiclePhoto> {
+  const record = { ...photo, id: crypto.randomUUID() };
+  await put("photos", record);
+  return record;
+}
+export const deletePhoto = (id: string) => remove("photos", id);
 export async function updatePhoto(
-  id: string, changes: Partial<Pick<VehiclePhoto, "sort_order" | "crop_x" | "crop_y" | "crop_zoom" | "crop_rotation" | "cropped_storage_path">>,
+  id: string,
+  changes: Partial<Pick<VehiclePhoto, "sort_order" | "crop_x" | "crop_y" | "crop_zoom" | "crop_rotation" | "cropped_storage_path">>,
 ): Promise<VehiclePhoto> {
-  const rows = await db<VehiclePhoto[]>("PATCH", "vehicle_images?id=eq." + encodeURIComponent(id), changes);
-  if (!rows[0]) throw new Error("Não foi possível atualizar esta fotografia.");
-  return rows[0];
+  const previous = await get<VehiclePhoto>("photos", id);
+  if (!previous) throw new Error("A fotografia não foi encontrada neste navegador.");
+  const next = { ...previous, ...changes };
+  await put("photos", next);
+  return next;
 }
-/** Atomically clears the old cover before setting a new one; keeps the one-cover unique index intact. */
 export async function setCoverPhoto(id: string): Promise<void> {
-  const response = await fetch(BASE + "/rest/v1/rpc/skinao_set_vehicle_cover", {
-    method: "POST",
-    headers: await secureHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ p_photo_id: id }),
+  const db = await openDatabase();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction("photos", "readwrite");
+    const store = transaction.objectStore("photos");
+    const request = store.getAll();
+    request.onsuccess = () => {
+      const photos = request.result as VehiclePhoto[];
+      const selected = photos.find(photo => photo.id === id);
+      if (!selected) { transaction.abort(); return; }
+      for (const photo of photos) {
+        if (photo.vehicle_id !== selected.vehicle_id) continue;
+        const shouldCover = photo.id === id;
+        if (photo.is_cover !== shouldCover) store.put({ ...photo, is_cover: shouldCover });
+      }
+    };
+    transaction.oncomplete = () => { db.close(); resolve(); };
+    transaction.onerror = () => { db.close(); reject(transaction.error ?? new Error("Falha ao atualizar a foto de capa.")); };
+    transaction.onabort = () => { db.close(); reject(new Error("A fotografia não foi encontrada.")); };
   });
-  await result(response);
 }
-export function photoUrl(path: string, externalUrl?: string | null) {
-  // Existing illustrative images were hosted on Unsplash, not in Supabase Storage.
+
+export function photoUrl(path: string, externalUrl?: string | null): string {
   if (externalUrl?.startsWith("https://images.unsplash.com/photo-")) return externalUrl;
-  return BASE + "/storage/v1/object/public/vehicle-images/" +
-    path.split("/").map(encodeURIComponent).join("/");
+  return previewUrls.get(path) ?? "/favicon.png";
 }
-/** A saved crop is a separate Storage object; original source and demo URL are never overwritten. */
 export function displayPhotoUrl(photo: VehiclePhoto): string {
   return photo.cropped_storage_path
-    ? photoUrl(photo.cropped_storage_path)
-    : photoUrl(photo.storage_path, photo.external_url);
+    ? photoUrl(photo.cropped_storage_path) : photoUrl(photo.storage_path, photo.external_url);
 }
 const allowed: Record<string, string> = {
   "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif",
@@ -223,23 +178,16 @@ const allowed: Record<string, string> = {
 export async function uploadPhoto(vehicleId: string, photo: File): Promise<string> {
   if (!allowed[photo.type]) throw new Error("Formato não aceito: utilize JPG, PNG, WebP ou AVIF.");
   if (photo.size > 8 * 1024 * 1024) throw new Error("Cada imagem deve ter até 8 MB.");
-  const path = "vehicles/" + vehicleId + "/" + crypto.randomUUID() + "." + allowed[photo.type];
-  const upload = await fetch(BASE + "/storage/v1/object/vehicle-images/" + path, {
-    method: "POST",
-    headers: await secureHeaders({ "Content-Type": photo.type, "x-upsert": "false" }),
-    body: photo,
-  });
-  await result(upload);
+  const path = "local/" + vehicleId + "/" + crypto.randomUUID() + "." + allowed[photo.type];
+  await put("images", photo, path);
+  previewUrls.set(path, URL.createObjectURL(photo));
   return path;
 }
 export async function removeStoredPhotos(paths: string[]): Promise<void> {
-  // Illustrative references have no corresponding object in Supabase Storage.
-  const storagePaths = paths.filter(path => path.startsWith("vehicles/"));
-  if (!storagePaths.length) return;
-  const response = await fetch(BASE + "/storage/v1/object/vehicle-images", {
-    method: "DELETE",
-    headers: await secureHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ prefixes: storagePaths }),
-  });
-  await result(response);
+  await Promise.all(paths.filter(p => p.startsWith("local/")).map(async path => {
+    await remove("images", path);
+    const url = previewUrls.get(path);
+    if (url) URL.revokeObjectURL(url);
+    previewUrls.delete(path);
+  }));
 }
