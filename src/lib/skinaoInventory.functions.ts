@@ -5,7 +5,7 @@ import { adminSession, authRevision, passwordMatches, requireAdmin } from "./ski
 import { neonTransport, neonTransportReady } from "./skinaoNeonTransport.server";
 import { repository } from "./skinaoRepository.server";
 import { storage } from "./skinaoStorage.server";
-import { draftSchema, uuid, safeStoragePath, PUBLIC_WHERE, imageUrl } from "./skinaoInventoryRules";
+import { draftSchema, uuid, safeStoragePath, PUBLIC_WHERE, DEMO_WHERE, imageUrl } from "./skinaoInventoryRules";
 import type { VehiclePhoto } from "./skinaoInventoryTypes";
 
 const filters = z.object({ query:z.string().max(100), brand:z.string().max(100), type:z.string().max(100),
@@ -53,10 +53,16 @@ export const publicCatalog = createServerFn({ method:"GET" }).inputValidator(z.o
   try {
     const repo = repository(neonTransport);
     const base = process.env['SKINAO_IMAGES_PUBLIC_URL'] ?? "https://br-wandering-mountain-besgf38z.storage.c-9.us-east-2.aws.neon.tech/vehicle-images";
-    // Global existence, not a filtered empty page, determines illustrative fallback.
-    const existence = await repo.rows<{ total:string }>(`SELECT count(*) AS total FROM vehicles WHERE ${PUBLIC_WHERE}`);
-    if (!Number(existence[0]?.total)) return { fallback:true, vehicles:[], total:0, hasMore:false };
-    return { fallback:false, ...await repo.catalog(data.filters,data.page,base) };
+    // Prefer published real inventory. When there is none, use the editable
+    // demonstrative records from Neon; keep the hard-coded examples only as a last fallback.
+    // The global decision must not change when a visitor applies filters or pagination.
+    const availability = (await repo.rows<{ real:string; demos:string }>(
+      `SELECT count(*) FILTER (WHERE ${PUBLIC_WHERE}) AS real,
+              count(*) FILTER (WHERE ${DEMO_WHERE}) AS demos FROM vehicles`))[0];
+    const hasReal = Number(availability?.real) > 0;
+    const hasDemo = Number(availability?.demos) > 0;
+    if (!hasReal && !hasDemo) return { fallback:true, vehicles:[], total:0, hasMore:false };
+    return { fallback:false, ...await repo.catalog(data.filters,data.page,base,!hasReal) };
   } catch (error) {
     console.error("Catalog request failed", error);
     throw new Error("Não foi possível consultar o estoque real. Tente novamente.");
@@ -64,11 +70,18 @@ export const publicCatalog = createServerFn({ method:"GET" }).inputValidator(z.o
 });
 export const publicFacets = createServerFn({ method:"GET" }).handler(async () => {
   if (!neonTransportReady || !process.env['DATABASE_URL']) return { isDemo:true, brands:[],types:[],transmissions:[] };
-  const result = await repository(neonTransport).rows<{ brands:string[];types:string[];transmissions:string[];total:string }>(
-    `SELECT array_agg(DISTINCT brand ORDER BY brand) AS brands,array_agg(DISTINCT type ORDER BY type) AS types,
-     array_agg(DISTINCT transmission ORDER BY transmission) AS transmissions,count(*) AS total FROM vehicles WHERE ${PUBLIC_WHERE}`);
+  const repo = repository(neonTransport);
+  const availability = (await repo.rows<{ total:string }>(
+    `SELECT count(*) AS total FROM vehicles WHERE ${PUBLIC_WHERE}`))[0];
+  const isDemo = !Number(availability?.total);
+  const where = isDemo ? DEMO_WHERE : PUBLIC_WHERE;
+  const result = await repo.rows<{ brands:string[];types:string[];transmissions:string[] }>(
+    `SELECT array_agg(DISTINCT brand ORDER BY brand) AS brands,
+       array_agg(DISTINCT type ORDER BY type) AS types,
+       array_agg(DISTINCT transmission ORDER BY transmission) AS transmissions
+     FROM vehicles WHERE ${where}`);
   const r = result[0];
-  return { isDemo: !Number(r?.total), brands:r?.brands ?? [], types:r?.types ?? [], transmissions:r?.transmissions ?? [] };
+  return { isDemo, brands:r?.brands ?? [], types:r?.types ?? [], transmissions:r?.transmissions ?? [] };
 });
 
 const requestSchema = z.discriminatedUnion("action",[
