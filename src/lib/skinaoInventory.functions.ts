@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest, setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { adminSession, requireAdmin } from "./skinaoAuth.server";
+import { adminSession, requireAdmin, requireOwner } from "./skinaoAuth.server";
 import { neonTransport, neonTransportReady } from "./skinaoNeonTransport.server";
 import { repository } from "./skinaoRepository.server";
 import { storage } from "./skinaoStorage.server";
@@ -23,9 +23,17 @@ export const getInventoryMode = createServerFn({ method:"GET" }).handler(async (
   const secret = process.env["SKINAO_SESSION_SECRET"];
   const configured = neonTransportReady && Boolean(process.env["DATABASE_URL"]);
   let unlocked = false;
+  let account: { username:string; role:"owner"|"staff" } | null = null;
   if (secret && configured) {
     try {
       const session = await requireAdmin(secret);
+      const records = await neonTransport([{
+        query:"SELECT username,role FROM skinao_admin_users WHERE id=$1 AND is_active=true",
+        params:[session.data.adminId],
+      }],false);
+      const row = records[0]?.rows[0];
+      if (!row || (row.role !== "owner" && row.role !== "staff")) throw new Error("Usuário não autorizado.");
+      account = {username:String(row.username),role:row.role};
       unlocked = true;
       // Revocable database identity is checked before renewing the secure cookie.
       await session.update({
@@ -35,7 +43,7 @@ export const getInventoryMode = createServerFn({ method:"GET" }).handler(async (
     } catch { /* no valid session: show the login screen */ }
   }
   setResponseHeader("Cache-Control","no-store");
-  return { configured, unlocked,
+  return { configured, unlocked, account,
     storageConfigured:Boolean(process.env['AWS_ENDPOINT_URL_S3'] && process.env['AWS_REGION'] && process.env['AWS_ACCESS_KEY_ID'] && process.env['AWS_SECRET_ACCESS_KEY']) };
 });
 /** Single administrator sign-in. Password stays server-side, never in the JS bundle.
@@ -85,6 +93,7 @@ export const loginInventory = createServerFn({ method:"POST" }).inputValidator(s
       );
       const account = accounts[0];
       if (blocked || !account?.valid) return { ok:false, reason:"invalid" as const };
+      await repo.rows("UPDATE skinao_admin_users SET last_login_at=now() WHERE id=$1", [account.id], true);
       await repo.rows("DELETE FROM skinao_admin_login_limits WHERE fingerprint=$1", [fingerprint], true);
       const session = await adminSession(secret);
       await session.update({
@@ -193,6 +202,7 @@ export const inventoryRequest = createServerFn({ method:"POST" }).inputValidator
       }
       case "save": return result(await repo.save(data.draft,data.id ?? crypto.randomUUID()));
       case "deleteVehicle": {
+        await requireOwner(process.env["SKINAO_SESSION_SECRET"]);
         const existing = await repo.getVehicle(data.id);
         const oldPhotos = await repo.photos([existing.id]);
         // Vehicle photos are deleted in PostgreSQL by ON DELETE CASCADE.
