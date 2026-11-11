@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
 /** Persistent browser authorization, renewable on each authorized panel visit. */
-export const ADMIN_SESSION_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
+export const ADMIN_SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 import { useSession, getRequest, setResponseHeader } from "@tanstack/react-start/server";
 
 export function passwordMatches(input: string, expected: string | undefined) {
@@ -22,6 +22,6 @@ export async function requireAdmin(key: string | undefined, secret: string | und
   if (!key || !secret) throw new Error("Edição remota indisponível. Configure a autorização de administração.");
   const session = await adminSession(secret);
   if (!session.data.unlocked || !passwordMatches(session.data.revision ?? "", authRevision(key)))
-    throw new Error("Edição bloqueada. Desbloqueie novamente no painel.");
+    throw new Error("Edição bloqueada. Faça login novamente para continuar.");
   return session;
 }
