@@ -371,9 +371,35 @@ function AdminPanel() {
     if (working || item.is_published === publish) return;
     setPendingVisibility({ vehicle: item, publish });
   }
+  function requestDeletion(item: Vehicle) {
+    if (working) return;
+    setDeleteConfirmation("");
+    setPendingDelete(item);
+  }
+  async function deleteConfirmed(item: Vehicle) {
+    if (working || deleteConfirmation.trim().toUpperCase() !== "EXCLUIR") return;
+    setPendingDelete(null);
+    setDeleteConfirmation("");
+    setWorking(true); setFeedback(null);
+    try {
+      const result = await deleteVehicle(item.id);
+      setAdminPage(0);
+      await refresh();
+      setFeedback(result.cleanupFailed ? {
+        text: "O veículo foi excluído, mas alguns arquivos não puderam ser removidos do armazenamento. Revise o bucket de imagens.",
+        error: true,
+      } : {
+        text: remoteMode
+          ? "Veículo e fotografias excluídos definitivamente do estoque Neon."
+          : "Veículo e fotografias excluídos deste navegador. O estoque Neon não foi alterado.",
+      });
+    } catch (error) {
+      setFeedback({ text:error instanceof Error ? error.message : "Falha ao excluir o veículo.",error:true });
+    } finally { setWorking(false); }
+  }
   // Trap keyboard focus within the confirmation dialog; Escape/backdrop cancel safely.
   useEffect(() => {
-    if (!pendingVisibility) return;
+    if (!pendingVisibility && !pendingDelete) return;
     const previousFocus = document.activeElement;
     const oldOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -382,6 +408,8 @@ function AdminPanel() {
       if (event.key === "Escape") {
         event.preventDefault();
         setPendingVisibility(null);
+        setPendingDelete(null);
+        setDeleteConfirmation("");
       } else if (event.key === "Tab") {
         const buttons = confirmDialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
         if (!buttons?.length) return;
@@ -400,7 +428,7 @@ function AdminPanel() {
       window.removeEventListener("keydown", onKeyDown);
       if (previousFocus instanceof HTMLElement) previousFocus.focus();
     };
-  }, [pendingVisibility]);
+  }, [pendingVisibility, pendingDelete]);
   // These photo controls save immediately; the vehicle's text fields still use "Salvar veículo".
   async function setCoverPicture(photo: VehiclePhoto) {
     if (working || photo.is_cover) return;
