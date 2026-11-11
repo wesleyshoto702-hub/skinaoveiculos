@@ -6,7 +6,7 @@ import {
   RefreshCw, RotateCcw, Save, Search, Sun, Moon, Trash2, WandSparkles, X,
 } from "lucide-react";
 import {
-  setRemoteInventory, ADMIN_PAGE_SIZE, addPhoto, deletePhoto, getAdminStats,
+  setRemoteInventory, ADMIN_PAGE_SIZE, addPhoto, deletePhoto, deleteVehicle, getAdminStats,
   listPhotosForVehicles, listVehiclePage,
   photoUrl, displayPhotoUrl, removeStoredPhotos, saveVehicle, setCoverPhoto, updatePhoto, uploadPhoto,
   type AdminStats, type Vehicle, type VehicleDraft, type VehiclePhoto,
@@ -255,6 +255,28 @@ function AdminPanel() {
     if (item.is_published) setPendingUnpublish(item);
     else void applyPublication(item);
   }
+  async function removeVehicle(item: Vehicle) {
+    if (working || !window.confirm(
+      "Excluir permanentemente " + item.brand + " " + item.model +
+      "? O anúncio e todas as fotos serão removidos. Esta ação não pode ser desfeita."
+    )) return;
+    setWorking(true); setFeedback(null);
+    try {
+      if (!remoteMode) {
+        const pictures = await listPhotosForVehicles([item.id]);
+        for (const picture of pictures) await deletePhoto(picture.id);
+        await removeStoredPhotos([...new Set(pictures.flatMap(p =>
+          [p.storage_path, ...(p.cropped_storage_path ? [p.cropped_storage_path] : [])]))]);
+      }
+      await deleteVehicle(item.id);
+      setAdminPage(0);
+      await refresh();
+      setFeedback({ text: remoteMode ? "Veículo e fotografias excluídos do estoque da loja." :
+        "Veículo e fotografias removidos deste navegador." });
+    } catch (error) {
+      setFeedback({ text: error instanceof Error ? error.message : "Não foi possível excluir o veículo.", error: true });
+    } finally { setWorking(false); }
+  }
   // Trap keyboard focus within the confirmation dialog; Escape/backdrop cancel safely.
   useEffect(() => {
     if (!pendingUnpublish) return;
@@ -483,6 +505,8 @@ function AdminPanel() {
                         {v.is_published ? "Despublicar" : remoteMode ? "Publicar" : "Marcar publicado"}
                       </button>
                       <button type="button" onClick={() => editItem(v)} title="Editar" aria-label={"Editar "+v.model}><Edit3 size={18}/></button>
+                      <button type="button" disabled={working} onClick={() => void removeVehicle(v)}
+                        title="Excluir veículo" aria-label={"Excluir "+v.brand+" "+v.model}><Trash2 size={18}/></button>
                     </div>
                   </div>;
                 }) : <div className="ska-empty"><CarFront size={33}/><h3>{search ? "Nenhum resultado" : "Seu estoque começa aqui"}</h3><p>{search ? "Experimente outra busca." : "Adicione o primeiro veículo para começar a utilizar o painel."}</p>{!search && <button className="ska-button ska-button--red" type="button" onClick={createNew}><Plus size={17}/> Cadastrar veículo</button>}</div>
