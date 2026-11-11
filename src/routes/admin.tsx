@@ -17,7 +17,10 @@ import { PhotoEditor } from "../components/admin/PhotoEditor";
 import { PhotoCropper } from "../components/admin/PhotoCropper";
 import { adjustedImageStyle, DEFAULT_PHOTO_ADJUSTMENTS, type PhotoAdjustments } from "../lib/skinaoPhotoAdjust";
 
-export const Route = createFileRoute("/admin")({ component: AdminPanel });
+export const Route = createFileRoute("/admin")({
+  component: AdminPanel,
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
+});
 type View = "inventory" | "form" | "storage";
 type Status = { text: string; error?: boolean };
 type AdminTheme = "dark" | "light";
