@@ -470,7 +470,7 @@ function AdminPanel() {
                 disabled={!modeReady || working}
                 aria-expanded={unlockOpen} aria-controls="ska-unlock-form"
                 onClick={() => setUnlockOpen(v => !v)}>
-                {modeReady ? "Desbloquear edição" : "Verificando conexão..."}
+                Desbloquear edição
               </button>}
           </section>
           {unlockOpen && !remoteMode && <form id="ska-unlock-form" className="ska-connection-form" onSubmit={changeAccess}>
