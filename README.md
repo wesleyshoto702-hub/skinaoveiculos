@@ -30,26 +30,61 @@ quilometragem, cor, preço, descrição, opcionais, status, destaque e publicaç
 upload de até 8 MB por foto, galeria, imagem de capa, edição do enquadramento,
 recorte com arquivo derivado, restauração do original e organização das fotos.
 
-**Painel administrativo com login:** o endereço `/admin` abre uma tela
-de autenticação para visitantes sem sessão. Ela possui somente **Usuário**, **Senha**
-e botão de **mostrar/ocultar senha**, sem cadastro público, recuperação de conta
-ou informações sobre o provedor do banco.
+**Login de administradores gerenciado no Neon.** A tela `/admin` contém
+somente **Usuário**, **Senha**, botão de **mostrar/ocultar senha** e **Entrar**.
+Não possui cadastro de contas aberto ao público.
 
-A única conta administrativa é configurada no servidor:
-- Usuário: `SKINAO_ADMIN_USERNAME` (produção: `admin`).
-- Senha: `SKINAO_ADMIN_ACCESS_KEY` (existente na Vercel; nunca versionar).
-- Sessões: `SKINAO_SESSION_SECRET`, rotacionado na implantação do login para
-  invalidar autorizações anteriores; cookie HttpOnly, Secure, SameSite=Strict.
-- Duração da sessão: **7 dias**, renovada em visitas autorizadas.
-- Botão **Sair**: revoga a sessão deste navegador.
-- Limite de tentativas: 10 por janela de 15 minutos e impressão digital
-  de IP anonimizada em `skinao_admin_login_limits` no PostgreSQL.
-- Mensagens genéricas quando usuário ou senha estão incorretos.
+As credenciais de cada administrador estão na tabela `skinao_admin_users`
+do banco `skinao`, protegidas por hashes bcrypt do `pgcrypto`. A Vercel
+não é mais a fonte de usuários ou senhas. O servidor continua usando as variáveis
+de infraestrutura `DATABASE_URL` e `SKINAO_SESSION_SECRET` para acessar
+a base e assinar o cookie de sessão, independentemente do provedor de hospedagem.
 
-As funções administrativas verificam a sessão no servidor antes de qualquer
-alteração. A página pública de veículos permanece acessível sem login.
-O painel não fornece chave fixa embutida no frontend, acesso público a escrita,
-convite, criação de conta ou modo local.
+Colunas principais:
+- `username`: login único, em letras minúsculas;
+- `password_hash`: apenas o hash bcrypt (`crypt` e `gen_salt('bf',12)`),
+  nunca a senha em texto puro;
+- `is_active`: se o login está autorizado;
+- `credential_version`: aumente ao mudar usuário/senha ou revogar sessões.
+
+O servidor valida usuário e senha em consulta parametrizada ao Neon e verifica
+`is_active` e `credential_version` em toda requisição de edição. A sessão
+é HttpOnly, Secure e SameSite=Strict, válida por até 7 dias, e pode ser encerrada
+com **Sair**. O limite de tentativas permanece na tabela
+`skinao_admin_login_limits`.
+
+**Definir nome de usuário e senha pelo Neon Console:**
+
+1. Em [console.neon.tech](https://console.neon.tech), selecione
+   `SkinaoVeiculos` → **Postgres database → SQL Editor**.
+2. Escolha a branch `main` e o banco `skinao`.
+3. Execute a consulta abaixo, substituindo `meuusuario` e
+   `SENHA_NOVA_FORTE_AQUI`:
+
+```sql
+UPDATE skinao_admin_users
+SET username = 'meuusuario',
+    password_hash = crypt('SENHA_NOVA_FORTE_AQUI', gen_salt('bf', 12)),
+    credential_version = credential_version + 1
+WHERE username = 'admin';
+```
+
+4. Confira **somente** os metadados, sem selecionar `password_hash`:
+
+```sql
+SELECT username, is_active, updated_at
+FROM skinao_admin_users;
+```
+
+5. Acesse `https://skinaoveiculos.vercel.app/admin` usando seu novo
+   nome e senha. Se já mudou o nome anteriormente, altere também o
+   `WHERE username = '...'` para o nome atual.
+
+**Cuidado:** o SQL Editor da Neon mantém histórico de consultas. O comando
+acima inclui a senha na consulta e, portanto, pode aparecer nesse histórico.
+Não compartilhe o histórico, não salve a consulta como modelo e, quando possível,
+prefira executar a alteração por um formulário seguro ou um cliente SQL com
+parâmetros de consulta. Senhas nunca devem ser salvas no código-fonte.
 
 ### Banco de dados já provisionado
 
@@ -123,19 +158,17 @@ acesso negado sem autorização no domínio definitivo.
 
 ### Login e testes da publicação
 
-1. Acesse `https://skinaoveiculos.vercel.app/admin` num navegador privado:
-   a tela de login deve aparecer antes do inventário.
-2. Entre com o usuário `admin` e a senha de administração já armazenada no
-   ambiente seguro da Vercel. O navegador recebe uma sessão assinada.
-3. Confira a abertura do estoque e o funcionamento das fotos e dos anúncios.
-4. Clique em **Sair** e confirme que o painel volta ao login; URLs de
-   administração não permitem gravação sem sessão.
-5. Verifique que tentativas com senha errada não criam sessão e que há
-   bloqueio temporário após 10 tentativas em 15 minutos.
+1. Defina as credenciais em `skinao_admin_users` pelo SQL Editor do Neon.
+2. Acesse `https://skinaoveiculos.vercel.app/admin`: a tela
+   de login deve aparecer antes do inventário.
+3. Entre com seu usuário e senha do Neon; a sessão é assinada no servidor.
+4. Confira o estoque, anúncios e fotos, e teste o botão **Sair**.
+5. Confira se senha incorreta não autoriza acesso e se dez falhas bloqueiam
+   tentativas adicionais por quinze minutos.
+6. Confirme que as rotas de gravação rejeitam visitantes sem sessão válida.
 
-Nenhuma senha é armazenada no código ou exposta ao navegador. A validação do
-usuário, senha e limite de tentativas ocorre no servidor. A publicação não
-depende da Lovable.
+Nenhuma senha de usuário precisa ser configurada na Vercel. As chaves de
+infraestrutura da hospedagem permanecem privadas e não são expostas ao navegador.
 
 ### Avisos e prevenção de perda acidental
 
