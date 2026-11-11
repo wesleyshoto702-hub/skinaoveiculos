@@ -23,7 +23,15 @@ export const getInventoryMode = createServerFn({ method:"GET" }).handler(async (
   const secret = process.env['SKINAO_SESSION_SECRET'];
   const configured = neonTransportReady && Boolean(process.env['DATABASE_URL']);
   let unlocked = false;
-  if (key && secret) { try { await requireAdmin(key,secret); unlocked=true; } catch { /* locked */ } }
+  if (key && secret) {
+    try {
+      const session = await requireAdmin(key, secret);
+      unlocked = true;
+      // Reissue the signed HttpOnly cookie so an active trusted browser stays unlocked.
+      // Clearing cookies, revoking the key or using "Bloquear edição" still ends access.
+      await session.update({ unlocked: true, revision: authRevision(key) });
+    } catch { /* locked or cookies unavailable */ }
+  }
   setResponseHeader("Cache-Control","no-store");
   return { configured, unlocked:configured && unlocked, canUnlock:configured && Boolean(key && secret),
     storageConfigured:Boolean(process.env['AWS_ENDPOINT_URL_S3'] && process.env['AWS_REGION'] && process.env['AWS_ACCESS_KEY_ID'] && process.env['AWS_SECRET_ACCESS_KEY']) };
@@ -106,7 +114,8 @@ export const inventoryRequest = createServerFn({ method:"POST" }).inputValidator
       case "photos": {
         const base = process.env['SKINAO_IMAGES_PUBLIC_URL'] ?? "https://br-wandering-mountain-besgf38z.storage.c-9.us-east-2.aws.neon.tech/vehicle-images";
         return result((await repo.photos(data.ids)).map(p=>({...p,
-          public_url:imageUrl(p.storage_path,base), cropped_url:p.cropped_storage_path ? imageUrl(p.cropped_storage_path,base) : null })));
+          public_url:p.external_url?.startsWith("https://images.unsplash.com/photo-") ? p.external_url : imageUrl(p.storage_path,base),
+          cropped_url:p.cropped_storage_path ? imageUrl(p.cropped_storage_path,base) : null })));
       }
       case "save": return result(await repo.save(data.draft,data.id ?? crypto.randomUUID()));
       case "deleteVehicle": {
