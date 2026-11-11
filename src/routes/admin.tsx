@@ -132,6 +132,32 @@ function AdminPanel() {
   const [draft, setDraft] = useState<VehicleDraft>(emptyDraft);
   const [newPhotos, setNewPhotos] = useState<File[]>([]);
   const [featureInput, setFeatureInput] = useState("");
+  const formBaselineRef = useRef("");
+
+  // Form data is saved only when "Salvar veículo" is pressed; gallery controls save immediately.
+  function hasUnsavedFormChanges() {
+    return view === "form" && (newPhotos.length > 0 ||
+      JSON.stringify({ draft, features: featureInput }) !== formBaselineRef.current);
+  }
+  function confirmLeaveForm() {
+    return !hasUnsavedFormChanges() || window.confirm(
+      "Você tem alterações não salvas neste veículo. Deseja sair e descartar essas alterações?"
+    );
+  }
+  function leaveForm(next: "inventory" | "storage") {
+    if (!confirmLeaveForm()) return;
+    setView(next); setMenuOpen(false);
+  }
+  useEffect(() => {
+    if (!hasUnsavedFormChanges()) return;
+    const preventAccidentalExit = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", preventAccidentalExit);
+    return () => window.removeEventListener("beforeunload", preventAccidentalExit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, draft, featureInput, newPhotos]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search), 350);
@@ -170,13 +196,20 @@ function AdminPanel() {
     }
   }
   function createNew() {
-    setDraft(emptyDraft()); setFeatureInput(""); setNewPhotos([]);
+    if (!confirmLeaveForm()) return;
+    const fresh = emptyDraft();
+    setDraft(fresh); setFeatureInput(""); setNewPhotos([]);
+    formBaselineRef.current = JSON.stringify({ draft: fresh, features: "" });
     setEditingId(null); setEditingPhoto(null); setCroppingPhoto(null); setView("form"); setFeedback(null);
     setMenuOpen(false);
   }
   function editItem(vehicle: Vehicle) {
-    setDraft(toDraft(vehicle));
-    setFeatureInput(vehicle.features.join(", "));
+    if (!confirmLeaveForm()) return;
+    const initial = toDraft(vehicle);
+    const initialFeatures = vehicle.features.join(", ");
+    setDraft(initial);
+    setFeatureInput(initialFeatures);
+    formBaselineRef.current = JSON.stringify({ draft: initial, features: initialFeatures });
     setNewPhotos([]); setEditingId(vehicle.id); setEditingPhoto(null); setCroppingPhoto(null);
     setView("form"); setFeedback(null); setMenuOpen(false);
   }
@@ -202,6 +235,9 @@ function AdminPanel() {
       setFeedback({ text: "Inclua uma fotografia antes de publicar o anúncio.", error: true });
       return;
     }
+    if (wasDemo && !draft.is_demo && !window.confirm(
+      "Converter este EXEMPLO DO SITE em um veículo real da loja? Verifique marca, preço, disponibilidade e fotografias reais antes de publicá-lo como anúncio."
+    )) return;
     setWorking(true); setFeedback(null);
     try {
       const requestedPublication = draft.is_published;
@@ -386,7 +422,9 @@ function AdminPanel() {
     } finally { setWorking(false); }
   }
   async function removePicture(photo: VehiclePhoto) {
-    if (working || !window.confirm("Excluir esta fotografia?")) return;
+    if (working || !window.confirm(
+      "Excluir esta fotografia do cadastro? Esta ação não pode ser desfeita. Se for a última foto, o veículo será despublicado automaticamente, mas continuará cadastrado."
+    )) return;
     setWorking(true); setFeedback(null);
     try {
       const nextCover = photo.is_cover
@@ -420,9 +458,9 @@ function AdminPanel() {
           <button className="ska-mobile-close" type="button" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"><X size={19}/></button>
         </div>
         <nav className="ska-nav" aria-label="Navegação administrativa">
-          <button className={view === "inventory" ? "is-active" : ""} onClick={() => { setView("inventory"); setMenuOpen(false); }}><ClipboardList size={19}/> Estoque</button>
+          <button className={view === "inventory" ? "is-active" : ""} onClick={() => leaveForm("inventory")}><ClipboardList size={19}/> Estoque</button>
           <button className={view === "form" ? "is-active" : ""} onClick={createNew}><Plus size={19}/> Novo veículo</button>
-          <button className={view === "storage" ? "is-active" : ""} onClick={() => { setView("storage"); setMenuOpen(false); }}><HardDrive size={19}/> Armazenamento</button>
+          <button className={view === "storage" ? "is-active" : ""} onClick={() => leaveForm("storage")}><HardDrive size={19}/> Armazenamento</button>
         </nav>
         <div className="ska-sidebar-footer">
           <a href="/" target="_blank" rel="noopener noreferrer"><ArrowLeft size={18}/> Visualizar site</a>
@@ -627,13 +665,17 @@ function AdminPanel() {
               )}
               <label className="ska-toggle"><input type="checkbox" checked={draft.is_published}
                 onChange={e => setDraft(d => ({ ...d, is_published:e.target.checked }))}/>
-                <span>{remoteMode ? "Publicar no catálogo" : "Marcar como publicado (apenas local)"}</span><small>{remoteMode ? "Somente veículos disponíveis ou reservados com fotos reais." : "Esta opção não publica no site público."}</small>
+                <span>{remoteMode ? "Publicar no catálogo" : "Marcar como publicado (apenas local)"}</span><small>{remoteMode
+                    ? (draft.is_demo
+                      ? "Exemplos aparecerão identificados como ilustrativos. Para despublicar, os dados e fotos ficam salvos."
+                      : "Veículos reais precisam estar disponíveis ou reservados e ter fotos reais.")
+                    : "Esta opção não publica no site público."}</small>
               </label>
               <label className="ska-toggle"><input type="checkbox" checked={draft.is_featured}
                 onChange={e => setDraft(d => ({ ...d, is_featured:e.target.checked }))}/>
                 <span>Marcar como destaque</span>
               </label>
-              <div className="ska-form-footer"><button type="button" className="ska-button ska-button--outline" onClick={() => setView("inventory")}>Cancelar</button>
+              <div className="ska-form-footer"><button type="button" className="ska-button ska-button--outline" onClick={() => leaveForm("inventory")}>Cancelar</button>
                 <button type="submit" disabled={working} className="ska-button ska-button--red"><Save size={18}/>{working?"Salvando...":"Salvar veículo"}</button></div>
             </form>
           </>}
