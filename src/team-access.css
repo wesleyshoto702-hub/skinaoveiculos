@@ -1,0 +1,96 @@
+/* Skinão Veículos — Equipe e acessos */
+.ska .ska-team { width:100%; }
+.ska .ska-team-heading {display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:28px;}
+.ska .ska-team-heading h1 {font:800 clamp(32px,3.3vw,44px)/1.03 "Barlow Condensed",sans-serif;letter-spacing:.02em;margin:10px 0 8px;}
+.ska .ska-team-heading p {font-size:14px;color:var(--ska-muted);margin:0;}
+.ska .ska-team-heading .ska-button {flex-shrink:0;}
+.ska .ska-team-alert {display:flex;align-items:center;gap:10px;padding:13px 15px;margin-bottom:21px;border-radius:10px;background:rgba(35,158,106,.11);color:#77d5ad;border:1px solid rgba(35,158,106,.35);font-size:13px;}
+.ska .ska-team-alert--error {color:#ffb4c0;border-color:rgba(229,50,77,.4);background:rgba(229,50,77,.1);}
+.ska .ska-team-alert span {flex:1;}
+.ska .ska-team-alert button {border:0;background:transparent;color:inherit;display:flex;padding:4px;border-radius:6px;}
+.ska .ska-team-owner {display:flex;gap:20px;align-items:center;border:1px solid #754052;border-radius:15px;background:linear-gradient(115deg,rgba(207,40,68,.14),var(--ska-panel) 70%);padding:25px 26px;margin-bottom:25px;}
+.ska .ska-team-owner-icon {width:56px;height:56px;display:grid;place-items:center;background:rgba(229,50,77,.13);color:#ed5a73;border:1px solid rgba(229,50,77,.4);border-radius:14px;flex-shrink:0;}
+.ska .ska-team-owner-info {flex:1;min-width:0;}
+.ska .ska-team-kicker {font-size:10px;font-weight:850;letter-spacing:.16em;color:var(--ska-red);}
+.ska .ska-team-owner-info h2 {font-size:19px;font-weight:850;line-height:1.3;margin:5px 0 7px;}
+.ska .ska-team-owner-info p {display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ska-text);margin:0 0 7px;overflow-wrap:anywhere;}
+.ska .ska-team-owner-info p svg {color:var(--ska-muted);flex-shrink:0;}
+.ska .ska-team-owner-info small {font-size:12px;color:var(--ska-muted);line-height:1.45;}
+.ska .ska-team-owner-badge {display:inline-flex;gap:7px;align-items:center;flex-shrink:0;padding:7px 10px;border-radius:99px;border:1px solid rgba(229,50,77,.4);background:rgba(229,50,77,.13);color:#f27890;font-size:11px;font-weight:800;}
+.ska .ska-team-columns {display:grid;grid-template-columns:minmax(310px,.87fr) minmax(380px,1.13fr);gap:20px;align-items:start;}
+.ska .ska-team-create,.ska .ska-team-members {min-width:0;background:var(--ska-panel);border:1px solid var(--ska-border);border-radius:14px;padding:25px;}
+.ska .ska-team-card-heading {display:flex;gap:13px;align-items:center;margin-bottom:24px;}
+.ska .ska-team-card-icon {width:45px;height:45px;display:grid;place-items:center;border-radius:11px;color:var(--ska-red);background:rgba(229,50,77,.1);border:1px solid rgba(229,50,77,.22);flex-shrink:0;}
+.ska .ska-team-card-heading h2,.ska .ska-team-members-header h2 {font-size:18px;line-height:1.3;margin:0 0 4px;font-weight:850;}
+.ska .ska-team-card-heading p,.ska .ska-team-members-header p {font-size:12px;color:var(--ska-muted);line-height:1.4;margin:0;}
+.ska .ska-team-form,.ska .ska-team-reset {display:flex;flex-direction:column;gap:17px;}
+.ska .ska-team-form label,.ska .ska-team-reset label {display:flex;flex-direction:column;gap:9px;font-size:12px;font-weight:750;color:var(--ska-text);}
+.ska .ska-team-form input,.ska .ska-team-reset input {
+  display:block;width:100%;min-width:0;min-height:46px;padding:11px 13px;outline:none;
+  border:1px solid var(--ska-border);border-radius:9px;color:var(--ska-text);background:var(--ska-bg);
+  font-size:13px;transition:border-color .2s,box-shadow .2s;
+}
+.ska .ska-team-form input:focus,.ska .ska-team-reset input:focus {border-color:var(--ska-red);box-shadow:0 0 0 3px rgba(229,50,77,.12);}
+.ska .ska-team-password {position:relative;display:block;}
+.ska .ska-team-password input {padding-right:48px;}
+.ska .ska-team-password button {display:grid;place-items:center;position:absolute;right:5px;top:5px;width:36px;height:36px;border:0;background:transparent;color:var(--ska-muted);border-radius:7px;}
+.ska .ska-team-password button:hover {color:var(--ska-text);background:var(--ska-panel-2);}
+.ska .ska-team-note {font-size:11px;line-height:1.5;margin:-6px 0 0;color:var(--ska-muted);}
+.ska .ska-team-permission {display:flex;gap:10px;padding:14px;background:var(--ska-panel-2);border-radius:9px;border:1px solid var(--ska-border);}
+.ska .ska-team-permission>svg {color:#76c6a6;flex-shrink:0;margin-top:2px;}
+.ska .ska-team-permission span {display:flex;flex-direction:column;gap:4px;}
+.ska .ska-team-permission strong {font-size:12px;}
+.ska .ska-team-permission small {color:var(--ska-muted);font-size:11px;line-height:1.4;}
+.ska .ska-team-form>.ska-button {width:100%;min-height:46px;}
+.ska .ska-team-members-header {display:flex;align-items:start;justify-content:space-between;gap:15px;margin-bottom:18px;}
+.ska .ska-team-members-header>span {font-size:11px;font-weight:800;background:var(--ska-panel-2);border:1px solid var(--ska-border);padding:5px 9px;border-radius:8px;color:var(--ska-muted);}
+.ska .ska-team-empty {display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:8px;min-height:220px;padding:22px;color:var(--ska-muted);border:1px dashed var(--ska-border);border-radius:11px;}
+.ska .ska-team-empty svg {color:#a1a6b2;}
+.ska .ska-team-empty strong {color:var(--ska-text);font-size:14px;}
+.ska .ska-team-empty p {margin:0;font-size:12px;}
+.ska .ska-team-member-list {display:flex;flex-direction:column;gap:12px;max-height:670px;overflow-y:auto;padding:1px;}
+.ska .ska-team-member {border:1px solid var(--ska-border);border-radius:11px;padding:15px;background:var(--ska-panel-2);}
+.ska .ska-team-member-top {display:flex;gap:10px;align-items:center;min-width:0;}
+.ska .ska-team-member-avatar {display:grid;place-items:center;width:38px;height:38px;flex-shrink:0;color:#c6ccd9;border-radius:11px;background:var(--ska-panel);border:1px solid var(--ska-border);}
+.ska .ska-team-member-info {flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.ska .ska-team-member-info strong {font-size:12px;overflow-wrap:anywhere;}
+.ska .ska-team-member-info small {color:var(--ska-muted);font-size:10px;line-height:1.3;}
+.ska .ska-team-state {font-size:10px;font-weight:800;border:1px solid var(--ska-border);border-radius:99px;padding:5px 9px;white-space:nowrap;flex-shrink:0;}
+.ska .ska-team-state.is-active {color:#70d8aa;background:rgba(37,160,105,.09);border-color:rgba(37,160,105,.29);}
+.ska .ska-team-state.is-inactive {color:#f2a2af;background:rgba(229,50,77,.1);border-color:rgba(229,50,77,.31);}
+.ska .ska-team-member-actions {display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px;}
+.ska .ska-team-secondary,.ska .ska-team-danger,.ska .ska-team-enable {border:1px solid var(--ska-border);border-radius:8px;background:var(--ska-panel);color:var(--ska-text);display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;font-size:11px;font-weight:750;min-height:37px;}
+.ska .ska-team-secondary:hover {border-color:var(--ska-red);}
+.ska .ska-team-danger {color:#f2a2af;border-color:rgba(229,50,77,.32);background:rgba(229,50,77,.06);}
+.ska .ska-team-danger:hover {background:rgba(229,50,77,.18);}
+.ska .ska-team-enable {color:#6dd5a7;border-color:rgba(53,180,122,.28);}
+.ska .ska-team-enable:hover {background:rgba(53,180,122,.1);}
+.ska .ska-team-reset {margin-top:15px;padding-top:15px;border-top:1px solid var(--ska-border);}
+.ska .ska-team-reset-actions {display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;}
+.ska .ska-team-reset-actions .ska-button {min-height:37px;padding:8px 12px;font-size:11px;}
+.ska .ska-team-footer-note,.ska .ska-team-info {display:flex;align-items:start;gap:13px;margin-top:21px;padding:17px 20px;border-radius:12px;border:1px solid var(--ska-border);background:var(--ska-panel);color:var(--ska-muted);}
+.ska .ska-team-footer-note svg,.ska .ska-team-info svg {flex-shrink:0;color:#72c6a1;}
+.ska .ska-team-footer-note p,.ska .ska-team-info p {font-size:12px;line-height:1.6;margin:0;}
+.ska .ska-team-info h3 {font-size:17px;color:var(--ska-text);margin:0 0 6px;}
+.ska[data-ska-theme="light"] .ska-team-owner {border-color:#e9b8c1;background:linear-gradient(115deg,#fff1f3,#fff 73%);}
+.ska[data-ska-theme="light"] .ska-team-owner-badge {color:#a51a34;background:#ffedf0;}
+.ska[data-ska-theme="light"] .ska-team-state.is-active {color:#19794e;}
+.ska[data-ska-theme="light"] .ska-team-state.is-inactive {color:#ac2540;}
+.ska[data-ska-theme="light"] .ska-team-alert {color:#166c45;}
+.ska[data-ska-theme="light"] .ska-team-alert--error {color:#a52642;}
+@media (max-width:1120px) {
+  .ska .ska-team-columns {grid-template-columns:1fr;}
+  .ska .ska-team-member-list {max-height:none;}
+}
+@media (max-width:650px) {
+  .ska .ska-team-heading {align-items:stretch;flex-direction:column;}
+  .ska .ska-team-heading .ska-button {align-self:flex-start;}
+  .ska .ska-team-owner {align-items:flex-start;gap:12px;padding:18px;flex-wrap:wrap;}
+  .ska .ska-team-owner-icon {width:45px;height:45px;}
+  .ska .ska-team-owner-badge {margin-left:0;}
+  .ska .ska-team-create,.ska .ska-team-members {padding:18px;}
+  .ska .ska-team-member-top {flex-wrap:wrap;}
+  .ska .ska-team-member-info {min-width:160px;}
+  .ska .ska-team-member-actions {justify-content:stretch;}
+  .ska .ska-team-member-actions>button {flex:1;}
+}
