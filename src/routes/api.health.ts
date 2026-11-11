@@ -9,7 +9,7 @@ export const Route = createFileRoute("/api/health")({
         let database = false;
         let storage = false;
         const authSteps: Record<string,boolean> = {
-          requestContext:false, userRead:false, passwordFunction:false, rateWrite:false, rateConflict:false, passwordLookup:false, sessionRead:false,
+          requestContext:false, userRead:false, passwordFunction:false, rateWrite:false, rateConflict:false, passwordLookup:false, sessionRead:false, sessionWrite:false,
         };
         try {
           const { getRequest } = await import("@tanstack/react-start/server");
@@ -61,6 +61,14 @@ export const Route = createFileRoute("/api/health")({
             const { adminSession } = await import("../lib/skinaoAuth.server");
             const session = await adminSession(process.env["SKINAO_SESSION_SECRET"] || "not-a-real-secret");
             authSteps.sessionRead=Boolean(session && typeof session.update==="function");
+            if (authSteps.sessionRead) {
+              try {
+                await session.update({});
+                authSteps.sessionWrite=true;
+              } catch(error) {
+                console.error("Temporary empty-session write failed",error);
+              }
+            }
 
           } catch {}
         }
