@@ -30,11 +30,15 @@ quilometragem, cor, preço, descrição, opcionais, status, destaque e publicaç
 upload de até 8 MB por foto, galeria, imagem de capa, edição do enquadramento,
 recorte com arquivo derivado, restauração do original e organização das fotos.
 
-**Sem tela de login:** o painel abre diretamente em modo local (IndexedDB).
-Cadastros locais ficam neste navegador e **não são publicados nem sincronizados**.
-Para ativar operações no estoque real, use **Desbloquear edição** dentro do painel.
-A chave é verificada no servidor e uma sessão assinada HttpOnly controla todas as
-operações remotas. Não remova as verificações de autorização das server functions.
+**Sem tela de login:** o painel abre diretamente; uma sessão assinada HttpOnly
+autoriza as operações com o Neon somente após informar a chave em **Desbloquear edição**.
+A sessão é salva no navegador por **até 365 dias e renovada a cada visita autorizada**,
+enquanto a chave não for alterada. **Bloquear edição** encerra a autorização.
+Limpar cookies, acessar outro navegador ou ultrapassar o prazo sem visitar o painel
+exige informar a chave novamente. Não remova as verificações de autorização.
+
+Sem desbloquear, o painel permanece no IndexedDB do navegador. Os dados locais
+são independentes, não sincronizam automaticamente e não aparecem no estoque Neon.
 
 ### Banco de dados já provisionado
 
@@ -46,8 +50,21 @@ operações remotas. Não remova as verificações de autorização das server f
   que usam `@neondatabase/serverless` e o SDK S3 somente no servidor.
 
 **Atenção:** o repositório não contém as antigas linhas do banco removido.
-O banco Neon recém-criado está vazio. Os seis veículos demonstrativos da
-homepage continuam sendo apenas exemplos, não estoque real.
+Em 11/11/2026 foram importados **6 veículos demonstrativos e 13 referências de
+imagens** diretamente da vitrine existente: Polo, Onix, Compass, Strada, Corolla
+e Ranger. Marca, versão, ano, KM, preço, opcionais e fotos foram preservados.
+Os registros usam `is_demo=true`, `is_published=false`, `demo_source_id=1..6`.
+O catálogo lê essas entradas do Neon quando não há veículos reais publicados:
+**editar um exemplo no painel atualiza a vitrine ilustrativa**. Quando existem
+veículos reais publicados, eles substituem a vitrine de demonstração. Um exemplo
+não pode virar anúncio real sem trocar as imagens ilustrativas por fotos reais.
+
+As imagens de exemplo são referências às URLs originais do Unsplash, **não
+cópias físicas no bucket**. Ao cadastrar fotos reais ou salvar recortes, os
+novos arquivos são armazenados no bucket Neon `vehicle-images`.
+O site original não possui descrição individual desses seis veículos; esses
+campos foram importados vazios, sem dados inventados. A importação é idempotente
+e não deve sobrescrever futuras edições feitas no painel.
 
 ### Variáveis necessárias no runtime do servidor (nunca no JavaScript do navegador)
 
@@ -67,7 +84,9 @@ Não use prefixo `VITE_` para segredos.
 
 As chaves de banco e armazenamento **não devem ser enviadas ao GitHub**. Crie a credencial
 de objeto S3 no Neon e copie diretamente para as variáveis secretas do ambiente de hospedagem.
-O plugin Neon conectado ao ChatGPT **não preenche automaticamente** as variáveis da hospedagem.
+As oito variáveis de produção foram configuradas no novo projeto Vercel
+`skinaoveiculos` pelo plugin, sem gravar segredos no repositório.
+Não utilize as credenciais da produção em builds de testes não autorizados.
 
 Sem `DATABASE_URL`, o site mostra exemplos ilustrativos e o painel continua local.
 Sem chave de administração ou segredo de sessão, a edição remota fica bloqueada.
@@ -79,7 +98,8 @@ acesso negado sem autorização no domínio definitivo.
 
 1. Reinstale as dependências após atualizar `package.json` (inclui o driver Neon).
 2. Execute `npm run build` e `npm test` antes de publicar.
-3. Acesse `/admin`, clique em **Desbloquear edição**, informe a chave definida na hospedagem.
+3. Acesse `https://skinaoveiculos.vercel.app/admin`. Caso ainda não esteja autorizado
+   neste navegador, clique em **Desbloquear edição** e informe a chave definida na hospedagem.
 4. Cadastre um veículo real, anexe fotografias e confirme a publicação.
 5. Confirme no catálogo público que descrição, preço e galeria correspondem ao cadastro.
 6. Use **Bloquear edição** ao concluir.
