@@ -14,8 +14,7 @@ import {
   type VehicleStatus,
 } from "../lib/skinaoAdminApi";
 import "../admin.css";
-import { getInventoryMode, loginInventory, logoutInventory } from "../lib/skinaoInventory.functions";
-import { useServerFn } from "@tanstack/react-start";
+
 import { PhotoEditor } from "../components/admin/PhotoEditor";
 import { PhotoCropper } from "../components/admin/PhotoCropper";
 import { TeamAccess } from "../components/admin/TeamAccess";
@@ -69,7 +68,6 @@ function AdminLogin({ theme, onThemeToggle, onAuthenticated }: {
   onThemeToggle: () => void;
   onAuthenticated: (account: { username:string; role:"owner"|"staff" }) => Promise<void>;
 }) {
-  const signIn = useServerFn(loginInventory);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -82,7 +80,16 @@ function AdminLogin({ theme, onThemeToggle, onAuthenticated }: {
     setSubmitting(true);
     setErrorMessage("");
     try {
-      const response = await signIn({ data: { username: username.trim(), password } });
+      const request = await fetch("/api/admin-auth", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        credentials:"same-origin",
+        cache:"no-store",
+        body:JSON.stringify({username:username.trim(),password}),
+      });
+      const response: {
+        ok:boolean; reason?:"invalid"|"unavailable"|"forbidden"; account?:{username:string;role:"owner"|"staff"};
+      } = await request.json();
       if (!response.ok) {
         setErrorMessage(response.reason === "unavailable"
           ? "Não foi possível entrar agora. Tente novamente."
@@ -178,28 +185,36 @@ function AdminPanel() {
   // A previously authorized session is still verified server-side before writes.
   useEffect(() => {
     let active = true;
-    void getInventoryMode().then(mode => {
-      if (!active) return;
-      setRemoteInventory(mode.unlocked);
-      setRemoteMode(mode.unlocked);
-      setAdminIdentity(mode.account ?? null);
-      setAccessIssue(mode.unlocked ? null : mode.configured ? "restricted" : "unavailable");
-    }).catch(() => {
-      if (!active) return;
-      setRemoteInventory(false);
-      setRemoteMode(false);
-      setAdminIdentity(null);
-      setAccessIssue("unavailable");
-    }).finally(() => { if (active) setModeReady(true); });
+    void fetch("/api/admin-auth", {method:"GET",credentials:"same-origin",cache:"no-store"})
+      .then(async response => {
+        if (!response.ok) throw new Error("Session status unavailable");
+        return response.json() as Promise<{
+          configured:boolean;unlocked:boolean;account?:{username:string;role:"owner"|"staff"}|null;
+        }>;
+      }).then(mode => {
+        if (!active) return;
+        setRemoteInventory(mode.unlocked);
+        setRemoteMode(mode.unlocked);
+        setAdminIdentity(mode.account ?? null);
+        setAccessIssue(mode.unlocked ? null : mode.configured ? "restricted" : "unavailable");
+      }).catch(() => {
+        if (!active) return;
+        setRemoteInventory(false);
+        setRemoteMode(false);
+        setAdminIdentity(null);
+        setAccessIssue("unavailable");
+      }).finally(() => { if (active) setModeReady(true); });
     return () => { active = false; };
   }, []);
-  const signOut = useServerFn(logoutInventory);
   async function handleSignOut() {
     if (working) return;
     if (view === "form" && !confirmLeaveForm()) return;
     setWorking(true);
     try {
-      await signOut();
+      const response = await fetch("/api/admin-auth", {
+        method:"DELETE",credentials:"same-origin",cache:"no-store",
+      });
+      if (!response.ok) throw new Error("Não foi possível sair.");
       setRemoteInventory(false);
       setRemoteMode(false);
       setAdminIdentity(null);
