@@ -1,4 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
+
+/** Persistent browser authorization, renewable on each authorized panel visit. */
+export const ADMIN_SESSION_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
 import { useSession, getRequest, setResponseHeader } from "@tanstack/react-start/server";
 
 export function passwordMatches(input: string, expected: string | undefined) {
@@ -8,7 +11,7 @@ export function passwordMatches(input: string, expected: string | undefined) {
 export async function adminSession(password: string) {
   setResponseHeader("Cache-Control", "no-store");
   return useSession<{ unlocked?: boolean; revision?: string }>({
-    password, name: "skinao-admin", maxAge: 3600,
+    password, name: "skinao-admin", maxAge: ADMIN_SESSION_MAX_AGE_SECONDS,
     cookie: { httpOnly: true, secure: new URL(getRequest().url).protocol === "https:", sameSite: "strict", path: "/" },
   });
 }
