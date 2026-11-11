@@ -15,7 +15,7 @@ describe("segurança da publicação e do armazenamento", () => {
   it("recusa publicação sem fotos reais", () => {
     expect(() => assertPublication({
       is_published: true, is_demo: false, status: "available",
-    }, [])).toThrow(/fotografias reais/);
+    }, [])).toThrow(/ao menos uma fotografia/);
   });
 
   it("permite publicar exemplo identificado, mas impede veículo vendido", () => {
