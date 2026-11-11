@@ -30,33 +30,27 @@ quilometragem, cor, preço, descrição, opcionais, status, destaque e publicaç
 upload de até 8 MB por foto, galeria, imagem de capa, edição do enquadramento,
 recorte com arquivo derivado, restauração do original e organização das fotos.
 
-**Sem tela de login recorrente:** a chave administrativa já está nas variáveis
-secretas da Vercel, **nunca no bundle ou no código público**. O primeiro acesso em
-um navegador novo exige uma autorização inicial (chave da loja ou convite único).
-Após autorizado, o navegador recebe uma sessão HttpOnly assinada, com validade de
-**até 365 dias, renovada a cada visita autorizada**. A tela normal de estoque
-não mostra mais banners de desbloqueio nem pedidos de senha. Limpar cookies, trocar
-de navegador ou revogar a chave exige nova autorização.
+**Painel sem chave ou convite na interface.** O catálogo público e o estoque
+administrativo já usam o mesmo PostgreSQL Neon em produção. O painel **não apresenta
+mais campo de chave, controles de bloquear/desbloquear, convites nem modo local**.
 
-Para entregar o painel a outra pessoa **sem pedir que ela digite a chave**:
-1. Entre no painel em um navegador já autorizado.
-2. Acesse **Armazenamento → Entregar acesso a outra pessoa → Gerar convite de acesso**.
-3. Copie o link e envie somente ao responsável pela loja. O link expira em 24h,
-   pode ser usado uma única vez e nunca contém a chave permanente.
-4. Quando a pessoa abrir o link, o servidor consumirá o convite e criará a
-   sessão protegida naquele navegador, sem precisar digitar código.
-5. Para encerrar a sessão daquele navegador, use
-   **Armazenamento → Encerrar acesso neste dispositivo**.
+Em navegadores que já possuem a sessão assinada de administração, o estoque abre
+diretamente e todas as operações de escrita continuam autorizadas pelo servidor.
+A sessão HttpOnly existente permanece válida por até **365 dias**, renovada a cada
+visita autorizada. A chave secreta do servidor **não é enviada ao navegador**.
 
-A tabela `skinao_admin_invites` do Neon guarda **apenas o hash SHA-256** dos
-convites (nunca o token em texto puro), sua validade e utilização. As funções
-`createAdminInvite` e `redeemAdminInvite` exigem autorização ou um token válido,
-respectivamente. Os convites são descartados do endereço antes de consultar a API.
-**Nunca autorize automaticamente visitantes anônimos ou exponha as credenciais
-em arquivos versionados**: isso permitiria a qualquer pessoa alterar os anúncios.
+**Limitação de segurança importante:** nenhum aplicativo público consegue liberar
+edição de estoque para **qualquer navegador anônimo**, sem qualquer identificação,
+e simultaneamente impedir alterações feitas por visitantes. Por isso, dispositivos
+sem sessão previamente autorizada exibem apenas **Acesso restrito**, sem chave,
+login ou convite dentro do painel; eles **não podem alterar o estoque**. Para
+autorizar novos dispositivos, seria necessário adotar alguma proteção fora do
+painel, como autenticação da hospedagem ou acesso de rede controlado. Não deixe
+escrita pública anônima habilitada.
 
-Sem autorização, o painel permanece no IndexedDB do navegador. Dados locais
-são independentes e não aparecem no estoque Neon.
+As APIs antigas de convite e entrada de chave foram removidas do código. A tabela
+histórica de convites no banco permanece inativa; nenhuma rota gera ou aceita
+convites.
 
 ### Banco de dados já provisionado
 
@@ -122,25 +116,22 @@ As oito variáveis de produção foram configuradas no novo projeto Vercel
 `skinaoveiculos` pelo plugin, sem gravar segredos no repositório.
 Não utilize as credenciais da produção em builds de testes não autorizados.
 
-Sem `DATABASE_URL`, o site mostra exemplos ilustrativos e o painel continua local.
-Sem chave de administração ou segredo de sessão, a edição remota fica bloqueada.
+Sem `DATABASE_URL`, o catálogo público pode mostrar exemplos de fallback e o painel exibe indisponibilidade.
+Sem autorização válida no servidor, o painel exibe acesso restrito e não executa consultas administrativas.
 Sem credenciais de storage, upload de fotografias reais não funciona. Não publique
 como concluído sem validar cadastro, upload, recorte, capa, edição, despublicação e
 acesso negado sem autorização no domínio definitivo.
 
-### Depois de configurar
+### Verificações em produção
 
-1. Reinstale as dependências após atualizar `package.json` (inclui o driver Neon).
-2. Execute `npm run build` e `npm test` antes de publicar.
-3. Acesse `https://skinaoveiculos.vercel.app/admin`. Em um navegador já autorizado,
-   o inventário abre diretamente. Em um dispositivo novo, use convite único ou
-   chave de administração na autorização inicial.
-4. Cadastre um veículo real, anexe fotografias e confirme a publicação.
-5. Confirme no catálogo público que descrição, preço e galeria correspondem ao cadastro.
-6. Se o navegador deixar de ser confiável, encerre a sessão em **Armazenamento**.
-
-O estoque local não migra automaticamente para o Neon. A rota `/admin`
-continua visível, mas operações reais são protegidas pela sessão do servidor.
+1. Execute `bun install --frozen-lockfile`, `bun run build` e `bun test` (quando aplicável).
+2. Abra `https://skinaoveiculos.vercel.app/admin` em navegador anteriormente autorizado:
+   o estoque Neon abre sem solicitar qualquer código ou convite.
+3. Se o navegador não tiver sessão válida, aparece **Acesso restrito**, sem acesso
+   às operações de publicação/edição/exclusão.
+4. Teste cadastro de veículo, upload de fotos, recorte, destaque, publicação,
+   despublicação e exclusão com confirmação.
+5. Confira a atualização correspondente em `https://skinaoveiculos.vercel.app`.
 
 ### Avisos e prevenção de perda acidental
 
@@ -155,5 +146,5 @@ continua visível, mas operações reais são protegidas pela sessão do servido
 - **Excluir fotografia**: alerta que a remoção da foto é permanente; se a última
   for excluída, o veículo é automaticamente despublicado, mas permanece salvo.
 
-O catálogo só reflete veículos do banco Neon se o painel estiver desbloqueado no
-modo **NEON**. O modo local do navegador não publica alterações.
+O catálogo público consulta o Neon diretamente. Edições pelo painel exigem uma
+sessão administrativa válida no servidor, mesmo sem campos de chave na interface.
