@@ -460,7 +460,7 @@ function AdminPanel() {
             <div className="ska-connection-copy">
               <strong>{remoteMode ? "Estoque Neon desbloqueado" : "Gerenciar veículos no estoque online"}</strong>
               <p>{remoteMode
-                ? "Você está editando o banco real. As publicações aparecerão no catálogo público."
+                ? "Acesso salvo neste navegador (até 12 meses, renovado nas visitas). Suas edições são salvas no Neon e os exemplos ilustrativos também são atualizados na vitrine."
                 : "Para cadastrar e publicar veículos no site, desbloqueie a edição usando a chave administrativa."}</p>
             </div>
             {remoteMode ?
