@@ -80,9 +80,9 @@ export const loginInventory = createServerFn({ method:"POST" }).inputValidator(s
       const userValid = passwordMatches(data.username, expectedUser);
       const passwordValid = passwordMatches(data.password, expectedPassword);
       if (blocked || !userValid || !passwordValid) return { ok:false, reason:"invalid" as const };
+      await repo.rows("DELETE FROM skinao_admin_login_limits WHERE fingerprint=$1", [fingerprint], true);
       const session = await adminSession(secret);
       await session.update({ unlocked:true, revision:authRevision(expectedPassword) });
-      await repo.rows("DELETE FROM skinao_admin_login_limits WHERE fingerprint=$1", [fingerprint], true);
       return { ok:true, reason:"success" as const };
     } catch (error) {
       console.error("Admin login unavailable", error);
