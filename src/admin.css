@@ -568,3 +568,14 @@
  .ska-photo-crop-ratios { gap:5px; }
  .ska-photo-crop-ratios button { padding:9px 8px; font-size:11px; }
 }
+
+/* Offline administration: distinguish local drafts from public website changes. */
+.ska-local-notice { display:flex; align-items:flex-start; gap:12px; margin:0 0 23px;
+  padding:14px 16px; border-radius:10px; border:1px solid var(--ska-border);
+  background:var(--ska-panel); color:var(--ska-muted); font-size:12px; line-height:1.65; }
+.ska-local-notice svg { flex-shrink:0; margin-top:2px; color:var(--ska-red); }
+.ska-local-notice strong { color:var(--ska-text); }
+.ska-sidebar-footer .ska-local-mode { display:flex; align-items:center; gap:12px;
+  padding:13px 16px; color:var(--ska-muted); font-size:12px; }
+.ska-sidebar-footer .ska-local-mode svg { color:var(--ska-red); }
+@media (max-width:600px) { .ska-local-notice { padding:12px; } }
