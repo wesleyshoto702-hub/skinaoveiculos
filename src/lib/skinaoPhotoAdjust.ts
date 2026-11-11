@@ -9,7 +9,7 @@ export const DEFAULT_PHOTO_ADJUSTMENTS: PhotoAdjustments = {
 };
 export function normalizeAdjustments(value?: Partial<PhotoAdjustments> | null): PhotoAdjustments {
   const clamp = (number: number | undefined, min: number, max: number, fallback: number) =>
-    Number.isFinite(number) ? Math.max(min, Math.min(max, Math.round(number!))) : fallback;
+    typeof number === "number" && Number.isFinite(number) ? Math.max(min, Math.min(max, Math.round(number))) : fallback;
   const rotation = Number(value?.crop_rotation);
   return {
     crop_x: clamp(value?.crop_x, 0, 100, 50),

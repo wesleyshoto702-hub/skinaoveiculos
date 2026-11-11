@@ -6,20 +6,27 @@ import {
   RefreshCw, RotateCcw, Save, Search, Sun, Moon, Trash2, WandSparkles, X,
 } from "lucide-react";
 import {
-  ADMIN_PAGE_SIZE, addPhoto, deletePhoto, getAdminStats,
+  setRemoteInventory, ADMIN_PAGE_SIZE, addPhoto, deletePhoto, getAdminStats,
   listPhotosForVehicles, listVehiclePage,
   photoUrl, displayPhotoUrl, removeStoredPhotos, saveVehicle, setCoverPhoto, updatePhoto, uploadPhoto,
   type AdminStats, type Vehicle, type VehicleDraft, type VehiclePhoto,
   type VehicleStatus,
 } from "../lib/skinaoAdminApi";
 import "../admin.css";
+import { useServerFn } from "@tanstack/react-start";
+import { getInventoryMode, unlockInventory, lockInventory } from "../lib/skinaoInventory.functions";
+import { Button } from "../components/ui/button";
 import { PhotoEditor } from "../components/admin/PhotoEditor";
 import { PhotoCropper } from "../components/admin/PhotoCropper";
 import { adjustedImageStyle, DEFAULT_PHOTO_ADJUSTMENTS, type PhotoAdjustments } from "../lib/skinaoPhotoAdjust";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPanel,
-  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
+  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" },
+    { title:"Skinão Veículos | Gestão de estoque" },{ name:"description",content:"Painel de gestão do catálogo Skinão Veículos." },
+    { property:"og:title",content:"Skinão Veículos | Gestão de estoque" },
+    { property:"og:description",content:"Administração de veículos e fotografias Skinão." },
+    { property:"og:type",content:"website" },{ name:"twitter:card",content:"summary" }] }),
 });
 type View = "inventory" | "form" | "storage";
 type Status = { text: string; error?: boolean };
@@ -70,6 +77,38 @@ function AdminPanel() {
     setAdminTheme(next);
     try { window.localStorage.setItem(THEME_STORAGE_KEY, next); } catch { /* Theme still works for this visit. */ }
   }
+  const [remoteMode, setRemoteMode] = useState(false);
+  const [modeReady, setModeReady] = useState(false);
+  const [canUnlock, setCanUnlock] = useState(false);
+  const [accessKey, setAccessKey] = useState("");
+  const [unlockOpen, setUnlockOpen] = useState(false);
+  const unlock = useServerFn(unlockInventory);
+  const lock = useServerFn(lockInventory);
+  useEffect(() => {
+    let active = true;
+    void getInventoryMode().then(mode => {
+      if (!active) return;
+      setRemoteInventory(mode.unlocked); setRemoteMode(mode.unlocked); setCanUnlock(mode.canUnlock);
+    }).catch(() => { setRemoteInventory(false); }).finally(() => { if(active) setModeReady(true); });
+    return () => { active=false; };
+  }, []);
+  async function changeAccess(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (working) return;
+    setWorking(true);
+    try {
+      const result = await unlock({ data:{ password:accessKey } });
+      setAccessKey("");
+      if (!result.ok) { setFeedback({ text:"Chave inválida ou administração não configurada.",error:true }); return; }
+      const mode = await getInventoryMode();
+      if (!mode.unlocked) throw new Error("Conecte o banco Neon antes de editar o estoque real.");
+      setRemoteInventory(true); setRemoteMode(true); setUnlockOpen(false); setEditingId(null); setView("inventory"); setAdminPage(0);
+    } catch(error) { setAccessKey(""); setFeedback({ text:error instanceof Error ? error.message : "Não foi possível desbloquear.",error:true }); }
+    finally { setWorking(false); }
+  }
+  async function lockAccess() {
+    if (working) return;
+    await lock(); setRemoteInventory(false); setRemoteMode(false); setView("inventory"); setEditingId(null); setAdminPage(0);
+  }
   const [view, setView] = useState<View>("inventory");
   const [menuOpen, setMenuOpen] = useState(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -99,9 +138,9 @@ function AdminPanel() {
     return () => window.clearTimeout(timer);
   }, [search]);
   useEffect(() => {
-    void refresh();
+    if (modeReady) void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminPage, debouncedSearch]);
+  }, [adminPage, debouncedSearch, modeReady, remoteMode]);
 
   async function refresh() {
     const run = ++refreshRunRef.current;
@@ -207,7 +246,7 @@ function AdminPanel() {
     try {
       await saveVehicle({ ...toDraft(item), is_published: !item.is_published }, item.id);
       await refresh();
-      setFeedback({ text: item.is_published ? "Publicação local desmarcada." : "Veículo marcado como publicado neste navegador (não no site)." });
+      setFeedback({ text: remoteMode ? (item.is_published ? "Veículo despublicado do site." : "Veículo publicado no site.") : (item.is_published ? "Publicação local desmarcada." : "Marcado apenas neste navegador; não publica no site.") });
     } catch (e) { setFeedback({ text: e instanceof Error ? e.message : "Erro ao atualizar publicação.", error: true }); }
     finally { setWorking(false); }
   }
@@ -231,6 +270,7 @@ function AdminPanel() {
         const buttons = confirmDialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
         if (!buttons?.length) return;
         const first = buttons[0], last = buttons[buttons.length - 1];
+        if (!first || !last) return;
         if (event.shiftKey && document.activeElement === first) {
           event.preventDefault(); last.focus();
         } else if (!event.shiftKey && document.activeElement === last) {
@@ -253,7 +293,7 @@ function AdminPanel() {
       // A single transactional RPC satisfies the unique "one cover per vehicle" index.
       await setCoverPhoto(photo.id);
       await refresh();
-      setFeedback({ text: "Capa alterada com sucesso no estoque local." });
+      setFeedback({ text: "Capa alterada com sucesso." });
     } catch (e) {
       setFeedback({ text: e instanceof Error ? e.message : "Não foi possível definir a capa.", error: true });
       await refresh();
@@ -265,7 +305,7 @@ function AdminPanel() {
     try {
       await updatePhoto(photo.id, edits);
       await refresh();
-      setFeedback({ text: "Enquadramento salvo neste navegador." });
+      setFeedback({ text: "Enquadramento salvo." });
     } catch (e) {
       throw e instanceof Error ? e : new Error("Erro ao salvar o enquadramento.");
     } finally {
@@ -307,7 +347,7 @@ function AdminPanel() {
         cropped_storage_path: null, ...DEFAULT_PHOTO_ADJUSTMENTS,
       });
       await refresh();
-      setFeedback({ text: "Imagem original restaurada no estoque local." });
+      setFeedback({ text: "Imagem original restaurada." });
       try { await removeStoredPhotos([photo.cropped_storage_path]); } catch { /* orphan variant is harmless */ }
     } catch (error) {
       setFeedback({ text: error instanceof Error ? error.message : "Falha ao restaurar imagem.", error: true });
@@ -320,16 +360,16 @@ function AdminPanel() {
     const from = ordered.findIndex(p => p.id === photo.id);
     const to = from + direction;
     // The cover stays first; the other photos can be reordered.
-    if (from < 0 || to < 0 || to >= ordered.length ||
-        ordered[from].is_cover || ordered[to].is_cover) return;
+    const source = ordered[from], target = ordered[to];
+    if (!source || !target || source.is_cover || target.is_cover) return;
     const changed = [...ordered];
-    [changed[from], changed[to]] = [changed[to], changed[from]];
+    changed[from] = target; changed[to] = source;
     setWorking(true); setFeedback(null);
     try {
       await Promise.all(changed.map((item, index) =>
         item.sort_order !== index ? updatePhoto(item.id, { sort_order: index }) : Promise.resolve()));
       await refresh();
-      setFeedback({ text: "Ordem das fotografias atualizada no estoque local." });
+      setFeedback({ text: "Ordem das fotografias atualizada." });
     } catch (e) {
       await refresh();
       setFeedback({ text: e instanceof Error ? e.message : "Falha ao reorganizar fotos.", error: true });
@@ -348,7 +388,7 @@ function AdminPanel() {
         // Orphaned storage can be cleaned up later; the public gallery is already consistent.
       }
       await refresh();
-      setFeedback({ text: "Fotografia excluída do estoque local." });
+      setFeedback({ text: "Fotografia excluída." });
     } catch (e) {
       await refresh();
       setFeedback({ text: e instanceof Error ? e.message : "Erro ao excluir foto.", error: true });
@@ -386,15 +426,22 @@ function AdminPanel() {
           <span>SKINÃO <strong>ADMIN</strong></span>
           <div className="ska-topbar-actions">
             <ThemeToggle theme={adminTheme} onToggle={toggleAdminTheme}/>
-            <div className="ska-session-badge"><span className="ska-online-dot"/><span>Este navegador</span><b>MODO LOCAL</b></div>
+            <div className="ska-session-badge"><span className="ska-online-dot"/><span>{remoteMode ? "Estoque da loja" : "Este navegador"}</span><b>{remoteMode ? "NEON" : "MODO LOCAL"}</b></div>
           </div>
         </header>
         <main className="ska-content">
           <div className="ska-local-notice" role="note">
             <HardDrive size={19} aria-hidden="true"/>
-            <span><strong>Administração local, sem login.</strong> Dados e fotografias ficam somente neste navegador.
-              Alterações e anúncios não são enviados ao site público ou a outros dispositivos.</span>
+            <span>{remoteMode ? <><strong>Edição autorizada.</strong> Cadastros e fotografias são enviados ao estoque real; anúncios publicados aparecem no site.</> : <><strong>Modo local: não publica.</strong> Dados e fotos ficam neste navegador. O estoque local não é transferido automaticamente ao Neon.</>}</span>
           </div>
+          <div className="ska-section-title">
+            {remoteMode ? <Button variant="outline" disabled={working} onClick={() => void lockAccess()}>Bloquear edição</Button> :
+              <Button variant="outline" disabled={!modeReady} onClick={() => setUnlockOpen(v=>!v)}>Desbloquear edição</Button>}
+          </div>
+          {unlockOpen && !remoteMode && <form className="ska-edit-form" onSubmit={changeAccess}>
+            {canUnlock ? <><label>Chave de administração<input type="password" autoComplete="off" required value={accessKey} maxLength={1024} onChange={e=>setAccessKey(e.target.value)}/></label>
+              <Button type="submit" disabled={working}>Desbloquear</Button></> : <p>Conexão Neon e autorização ainda não configuradas. O modo local continua disponível e não publica.</p>}
+          </form>}
           {feedback && <div className={"ska-feedback" + (feedback.error ? " ska-feedback--error" : "")} role="status">
             {feedback.error ? <CircleAlert size={19}/> : <Check size={19}/>} {feedback.text}
             <button type="button" onClick={() => setFeedback(null)} aria-label="Fechar aviso"><X size={16}/></button>
@@ -402,7 +449,7 @@ function AdminPanel() {
           {view === "inventory" && <>
             <div className="ska-section-header">
               <div><span className="ska-eyebrow">VISÃO GERAL</span><h1>GESTÃO DE <em>ESTOQUE.</em></h1>
-                <p>Cadastre e organize veículos neste navegador, mesmo sem banco de dados. {demoCount ? demoCount + " modelos ilustrativos importados do site." : ""}</p></div>
+                <p>{remoteMode ? "Gerencie o estoque real e suas publicações." : "Organize veículos neste navegador; não publica."} {demoCount ? demoCount + " modelos ilustrativos importados do site." : ""}</p></div>
               <button className="ska-button ska-button--red" type="button" onClick={createNew}><Plus size={18}/> Adicionar veículo</button>
             </div>
             <div className="ska-stats">
@@ -429,11 +476,11 @@ function AdminPanel() {
                       {v.is_demo && <span className="ska-status ska-status--demo">EXEMPLO DO SITE</span>}
                     </div>
                     <div className="ska-vehicle-state"><span className={"ska-status ska-status--"+v.status}>{statusLabel[v.status]}</span>
-                      <small>{v.is_published ? "Marcado como publicado (local)" : "Rascunho"}</small>
+                      <small>{v.is_published ? (remoteMode ? "Publicado no site" : "Marcado como publicado (local)") : "Rascunho"}</small>
                     </div>
                     <div className="ska-actions">
-                      <button type="button" disabled={working} onClick={() => void changePublish(v)} title={v.is_published ? "Desmarcar publicação local" : "Marcar publicação local"}>
-                        {v.is_published ? "Desmarcar" : "Marcar publicado"}
+                      <button type="button" disabled={working} onClick={() => void changePublish(v)} title={v.is_published ? "Despublicar veículo" : "Publicar veículo"}>
+                        {v.is_published ? "Despublicar" : remoteMode ? "Publicar" : "Marcar publicado"}
                       </button>
                       <button type="button" onClick={() => editItem(v)} title="Editar" aria-label={"Editar "+v.model}><Edit3 size={18}/></button>
                     </div>
@@ -455,7 +502,7 @@ function AdminPanel() {
             <div className="ska-section-header"><div>
               <span className="ska-eyebrow">GERENCIAR ANÚNCIO</span>
               <h1>{editingId ? "EDITAR" : "NOVO"} <em>VEÍCULO.</em></h1>
-              <p>Cadastro armazenado neste navegador. Para exibir no site público, será necessário conectar um backend no futuro.</p>
+              <p>{remoteMode ? "Alterações são salvas no estoque da loja." : "Cadastro local: não aparece no site público."}</p>
             </div><button type="button" className="ska-button ska-button--outline" onClick={() => setView("inventory")}><ArrowLeft size={17}/> Voltar</button></div>
             <form onSubmit={save} className="ska-edit-form">
               <h2>Informações do veículo</h2>
@@ -542,7 +589,7 @@ function AdminPanel() {
               )}
               <label className="ska-toggle"><input type="checkbox" checked={draft.is_published}
                 onChange={e => setDraft(d => ({ ...d, is_published:e.target.checked }))}/>
-                <span>Marcar como publicado (apenas local)</span><small>Esta opção ainda não publica o anúncio no site público.</small>
+                <span>{remoteMode ? "Publicar no catálogo" : "Marcar como publicado (apenas local)"}</span><small>{remoteMode ? "Somente veículos disponíveis ou reservados com fotos reais." : "Esta opção não publica no site público."}</small>
               </label>
               <label className="ska-toggle"><input type="checkbox" checked={draft.is_featured}
                 onChange={e => setDraft(d => ({ ...d, is_featured:e.target.checked }))}/>
@@ -554,10 +601,11 @@ function AdminPanel() {
           </>}
           {view === "storage" && <>
             <div className="ska-section-header"><div><span className="ska-eyebrow">DADOS DO PAINEL</span>
-              <h1>ARMAZENAMENTO <em>LOCAL.</em></h1>
-              <p>O login e a ligação de administração com o antigo Supabase foram removidos.</p></div></div>
+              <h1>ARMAZENAMENTO <em>{remoteMode ? "NEON." : "LOCAL."}</em></h1>
+              <p>O painel abre sem login. Alterações reais exigem desbloqueio autorizado.</p></div></div>
             <div className="ska-info">
-              <h3>Como o painel funciona agora</h3>
+              <h3>{remoteMode ? "Estoque conectado" : "Armazenamento deste navegador"}</h3>
+              {remoteMode && <p>O estoque real fica no Neon e as fotos no bucket vehicle-images. Originais e recortes são preservados separadamente. Bloqueie a edição ao terminar.</p>}
               <p>Os veículos e as fotografias são salvos no armazenamento IndexedDB deste navegador.
                 É possível criar e editar cadastros sem conta e sem banco de dados remoto.</p>
               <p>Esses cadastros não sincronizam com outros navegadores ou celulares e não aparecem
@@ -587,7 +635,7 @@ function AdminPanel() {
           <span className="ska-confirm-icon"><AlertTriangle size={25} aria-hidden="true"/></span>
           <span className="ska-eyebrow">CONFIRMAR ALTERAÇÃO</span>
           <h2 id="ska-unpublish-title">Despublicar veículo?</h2>
-          <p id="ska-unpublish-description">O veículo <strong>{pendingUnpublish.brand} {pendingUnpublish.model}</strong> deixará de estar marcado como publicado neste navegador. Nada será alterado no site público.</p>
+          <p id="ska-unpublish-description">O veículo <strong>{pendingUnpublish.brand} {pendingUnpublish.model}</strong> {remoteMode ? "deixará de aparecer no catálogo público." : "deixará de estar marcado neste navegador; nada muda no site público."}</p>
           <div className="ska-confirm-actions">
             <button type="button" ref={confirmCancelRef} className="ska-button ska-button--outline"
               onClick={() => setPendingUnpublish(null)}>Manter publicado</button>
