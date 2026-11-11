@@ -22,3 +22,17 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Administração sem login (modo local)
+
+O endereço `/admin` abre diretamente o painel, sem conta ou senha.
+Como o Supabase de administração foi removido, cadastros e fotos são guardados **apenas
+no IndexedDB do navegador em uso**. Isso permite experimentar o painel sem backend,
+mas **não publica dados no site, nem sincroniza entre dispositivos**. Limpar os dados
+do navegador pode apagar o estoque local. O site público continua mostrando um
+catálogo explicitamente ilustrativo.
+
+**Importante:** a rota `/admin` não é privada. Para cadastrar anúncios reais e
+sincronizá-los entre dispositivos ou exibi-los publicamente, conecte um backend
+com autenticação, autorização no servidor e armazenamento de imagens antes de liberar
+essa funcionalidade para a equipe.
