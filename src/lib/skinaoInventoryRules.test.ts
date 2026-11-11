@@ -18,13 +18,23 @@ describe("segurança da publicação e do armazenamento", () => {
     }, [])).toThrow(/fotografias reais/);
   });
 
-  it("recusa publicar exemplo ou veículo vendido", () => {
+  it("permite publicar exemplo identificado, mas impede veículo vendido", () => {
     expect(() => assertPublication({
       is_published: true, is_demo: true, status: "available",
-    }, [photo])).toThrow();
+    }, [photo])).not.toThrow();
     expect(() => assertPublication({
       is_published: true, is_demo: false, status: "sold",
     }, [photo])).toThrow();
+  });
+
+  it("não permite publicar anúncio real com fotografia ilustrativa", () => {
+    const demoPhoto = { ...photo, external_url: "https://images.unsplash.com/photo-test" };
+    expect(() => assertPublication({
+      is_published: true, is_demo: false, status: "available",
+    }, [demoPhoto])).toThrow(/fotografias reais/);
+    expect(() => assertPublication({
+      is_published: true, is_demo: true, status: "available",
+    }, [demoPhoto])).not.toThrow();
   });
 
   it("autoriza anúncio real com fotos e preserva rascunhos", () => {
@@ -81,7 +91,7 @@ describe("sincronização da vitrine demonstrativa", () => {
     const [count, listings] = catalogStatement(filters, 0, 12, true);
     expect(count.query).toContain("is_demo = true");
     expect(listings.query).toContain("status IN ('available','reserved')");
-    expect(listings.query).not.toContain("is_published = true");
+    expect(listings.query).toContain("is_published = true");
   });
 
   it("mostra no site as fotografias e os detalhes importados do painel", () => {
