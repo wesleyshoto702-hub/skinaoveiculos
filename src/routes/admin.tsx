@@ -456,13 +456,35 @@ function AdminPanel() {
             <HardDrive size={19} aria-hidden="true"/>
             <span>{remoteMode ? <><strong>Edição autorizada.</strong> Cadastros e fotografias são enviados ao estoque real; anúncios publicados aparecem no site.</> : <><strong>Modo local: não publica.</strong> Dados e fotos ficam neste navegador. O estoque local não é transferido automaticamente ao Neon.</>}</span>
           </div>
-          <div className="ska-section-title">
-            {remoteMode ? <Button variant="outline" disabled={working} onClick={() => void lockAccess()}>Bloquear edição</Button> :
-              <Button variant="outline" disabled={!modeReady} onClick={() => setUnlockOpen(v=>!v)}>Desbloquear edição</Button>}
-          </div>
-          {unlockOpen && !remoteMode && <form className="ska-edit-form" onSubmit={changeAccess}>
-            {canUnlock ? <><label>Chave de administração<input type="password" autoComplete="off" required value={accessKey} maxLength={1024} onChange={e=>setAccessKey(e.target.value)}/></label>
-              <Button type="submit" disabled={working}>Desbloquear</Button></> : <p>Conexão Neon e autorização ainda não configuradas. O modo local continua disponível e não publica.</p>}
+          <section className="ska-connection-panel" aria-label="Acesso ao estoque online Neon">
+            <div className="ska-connection-copy">
+              <strong>{remoteMode ? "Estoque Neon desbloqueado" : "Gerenciar veículos no estoque online"}</strong>
+              <p>{remoteMode
+                ? "Você está editando o banco real. As publicações aparecerão no catálogo público."
+                : "Para cadastrar e publicar veículos no site, desbloqueie a edição usando a chave administrativa."}</p>
+            </div>
+            {remoteMode ?
+              <button type="button" className="ska-button ska-button--outline ska-connection-action"
+                disabled={working} onClick={() => void lockAccess()}>Bloquear edição</button> :
+              <button type="button" className="ska-button ska-button--red ska-connection-action"
+                disabled={!modeReady || working}
+                aria-expanded={unlockOpen} aria-controls="ska-unlock-form"
+                onClick={() => setUnlockOpen(v => !v)}>
+                {modeReady ? "Desbloquear edição" : "Verificando conexão..."}
+              </button>}
+          </section>
+          {unlockOpen && !remoteMode && <form id="ska-unlock-form" className="ska-connection-form" onSubmit={changeAccess}>
+            {canUnlock ? <>
+              <label htmlFor="ska-access-key">Chave de administração</label>
+              <div className="ska-connection-form-row">
+                <input id="ska-access-key" type="password" autoComplete="off" required
+                  value={accessKey} maxLength={1024} onChange={e=>setAccessKey(e.target.value)}
+                  placeholder="Digite sua chave de administração"/>
+                <button type="submit" className="ska-button ska-button--red" disabled={working}>
+                  {working ? "Verificando..." : "Entrar no estoque"}
+                </button>
+              </div>
+            </> : <p>A conexão ou a autorização do servidor ainda não está configurada. O modo local continua disponível.</p>}
           </form>}
           {feedback && <div className={"ska-feedback" + (feedback.error ? " ska-feedback--error" : "")} role="status">
             {feedback.error ? <CircleAlert size={19}/> : <Check size={19}/>} {feedback.text}
