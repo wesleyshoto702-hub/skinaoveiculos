@@ -30,15 +30,33 @@ quilometragem, cor, preço, descrição, opcionais, status, destaque e publicaç
 upload de até 8 MB por foto, galeria, imagem de capa, edição do enquadramento,
 recorte com arquivo derivado, restauração do original e organização das fotos.
 
-**Sem tela de login:** o painel abre diretamente; uma sessão assinada HttpOnly
-autoriza as operações com o Neon somente após informar a chave em **Desbloquear edição**.
-A sessão é salva no navegador por **até 365 dias e renovada a cada visita autorizada**,
-enquanto a chave não for alterada. **Bloquear edição** encerra a autorização.
-Limpar cookies, acessar outro navegador ou ultrapassar o prazo sem visitar o painel
-exige informar a chave novamente. Não remova as verificações de autorização.
+**Sem tela de login recorrente:** a chave administrativa já está nas variáveis
+secretas da Vercel, **nunca no bundle ou no código público**. O primeiro acesso em
+um navegador novo exige uma autorização inicial (chave da loja ou convite único).
+Após autorizado, o navegador recebe uma sessão HttpOnly assinada, com validade de
+**até 365 dias, renovada a cada visita autorizada**. A tela normal de estoque
+não mostra mais banners de desbloqueio nem pedidos de senha. Limpar cookies, trocar
+de navegador ou revogar a chave exige nova autorização.
 
-Sem desbloquear, o painel permanece no IndexedDB do navegador. Os dados locais
-são independentes, não sincronizam automaticamente e não aparecem no estoque Neon.
+Para entregar o painel a outra pessoa **sem pedir que ela digite a chave**:
+1. Entre no painel em um navegador já autorizado.
+2. Acesse **Armazenamento → Entregar acesso a outra pessoa → Gerar convite de acesso**.
+3. Copie o link e envie somente ao responsável pela loja. O link expira em 24h,
+   pode ser usado uma única vez e nunca contém a chave permanente.
+4. Quando a pessoa abrir o link, o servidor consumirá o convite e criará a
+   sessão protegida naquele navegador, sem precisar digitar código.
+5. Para encerrar a sessão daquele navegador, use
+   **Armazenamento → Encerrar acesso neste dispositivo**.
+
+A tabela `skinao_admin_invites` do Neon guarda **apenas o hash SHA-256** dos
+convites (nunca o token em texto puro), sua validade e utilização. As funções
+`createAdminInvite` e `redeemAdminInvite` exigem autorização ou um token válido,
+respectivamente. Os convites são descartados do endereço antes de consultar a API.
+**Nunca autorize automaticamente visitantes anônimos ou exponha as credenciais
+em arquivos versionados**: isso permitiria a qualquer pessoa alterar os anúncios.
+
+Sem autorização, o painel permanece no IndexedDB do navegador. Dados locais
+são independentes e não aparecem no estoque Neon.
 
 ### Banco de dados já provisionado
 
@@ -61,9 +79,13 @@ já aparecia no site. No painel, **Publicar** e **Despublicar** são ações
 independentes com confirmação. Despublicar define `is_published=false`, mantém
 dados/fotos no Neon e oculta o veículo no catálogo; Publicar define
 `is_published=true` e restaura sua visibilidade. A listagem de veículos
-não possui mais lixeira e o endpoint de exclusão definitiva de veículos foi
-removido. A exclusão de uma foto individual continua disponível com aviso,
-pois essa ação remove a fotografia da galeria.
+possui os controles **Publicar / Despublicar / Editar (lápis) / Excluir (lixeira)**,
+nessa ordem. **Excluir definitivamente** exige uma confirmação em destaque e
+digitar a palavra `EXCLUIR`; o endpoint é autorizado no servidor. A exclusão
+remove o veículo do PostgreSQL, elimina as referências via CASCADE e tenta apagar
+do S3 apenas os arquivos pertencentes ao bucket da loja. Falhas na limpeza
+de objetos são reportadas, sem esconder que o cadastro já foi excluído.
+A exclusão de fotografia individual também permanece com aviso.
 
 O catálogo só lê os exemplos `is_demo=true AND is_published=true` quando
 não há veículos reais publicados: **editar um exemplo visível no painel atualiza
@@ -110,11 +132,12 @@ acesso negado sem autorização no domínio definitivo.
 
 1. Reinstale as dependências após atualizar `package.json` (inclui o driver Neon).
 2. Execute `npm run build` e `npm test` antes de publicar.
-3. Acesse `https://skinaoveiculos.vercel.app/admin`. Caso ainda não esteja autorizado
-   neste navegador, clique em **Desbloquear edição** e informe a chave definida na hospedagem.
+3. Acesse `https://skinaoveiculos.vercel.app/admin`. Em um navegador já autorizado,
+   o inventário abre diretamente. Em um dispositivo novo, use convite único ou
+   chave de administração na autorização inicial.
 4. Cadastre um veículo real, anexe fotografias e confirme a publicação.
 5. Confirme no catálogo público que descrição, preço e galeria correspondem ao cadastro.
-6. Use **Bloquear edição** ao concluir.
+6. Se o navegador deixar de ser confiável, encerre a sessão em **Armazenamento**.
 
 O estoque local não migra automaticamente para o Neon. A rota `/admin`
 continua visível, mas operações reais são protegidas pela sessão do servidor.
@@ -127,6 +150,8 @@ continua visível, mas operações reais são protegidas pela sessão do servido
 - **Editar a publicação no formulário**: pede confirmação se o estado mudar.
 - **Sair de uma edição não salva**: avisa antes de descartar dados e ao fechar a aba.
 - **Converter exemplo em anúncio real**: exige fotos reais e confirmação.
+- **Excluir veículo definitivamente**: exige digitar `EXCLUIR`, diferente de
+  **Despublicar**, que apenas oculta e permite republicação.
 - **Excluir fotografia**: alerta que a remoção da foto é permanente; se a última
   for excluída, o veículo é automaticamente despublicado, mas permanece salvo.
 
