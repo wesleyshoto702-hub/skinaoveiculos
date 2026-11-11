@@ -4,6 +4,7 @@ import {
   AlertTriangle, ArrowLeft, ArrowRight, Camera, CarFront, Check, ChevronDown, CircleAlert,
   ClipboardList, Crop, Edit3, HardDrive, ImagePlus, Menu, Plus,
   RefreshCw, RotateCcw, Save, Search, Sun, Moon, Trash2, WandSparkles, X,
+  Eye, EyeOff, LockKeyhole, LogOut, UserRound,
 } from "lucide-react";
 import {
   setRemoteInventory, ADMIN_PAGE_SIZE, addPhoto, deletePhoto, deleteVehicle, getAdminStats,
@@ -13,7 +14,8 @@ import {
   type VehicleStatus,
 } from "../lib/skinaoAdminApi";
 import "../admin.css";
-import { getInventoryMode } from "../lib/skinaoInventory.functions";
+import { getInventoryMode, loginInventory, logoutInventory } from "../lib/skinaoInventory.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { PhotoEditor } from "../components/admin/PhotoEditor";
 import { PhotoCropper } from "../components/admin/PhotoCropper";
 import { adjustedImageStyle, DEFAULT_PHOTO_ADJUSTMENTS, type PhotoAdjustments } from "../lib/skinaoPhotoAdjust";
@@ -61,6 +63,97 @@ const orderPhotos = (photos: VehiclePhoto[], vehicleId: string) =>
   photos.filter(p => p.vehicle_id === vehicleId).sort((a, b) =>
     Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order);
 
+function AdminLogin({ theme, onThemeToggle, onAuthenticated, unavailable }: {
+  theme: AdminTheme;
+  onThemeToggle: () => void;
+  onAuthenticated: () => Promise<void>;
+  unavailable: boolean;
+}) {
+  const signIn = useServerFn(loginInventory);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    setErrorMessage("");
+    try {
+      const response = await signIn({ data: { username: username.trim(), password } });
+      if (!response.ok) {
+        setErrorMessage(response.reason === "unavailable"
+          ? "Não foi possível entrar agora. Tente novamente."
+          : "Usuário ou senha inválidos. Verifique os dados e tente novamente.");
+        setPassword("");
+        return;
+      }
+      setPassword("");
+      await onAuthenticated();
+    } catch {
+      setErrorMessage("Não foi possível concluir o login. Tente novamente.");
+      setPassword("");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return <main className="ska ska-login-page" data-ska-theme={theme}>
+    <a className="ska-back-link" href="/"><ArrowLeft size={17}/> Voltar ao site</a>
+    <ThemeToggle theme={theme} onToggle={onThemeToggle}/>
+    <section className="ska-login-card" aria-labelledby="ska-login-title">
+      <div className="ska-login-brand">SKINÃO <strong>VEÍCULOS</strong></div>
+      <div className="ska-login-icon"><LockKeyhole size={27} aria-hidden="true"/></div>
+      <span className="ska-eyebrow">PAINEL ADMINISTRATIVO</span>
+      <h1 id="ska-login-title">ACESSAR <em>PAINEL.</em></h1>
+      <p>Entre com suas credenciais para gerenciar os veículos da loja.</p>
+      {errorMessage && <div className="ska-login-error" role="alert">
+        <CircleAlert size={18} aria-hidden="true"/>{errorMessage}
+      </div>}
+      {unavailable && !errorMessage && <div className="ska-login-error" role="status">
+        <CircleAlert size={18} aria-hidden="true"/> O acesso está temporariamente indisponível.
+      </div>}
+      <form className="ska-form" onSubmit={handleLogin} autoComplete="on">
+        <label htmlFor="ska-login-username">
+          Usuário
+          <span className="ska-login-input">
+            <UserRound size={18} aria-hidden="true"/>
+            <input id="ska-login-username" name="username" type="text"
+              autoComplete="username" spellCheck={false} required minLength={1} maxLength={100}
+              placeholder="Digite seu usuário"
+              value={username} onChange={event => setUsername(event.target.value)}
+              disabled={submitting}/>
+          </span>
+        </label>
+        <label htmlFor="ska-login-password" className="ska-password-control">
+          Senha
+          <span className="ska-password-field ska-login-input">
+            <LockKeyhole size={18} aria-hidden="true"/>
+            <input id="ska-login-password" name="password"
+              type={showPassword ? "text" : "password"} autoComplete="current-password"
+              required minLength={1} maxLength={1024}
+              placeholder="Digite sua senha"
+              value={password} onChange={event => setPassword(event.target.value)}
+              disabled={submitting}/>
+            <button type="button" className="ska-password-visibility"
+              aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              aria-pressed={showPassword} disabled={submitting}
+              onClick={() => setShowPassword(visible => !visible)}>
+              {showPassword ? <EyeOff size={19} aria-hidden="true"/> : <Eye size={19} aria-hidden="true"/>}
+            </button>
+          </span>
+        </label>
+        <button className="ska-button ska-button--red ska-login-submit" type="submit" disabled={submitting || unavailable}>
+          {submitting ? <><span className="ska-spinner" aria-hidden="true"/> Entrando...</> :
+            <>Entrar no painel <ArrowRight size={18} aria-hidden="true"/></>}
+        </button>
+      </form>
+    </section>
+  </main>;
+}
+
 function AdminPanel() {
   // Initial render matches SSR; restore preference after hydration without changing the public site.
   const [adminTheme, setAdminTheme] = useState<AdminTheme>("dark");
@@ -96,6 +189,26 @@ function AdminPanel() {
     }).finally(() => { if (active) setModeReady(true); });
     return () => { active = false; };
   }, []);
+  const signOut = useServerFn(logoutInventory);
+  async function handleSignOut() {
+    if (working) return;
+    if (view === "form" && !confirmLeaveForm()) return;
+    setWorking(true);
+    try {
+      await signOut();
+      setRemoteInventory(false);
+      setRemoteMode(false);
+      setAccessIssue(null);
+      setVehicles([]);
+      setPhotos([]);
+      setEditingId(null);
+      setView("inventory");
+    } catch {
+      setFeedback({ text:"Não foi possível sair. Tente novamente.", error:true });
+    } finally {
+      setWorking(false);
+    }
+  }
   const [view, setView] = useState<View>("inventory");
   const [menuOpen, setMenuOpen] = useState(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -475,20 +588,25 @@ function AdminPanel() {
   const editingPhotos = editingId ? orderPhotos(photos, editingId) : [];
   const searched = vehicles;
 
-  if (!modeReady || !remoteMode) {
-    return <div className="ska ska-dashboard" data-ska-theme={adminTheme}>
-      <main className="ska-access-state">
-        <span className="ska-brand">SKINÃO <strong>VEÍCULOS</strong></span>
-        <span className="ska-eyebrow">PAINEL ADMINISTRATIVO</span>
-        <h1>{!modeReady ? "Abrindo estoque..." :
-          accessIssue === "unavailable" ? "Estoque indisponível." : "Acesso restrito."}</h1>
-        <p>{!modeReady ? "Verificando a conexão segura com o estoque do site." :
-          accessIssue === "unavailable"
-            ? "Não foi possível acessar a configuração do estoque online. O catálogo público continua disponível."
-            : "Este navegador não possui uma sessão de administração válida. O sistema não libera alterações de veículos a visitantes não autorizados."}</p>
-        <a className="ska-button ska-button--outline" href="/">Voltar ao site</a>
-      </main>
+  if (!modeReady) {
+    return <div className="ska ska-login-page ska-login-loading" data-ska-theme={adminTheme}>
+      <div className="ska-login-loading-inner">
+        <div className="ska-spinner" role="status" aria-label="Verificando sessão"/>
+        <span>Verificando acesso...</span>
+      </div>
     </div>;
+  }
+  if (!remoteMode) {
+    return <AdminLogin theme={adminTheme} onThemeToggle={toggleAdminTheme}
+      unavailable={accessIssue === "unavailable"}
+      onAuthenticated={async () => {
+        const mode = await getInventoryMode();
+        if (!mode.unlocked) throw new Error("Não foi possível confirmar a sessão.");
+        setRemoteInventory(true);
+        setRemoteMode(true);
+        setAccessIssue(null);
+        setAdminPage(0);
+      }}/>;
   }
 
   return (
@@ -517,6 +635,10 @@ function AdminPanel() {
           <div className="ska-topbar-actions">
             <ThemeToggle theme={adminTheme} onToggle={toggleAdminTheme}/>
             <div className="ska-session-badge"><span className="ska-online-dot"/><span>Estoque da loja</span><b>ONLINE</b></div>
+            <button type="button" className="ska-signout-button" title="Encerrar sessão"
+              disabled={working} onClick={() => void handleSignOut()}>
+              <LogOut size={17} aria-hidden="true"/> Sair
+            </button>
           </div>
         </header>
         <main className="ska-content">
