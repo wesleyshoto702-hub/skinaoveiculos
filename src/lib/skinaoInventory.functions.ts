@@ -26,7 +26,7 @@ export const getInventoryMode = createServerFn({ method:"GET" }).handler(async (
   if (key && secret) { try { await requireAdmin(key,secret); unlocked=true; } catch { /* locked */ } }
   setResponseHeader("Cache-Control","no-store");
   return { configured, unlocked:configured && unlocked, canUnlock:configured && Boolean(key && secret),
-    storageConfigured:Boolean(process.env['AWS_ENDPOINT_URL_S3'] && process.env['AWS_REGION'] && process.env['AWS_ACCESS_KEY_ID'] && process.env['AWS_SECRET_ACCESS_KEY'] && process.env['SKINAO_IMAGES_PUBLIC_URL']) };
+    storageConfigured:Boolean(process.env['AWS_ENDPOINT_URL_S3'] && process.env['AWS_REGION'] && process.env['AWS_ACCESS_KEY_ID'] && process.env['AWS_SECRET_ACCESS_KEY']) };
 });
 export const unlockInventory = createServerFn({ method:"POST" }).inputValidator(z.object({ password:z.string().min(1).max(1024) })).handler(async ({ data }) => {
   const key = process.env['SKINAO_ADMIN_ACCESS_KEY']; const secret = process.env['SKINAO_SESSION_SECRET'];
