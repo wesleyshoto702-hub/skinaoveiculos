@@ -238,6 +238,15 @@ function AdminPanel() {
     if (wasDemo && !draft.is_demo && !window.confirm(
       "Converter este EXEMPLO DO SITE em um veículo real da loja? Verifique marca, preço, disponibilidade e fotografias reais antes de publicá-lo como anúncio."
     )) return;
+    const original = editingId ? vehicles.find(v => v.id === editingId) : null;
+    if (original && original.is_published && !draft.is_published && !window.confirm(
+      "Despublicar " + original.brand + " " + original.model +
+      "? O veículo ficará oculto no site, mas continuará cadastrado com todas as fotos e poderá ser republicado depois."
+    )) return;
+    if (original && !original.is_published && draft.is_published && !window.confirm(
+      "Publicar " + original.brand + " " + original.model +
+      "? Confira preço, fotos e descrição antes de tornar o anúncio visível no site."
+    )) return;
     setWorking(true); setFeedback(null);
     try {
       const requestedPublication = draft.is_published;
@@ -533,6 +542,7 @@ function AdminPanel() {
             <div className="ska-section-title"><h2>Veículos cadastrados</h2>
               <button type="button" onClick={() => void refresh()} disabled={loading}><RefreshCw size={18}/> Atualizar</button>
             </div>
+            <p className="ska-stock-hint"><CircleAlert size={16} aria-hidden="true"/> Despublicar apenas oculta o anúncio. Veículo, informações e fotos continuam salvos e podem ser republicados.</p>
             <label className="ska-search"><Search size={19}/><input value={search} onChange={e => { setSearch(e.target.value); setAdminPage(0); }} placeholder="Buscar marca, modelo ou versão..."/></label>
             <div className="ska-inventory">
               {loading ? <div className="ska-empty">Carregando veículos...</div> :
@@ -546,7 +556,7 @@ function AdminPanel() {
                       {v.is_demo && <span className="ska-status ska-status--demo">EXEMPLO DO SITE</span>}
                     </div>
                     <div className="ska-vehicle-state"><span className={"ska-status ska-status--"+v.status}>{statusLabel[v.status]}</span>
-                      <small>{v.is_published ? (remoteMode ? "Publicado no site" : "Marcado como publicado (local)") : "Rascunho"}</small>
+                      <small>{v.is_published ? (remoteMode ? "Publicado no site" : "Marcado publicado (local)") : (remoteMode ? "Despublicado • preservado" : "Não publicado (local)")}</small>
                     </div>
                     <div className="ska-actions">
                       <button type="button" className="ska-publish-action" disabled={working || v.is_published}
