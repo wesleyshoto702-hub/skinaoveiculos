@@ -10,7 +10,13 @@ import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 
 import { ChevronLeft, ChevronRight, Instagram, Menu, MessageCircle, Search, X } from "lucide-react";
 import logoAsset from "../assets/skinao-logo.png.asset.json";
 
-export const Route = createFileRoute("/")({ component: Home });
+export const Route = createFileRoute("/")({ component: Home, head: () => ({ meta: [
+  { title: "Skinão Veículos | Catálogo em Lavras" },
+  { name:"description",content:"Consulte os veículos da Skinão em Lavras, fotos, detalhes e atendimento." },
+  { property:"og:title",content:"Skinão Veículos | Catálogo em Lavras" },
+  { property:"og:description",content:"Veículos, fotografias e detalhes do catálogo Skinão Veículos." },
+  { property:"og:type",content:"website" },{ name:"twitter:card",content:"summary_large_image" },
+] }) });
 
 type Vehicle = {
   id: number | string;
@@ -39,7 +45,7 @@ const image = (id: string, width = 900) =>
   "https://images.unsplash.com/" + id + "?auto=format&fit=crop&w=" + width + "&q=82";
 
 // Until a public inventory backend is connected, the website shows clearly labeled examples.
-const REMOTE_CATALOG_ENABLED = false;
+const REMOTE_CATALOG_ENABLED = true;
 const demoVehicles: Vehicle[] = [
   {
     id: 1, brand: "Volkswagen", model: "Polo", version: "1.0 TSI Comfortline",
@@ -437,13 +443,13 @@ function Home() {
           setPage(Math.max(0, Math.ceil(result.total / CATALOG_PAGE_SIZE) - 1));
           return;
         }
-        setFacets(options);
-        setLiveVehicles(result.vehicles);
+        setFacets(options.isDemo ? null : options);
+        setLiveVehicles(result.fallback ? null : result.vehicles);
         setCatalogTotal(result.total);
         setHasMore(result.hasMore);
         setCatalogError("");
       } catch (error) {
-        if (mounted) setCatalogError("Não foi possível atualizar o estoque. Tentaremos novamente automaticamente.");
+        if (mounted) { setLiveVehicles([]); setCatalogTotal(0); setHasMore(false); setFacets({ isDemo:false,brands:[],types:[],transmissions:[] }); setCatalogError("Não foi possível atualizar o estoque real. Tente novamente."); }
         console.warn("Não foi possível carregar o catálogo Skinão:", error);
       } finally {
         fetching = false;
@@ -453,13 +459,13 @@ function Home() {
     setCatalogLoading(true);
     void refreshCatalog();
     const onVisible = () => { if (!document.hidden) void refreshCatalog(); };
-    const interval = window.setInterval(onVisible, 15000);
+
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
     window.addEventListener("online", onVisible);
     return () => {
       mounted = false;
-      window.clearInterval(interval);
+
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
       window.removeEventListener("online", onVisible);
@@ -620,7 +626,7 @@ function Home() {
                 <ChevronLeft size={18}/> Anterior
               </button>
               <span>Página {page + 1} de {totalPages}</span>
-              <button type="button" disabled={!hasMore} onClick={() => navigateCatalog(page+1)}>
+              <button type="button" disabled={liveVehicles === null ? page + 1 >= totalPages : !hasMore} onClick={() => navigateCatalog(page+1)}>
                 Próxima <ChevronRight size={18}/>
               </button>
             </nav>}
