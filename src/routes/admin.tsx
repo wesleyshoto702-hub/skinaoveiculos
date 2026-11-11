@@ -401,7 +401,7 @@ function AdminPanel() {
         ? (publish ? "Veículo publicado no catálogo. As informações e fotos estão preservadas." :
           "Veículo despublicado. Dados e fotografias foram mantidos no painel e podem ser republicados.")
         : (publish ? "Marcado como publicado apenas neste navegador." :
-          "Despublicado apenas neste navegador; o estoque Neon não foi alterado.") });
+          "Despublicado apenas neste navegador; o estoque da loja não foi alterado.") });
     } catch (error) {
       setFeedback({ text: error instanceof Error ? error.message : "Erro ao atualizar a publicação.", error: true });
     } finally {
@@ -431,8 +431,8 @@ function AdminPanel() {
         error: true,
       } : {
         text: remoteMode
-          ? "Veículo e fotografias excluídos definitivamente do estoque Neon."
-          : "Veículo e fotografias excluídos deste navegador. O estoque Neon não foi alterado.",
+          ? "Veículo e fotografias excluídos definitivamente do estoque da loja."
+          : "Veículo e fotografias excluídos deste navegador. O estoque da loja não foi alterado.",
       });
     } catch (error) {
       setFeedback({ text:error instanceof Error ? error.message : "Falha ao excluir o veículo.",error:true });
@@ -815,11 +815,11 @@ function AdminPanel() {
             <div className="ska-section-header"><div>
               <span className="ska-eyebrow">DADOS DO PAINEL</span>
               <h1>ARMAZENAMENTO <em>ONLINE.</em></h1>
-              <p>O estoque e o site estão conectados ao mesmo banco Neon.</p>
+              <p>Os veículos gerenciados aqui são sincronizados com o catálogo do site.</p>
             </div></div>
             <div className="ska-info">
               <h3>Estoque sincronizado</h3>
-              <p>Os veículos são armazenados no PostgreSQL Neon. Fotos, imagens de capa e
+              <p>Os veículos são armazenados no sistema da loja. Fotos, imagens de capa e
                 recortes são salvos no armazenamento de imagens da loja. Alterações realizadas
                 aqui aparecem no catálogo público de acordo com o estado Publicado/Despublicado.</p>
               <p>Despublicar preserva o veículo e as fotografias. Excluir definitivamente
@@ -852,10 +852,10 @@ function AdminPanel() {
                 ? (pendingVisibility.vehicle.is_demo
                   ? "aparecerá na vitrine como EXEMPLO DO SITE. Confira se os dados e as fotografias ilustrativas estão corretos."
                   : "ficará visível no catálogo público, incluindo preço, descrição e fotografias.")
-                : "será marcado como publicado somente neste navegador. Nada será enviado ao Neon.")
+                : "será marcado como publicado somente neste navegador. Nada será enviado ao estoque da loja.")
               : (remoteMode
                 ? "deixará de aparecer na vitrine pública, mas continuará no painel com todas as informações e fotografias. Você poderá republicá-lo depois."
-                : "deixará de estar marcado neste navegador, sem excluir informações ou fotografias. Nada muda no Neon.")}
+                : "deixará de estar marcado neste navegador, sem excluir informações ou fotografias. Nada muda no estoque da loja.")}
           </p>
           <div className="ska-confirm-actions">
             <button type="button" ref={confirmCancelRef} className="ska-button ska-button--outline"
@@ -883,7 +883,7 @@ function AdminPanel() {
           <h2 id="ska-delete-title">Excluir veículo?</h2>
           <p id="ska-delete-description">
             <strong>{pendingDelete.brand} {pendingDelete.model}</strong> será removido
-            {remoteMode ? " do banco Neon e do catálogo público" : " do armazenamento deste navegador"}.
+            {remoteMode ? " do estoque da loja e do catálogo público" : " do armazenamento deste navegador"}.
             O cadastro e suas fotografias serão apagados. <strong>Essa ação não pode ser desfeita.</strong>
             Se você pretende apenas ocultá-lo, cancele e use o botão vermelho Despublicar.
           </p>
