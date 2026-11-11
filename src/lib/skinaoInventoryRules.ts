@@ -14,6 +14,8 @@ export const draftSchema = z.object({
   is_featured: z.boolean(), is_demo: z.boolean(),
 });
 export const PUBLIC_WHERE = "is_published = true AND status IN ('available','reserved') AND is_demo = false";
+/** Demonstrative inventory remains visibly labelled and never requires real publication. */
+export const DEMO_WHERE = "is_demo = true AND status IN ('available','reserved')";
 export function assertPublication(vehicle: Pick<Vehicle, "is_published" | "is_demo" | "status">, photos: VehiclePhoto[]) {
   if (!vehicle.is_published) return;
   if (vehicle.is_demo || vehicle.status === "sold") throw new Error("Exemplos e veículos vendidos não podem ser publicados.");
@@ -31,7 +33,13 @@ export function imageUrl(path: string, base: string) {
 }
 export function publicVehicle(vehicle: Vehicle, photos: VehiclePhoto[], base: string) {
   const ordered = [...photos].sort((a,b) => Number(b.is_cover)-Number(a.is_cover) || a.sort_order-b.sort_order || a.id.localeCompare(b.id));
-  const gallery = ordered.map(p => imageUrl(p.cropped_storage_path || p.storage_path, base));
+  const gallery = ordered.map(p => {
+    if (p.cropped_storage_path) return imageUrl(p.cropped_storage_path, base);
+    // Only allow existing Unsplash references for illustrative demo records.
+    if (vehicle.is_demo && /^https:\/\/images\.unsplash\.com\/photo-[\w-]+(?:\?[^#]*)?$/.test(p.external_url ?? ""))
+      return p.external_url!;
+    return imageUrl(p.storage_path, base);
+  });
   const galleryEdits = ordered.map(p => normalizeAdjustments(p));
   return { id: vehicle.id, brand: vehicle.brand, model: vehicle.model, version: vehicle.version,
     year: String(vehicle.year), km: Number(vehicle.km), price: Number(vehicle.price),
@@ -40,5 +48,5 @@ export function publicVehicle(vehicle: Vehicle, photos: VehiclePhoto[], base: st
     ...(galleryEdits[0] ? { coverEdits: galleryEdits[0] } : {}),
     ...(vehicle.badge ? { badge: vehicle.badge } : {}),
     ...(vehicle.description?.trim() ? { description: vehicle.description.trim() } : {}),
-    isFeatured: vehicle.is_featured, isDemo: false };
+    isFeatured: vehicle.is_featured, isDemo: vehicle.is_demo };
 }
