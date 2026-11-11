@@ -18,7 +18,6 @@ export async function listPhotosForVehicles(ids: string[]): Promise<VehiclePhoto
   return photos;
 }
 export const saveVehicle = (draft: VehicleDraft, id?: string): Promise<Vehicle> => remote ? request({ action:"save",draft,...(id ? {id} : {}) }) : local.saveVehicle(draft,id);
-export const deleteVehicle = (id: string) => remote ? request<void>({ action:"deleteVehicle",id }) : local.deleteVehicle(id);
 export const addPhoto = (photo: Omit<VehiclePhoto,"id">): Promise<VehiclePhoto> => remote ? request({ action:"addPhoto",photo }) : local.addPhoto(photo);
 export const deletePhoto = (id: string) => remote ? request<void>({ action:"deletePhoto",id }) : local.deletePhoto(id);
 export const setCoverPhoto = (id: string) => remote ? request<void>({ action:"cover",id }) : local.setCoverPhoto(id);
