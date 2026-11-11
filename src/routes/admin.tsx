@@ -768,19 +768,49 @@ function AdminPanel() {
           {view === "storage" && <>
             <div className="ska-section-header"><div><span className="ska-eyebrow">DADOS DO PAINEL</span>
               <h1>ARMAZENAMENTO <em>{remoteMode ? "NEON." : "LOCAL."}</em></h1>
-              <p>O painel abre sem login. Alterações reais exigem desbloqueio autorizado.</p></div></div>
-            <div className="ska-info">
-              <h3>{remoteMode ? "Estoque conectado" : "Armazenamento deste navegador"}</h3>
-              {remoteMode && <p>O estoque real fica no Neon e as fotos no bucket vehicle-images. Originais e recortes são preservados separadamente. Bloqueie a edição ao terminar.</p>}
-              <p>Os veículos e as fotografias são salvos no armazenamento IndexedDB deste navegador.
-                É possível criar e editar cadastros sem conta e sem banco de dados remoto.</p>
-              <p>Esses cadastros não sincronizam com outros navegadores ou celulares e não aparecem
-                automaticamente no site público. Limpar os dados do navegador ou usar modo anônimo
-                pode apagar os cadastros. Faça cópias dos arquivos importantes.</p>
-              <p><strong>Atenção:</strong> qualquer pessoa com o endereço /admin pode abrir seu próprio
-                painel local. Antes de publicar alterações reais para visitantes, será necessário
-                reintroduzir um backend com autenticação e permissões seguras.</p>
-            </div>
+              <p>{remoteMode ? "Banco de dados conectado e acesso autorizado neste navegador." :
+                "Cadastros locais não são enviados ao site. Para usar o estoque Neon, autorize este dispositivo."}</p></div></div>
+            {remoteMode ? <>
+              <div className="ska-info">
+                <h3>Estoque sincronizado</h3>
+                <p>Os veículos ficam no Neon e as fotos reais no armazenamento vehicle-images.
+                  Este navegador permanece autorizado nas visitas futuras, enquanto a sessão e a chave administrativa forem válidas.</p>
+              </div>
+              <div className="ska-info ska-device-sharing">
+                <h3>Entregar acesso a outra pessoa</h3>
+                <p>Gere um convite para o navegador de quem administrará a loja. A pessoa
+                  abre o link uma única vez e poderá gerenciar o estoque sem digitar a chave.
+                  O link expira em 24 horas e só pode ser usado uma vez.</p>
+                <p><strong>Atenção:</strong> qualquer pessoa que usar o convite poderá publicar,
+                  editar e excluir veículos. Envie exclusivamente ao responsável pela loja.</p>
+                <button type="button" className="ska-button ska-button--red"
+                  disabled={inviteBusy || working} onClick={() => void createInviteLink()}>
+                  {inviteBusy ? "Gerando convite..." : "Gerar convite de acesso"}
+                </button>
+                {inviteLink && <div className="ska-invite-result">
+                  <label htmlFor="ska-invite-url">Link de convite (válido por 24 horas)</label>
+                  <div className="ska-invite-row">
+                    <input id="ska-invite-url" type="text" readOnly value={inviteLink}
+                      onFocus={event => event.currentTarget.select()} autoComplete="off"/>
+                    <button type="button" className="ska-button ska-button--outline"
+                      onClick={() => void copyInviteLink()}>Copiar link</button>
+                  </div>
+                  <small>O link será descartado desta tela ao atualizar a página. Se necessário, gere outro.</small>
+                </div>}
+              </div>
+              <div className="ska-info">
+                <h3>Segurança do dispositivo</h3>
+                <p>Se este computador deixar de ser utilizado pela loja, encerre a autorização
+                  aqui. Essa ação não remove veículos nem fotografias.</p>
+                <button type="button" className="ska-button ska-button--outline"
+                  disabled={working} onClick={() => void lockAccess()}>Encerrar acesso neste dispositivo</button>
+              </div>
+            </> : <div className="ska-info">
+              <h3>Armazenamento deste navegador</h3>
+              <p>Os veículos e as fotografias locais ficam no IndexedDB e não aparecem no site público.
+                O estoque verdadeiro precisa de um convite ou da autorização inicial deste navegador.</p>
+              <p>Limpar os dados do navegador pode apagar cadastros locais. Eles não são transferidos automaticamente ao Neon.</p>
+            </div>}
           </>}
         </main>
       </div>
