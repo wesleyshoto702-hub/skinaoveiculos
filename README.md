@@ -86,6 +86,45 @@ Não compartilhe o histórico, não salve a consulta como modelo e, quando poss�
 prefira executar a alteração por um formulário seguro ou um cliente SQL com
 parâmetros de consulta. Senhas nunca devem ser salvas no código-fonte.
 
+### Equipe e acessos — funcionários cadastrados pelo painel
+
+O item **Armazenamento** do menu foi substituído por **Equipe e acessos**.
+O administrador principal existente foi preservado como `owner`; seus
+dados e senha não mudaram. Na página ele aparece como **Administrador principal**.
+
+O proprietário pode, sem abrir Neon ou alterar variáveis na hospedagem:
+
+1. Abrir **Equipe e acessos → Adicionar funcionário**.
+2. Informar um endereço de e-mail válido (Gmail, Outlook, domínio próprio etc.).
+3. Definir uma senha inicial com 12 a 72 caracteres, contendo letras e números.
+4. Clicar em **Criar acesso**. A conta nasce ativa imediatamente.
+5. Enviar o e-mail e a senha ao funcionário por canal privado. O funcionário
+   entra em `/admin` normalmente; não existe registro público no login.
+6. Na lista, **Suspender**, **Reativar** ou **Alterar senha** do funcionário.
+
+O cadastro usa bcrypt com `pgcrypto` **somente no servidor**. Nenhuma senha
+em texto puro é guardada no banco ou devolvida ao navegador. As consultas são
+parametrizadas e exigem uma sessão ativa do `owner`.
+
+Permissões:
+- **owner**: gerencia funcionários e todas as operações do estoque;
+- **staff**: cadastra e edita veículos, fotografias e publicações;
+  **não** gerencia outras contas e **não** exclui veículos definitivamente.
+- A suspensão e a troca de senha incrementam `credential_version`, revogando
+  sessões antigas. A conta do proprietário não pode ser suspensa por essas APIs.
+
+As tabelas continuam no projeto Neon existente: `skinao_admin_users` agora
+tem as colunas `role` e `last_login_at`. A migração que já foi aplicada está
+versionada em `db/migrations/20261111_team_access.sql`.
+Há limite de 30 contas de funcionários e a criação de um e-mail já cadastrado
+é rejeitada, inclusive se a conta estiver suspensa. Contas desativadas ficam
+preservadas e podem ser reativadas sem perda de dados.
+
+**Importante:** usar um e-mail como login não cria uma caixa postal nem envia
+automaticamente credenciais ao funcionário; o proprietário deve fornecê-las
+por um canal seguro. Os acessos são gerenciados no próprio painel sem configurar
+a Vercel para cada funcionário. A hospedagem continua executando a aplicação.
+
 ### Banco de dados já provisionado
 
 - Projeto Neon: `SkinaoVeiculos` (`wispy-fire-71183672`).
@@ -136,7 +175,7 @@ Não use prefixo `VITE_` para segredos.
 | Variável | Descrição |
 | --- | --- |
 | `DATABASE_URL` | Connection string PostgreSQL **pooled** do banco `skinao`, obtida no console Neon |
-| `SKINAO_ADMIN_ACCESS_KEY` | Chave forte de administração criada e mantida pelo proprietário |
+| `SKINAO_ADMIN_ACCESS_KEY` | Configuração antiga; o login atual usa `skinao_admin_users` e não depende desta variável |
 | `SKINAO_SESSION_SECRET` | Segredo aleatório independente para assinatura das sessões, com no mínimo 32 caracteres |
 | `AWS_ENDPOINT_URL_S3` | `https://br-wandering-mountain-besgf38z.storage.c-9.us-east-2.aws.neon.tech` |
 | `AWS_REGION` | `us-east-2` |
@@ -146,7 +185,7 @@ Não use prefixo `VITE_` para segredos.
 
 As chaves de banco e armazenamento **não devem ser enviadas ao GitHub**. Crie a credencial
 de objeto S3 no Neon e copie diretamente para as variáveis secretas do ambiente de hospedagem.
-As oito variáveis de produção foram configuradas no novo projeto Vercel
+As variáveis de infraestrutura de produção foram configuradas no projeto Vercel
 `skinaoveiculos` pelo plugin, sem gravar segredos no repositório.
 Não utilize as credenciais da produção em builds de testes não autorizados.
 
@@ -166,6 +205,10 @@ acesso negado sem autorização no domínio definitivo.
 5. Confira se senha incorreta não autoriza acesso e se dez falhas bloqueiam
    tentativas adicionais por quinze minutos.
 6. Confirme que as rotas de gravação rejeitam visitantes sem sessão válida.
+7. Como proprietário, abra **Equipe e acessos**, cadastre um funcionário
+   e verifique login, suspensão, reativação e alteração de senha.
+8. Confira que uma sessão de funcionário não consegue criar contas nem
+   excluir veículos definitivamente.
 
 Nenhuma senha de usuário precisa ser configurada na Vercel. As chaves de
 infraestrutura da hospedagem permanecem privadas e não são expostas ao navegador.
