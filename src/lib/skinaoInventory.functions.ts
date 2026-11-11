@@ -21,7 +21,7 @@ const changesSchema = z.object({ sort_order:z.number().int().min(0).max(1000).op
 export const getInventoryMode = createServerFn({ method:"GET" }).handler(async () => {
   const key = process.env['SKINAO_ADMIN_ACCESS_KEY'];
   const secret = process.env['SKINAO_SESSION_SECRET'];
-  const configured = neonTransportReady && Boolean(process.env['NEON_API_KEY']);
+  const configured = neonTransportReady && Boolean(process.env['DATABASE_URL']);
   let unlocked = false;
   if (key && secret) { try { await requireAdmin(key,secret); unlocked=true; } catch { /* locked */ } }
   setResponseHeader("Cache-Control","no-store");
@@ -41,10 +41,10 @@ export const lockInventory = createServerFn({ method:"POST" }).handler(async () 
   return { ok:true };
 });
 export const publicCatalog = createServerFn({ method:"GET" }).inputValidator(z.object({ filters, page })).handler(async ({ data }) => {
-  if (!neonTransportReady || !process.env['NEON_API_KEY']) return { fallback:true, vehicles:[], total:0, hasMore:false };
+  if (!neonTransportReady || !process.env['DATABASE_URL']) return { fallback:true, vehicles:[], total:0, hasMore:false };
   try {
     const repo = repository(neonTransport);
-    const base = process.env['SKINAO_IMAGES_PUBLIC_URL'] ?? "";
+    const base = process.env['SKINAO_IMAGES_PUBLIC_URL'] ?? "https://br-wandering-mountain-besgf38z.storage.c-9.us-east-2.aws.neon.tech/vehicle-images";
     // Global existence, not a filtered empty page, determines illustrative fallback.
     const existence = await repo.rows<{ total:string }>(`SELECT count(*) AS total FROM vehicles WHERE ${PUBLIC_WHERE}`);
     if (!Number(existence[0]?.total)) return { fallback:true, vehicles:[], total:0, hasMore:false };
@@ -55,7 +55,7 @@ export const publicCatalog = createServerFn({ method:"GET" }).inputValidator(z.o
   }
 });
 export const publicFacets = createServerFn({ method:"GET" }).handler(async () => {
-  if (!neonTransportReady || !process.env['NEON_API_KEY']) return { isDemo:true, brands:[],types:[],transmissions:[] };
+  if (!neonTransportReady || !process.env['DATABASE_URL']) return { isDemo:true, brands:[],types:[],transmissions:[] };
   const result = await repository(neonTransport).rows<{ brands:string[];types:string[];transmissions:string[];total:string }>(
     `SELECT array_agg(DISTINCT brand ORDER BY brand) AS brands,array_agg(DISTINCT type ORDER BY type) AS types,
      array_agg(DISTINCT transmission ORDER BY transmission) AS transmissions,count(*) AS total FROM vehicles WHERE ${PUBLIC_WHERE}`);
@@ -104,7 +104,7 @@ export const inventoryRequest = createServerFn({ method:"POST" }).inputValidator
         return result(Object.fromEntries(Object.entries(r).map(([k,v])=>[k,Number(v)])));
       }
       case "photos": {
-        const base = process.env['SKINAO_IMAGES_PUBLIC_URL'] ?? "";
+        const base = process.env['SKINAO_IMAGES_PUBLIC_URL'] ?? "https://br-wandering-mountain-besgf38z.storage.c-9.us-east-2.aws.neon.tech/vehicle-images";
         return result((await repo.photos(data.ids)).map(p=>({...p,
           public_url:imageUrl(p.storage_path,base), cropped_url:p.cropped_storage_path ? imageUrl(p.cropped_storage_path,base) : null })));
       }
