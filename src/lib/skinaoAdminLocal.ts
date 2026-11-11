@@ -131,7 +131,21 @@ export async function addPhoto(photo: Omit<VehiclePhoto, "id">): Promise<Vehicle
   await put("photos", record);
   return record;
 }
-export const deletePhoto = (id: string) => remove("photos", id);
+export async function deletePhoto(id: string): Promise<void> {
+  const previous = await get<VehiclePhoto>("photos", id);
+  if (!previous) throw new Error("Fotografia não encontrada neste navegador.");
+  await remove("photos", id);
+  const remaining = await listPhotosForVehicles([previous.vehicle_id]);
+  if (!remaining.length) {
+    // In local mode too, deleting the last photograph only unpublishes the car.
+    const vehicle = await get<Vehicle>("vehicles", previous.vehicle_id);
+    if (vehicle?.is_published) await put("vehicles", {
+      ...vehicle, is_published: false, updated_at: new Date().toISOString(),
+    });
+  } else if (previous.is_cover && !remaining.some(p => p.is_cover)) {
+    await setCoverPhoto(remaining[0].id);
+  }
+}
 export async function updatePhoto(
   id: string,
   changes: Partial<Pick<VehiclePhoto, "sort_order" | "crop_x" | "crop_y" | "crop_zoom" | "crop_rotation" | "cropped_storage_path">>,
