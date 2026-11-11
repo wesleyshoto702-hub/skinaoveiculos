@@ -6,7 +6,7 @@ import {
   RefreshCw, RotateCcw, Save, Search, Sun, Moon, Trash2, WandSparkles, X,
 } from "lucide-react";
 import {
-  setRemoteInventory, ADMIN_PAGE_SIZE, addPhoto, deletePhoto, deleteVehicle, getAdminStats,
+  setRemoteInventory, ADMIN_PAGE_SIZE, addPhoto, deletePhoto, getAdminStats,
   listPhotosForVehicles, listVehiclePage,
   photoUrl, displayPhotoUrl, removeStoredPhotos, saveVehicle, setCoverPhoto, updatePhoto, uploadPhoto,
   type AdminStats, type Vehicle, type VehicleDraft, type VehiclePhoto,
@@ -124,7 +124,7 @@ function AdminPanel() {
   const [loading, setLoading] = useState(false);
   const [working, setWorking] = useState(false);
   const [feedback, setFeedback] = useState<Status | null>(null);
-  const [pendingUnpublish, setPendingUnpublish] = useState<Vehicle | null>(null);
+  const [pendingVisibility, setPendingVisibility] = useState<{ vehicle: Vehicle; publish: boolean } | null>(null);
   const confirmCancelRef = useRef<HTMLButtonElement | null>(null);
   const confirmDialogRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState("");
@@ -236,50 +236,38 @@ function AdminPanel() {
     } catch (e) { setFeedback({ text: e instanceof Error ? e.message : "Não foi possível salvar.", error: true }); }
     finally { setWorking(false); }
   }
-  async function applyPublication(item: Vehicle) {
-    if (working) return;
-    if (!item.is_published && !orderPhotos(photos, item.id).length) {
+  async function applyPublication(item: Vehicle, publish: boolean) {
+    if (working || item.is_published === publish) return;
+    if (publish && item.status === "sold") {
+      setFeedback({ text: "Veículos vendidos não podem ser publicados. Atualize o status antes.", error: true });
+      return;
+    }
+    if (publish && !orderPhotos(photos, item.id).length) {
       setFeedback({ text: "Inclua uma fotografia antes de publicar.", error: true });
       return;
     }
     setWorking(true); setFeedback(null);
     try {
-      await saveVehicle({ ...toDraft(item), is_published: !item.is_published }, item.id);
+      await saveVehicle({ ...toDraft(item), is_published: publish }, item.id);
       await refresh();
-      setFeedback({ text: remoteMode ? (item.is_published ? "Veículo despublicado do site." : "Veículo publicado no site.") : (item.is_published ? "Publicação local desmarcada." : "Marcado apenas neste navegador; não publica no site.") });
-    } catch (e) { setFeedback({ text: e instanceof Error ? e.message : "Erro ao atualizar publicação.", error: true }); }
-    finally { setWorking(false); }
-  }
-  function changePublish(item: Vehicle) {
-    if (working) return;
-    if (item.is_published) setPendingUnpublish(item);
-    else void applyPublication(item);
-  }
-  async function removeVehicle(item: Vehicle) {
-    if (working || !window.confirm(
-      "Excluir permanentemente " + item.brand + " " + item.model +
-      "? O anúncio e todas as fotos serão removidos. Esta ação não pode ser desfeita."
-    )) return;
-    setWorking(true); setFeedback(null);
-    try {
-      if (!remoteMode) {
-        const pictures = await listPhotosForVehicles([item.id]);
-        for (const picture of pictures) await deletePhoto(picture.id);
-        await removeStoredPhotos([...new Set(pictures.flatMap(p =>
-          [p.storage_path, ...(p.cropped_storage_path ? [p.cropped_storage_path] : [])]))]);
-      }
-      await deleteVehicle(item.id);
-      setAdminPage(0);
-      await refresh();
-      setFeedback({ text: remoteMode ? "Veículo e fotografias excluídos do estoque da loja." :
-        "Veículo e fotografias removidos deste navegador." });
+      setFeedback({ text: remoteMode
+        ? (publish ? "Veículo publicado no catálogo. As informações e fotos estão preservadas." :
+          "Veículo despublicado. Dados e fotografias foram mantidos no painel e podem ser republicados.")
+        : (publish ? "Marcado como publicado apenas neste navegador." :
+          "Despublicado apenas neste navegador; o estoque Neon não foi alterado.") });
     } catch (error) {
-      setFeedback({ text: error instanceof Error ? error.message : "Não foi possível excluir o veículo.", error: true });
-    } finally { setWorking(false); }
+      setFeedback({ text: error instanceof Error ? error.message : "Erro ao atualizar a publicação.", error: true });
+    } finally {
+      setWorking(false);
+    }
+  }
+  function confirmVisibility(item: Vehicle, publish: boolean) {
+    if (working || item.is_published === publish) return;
+    setPendingVisibility({ vehicle: item, publish });
   }
   // Trap keyboard focus within the confirmation dialog; Escape/backdrop cancel safely.
   useEffect(() => {
-    if (!pendingUnpublish) return;
+    if (!pendingVisibility) return;
     const previousFocus = document.activeElement;
     const oldOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -287,7 +275,7 @@ function AdminPanel() {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        setPendingUnpublish(null);
+        setPendingVisibility(null);
       } else if (event.key === "Tab") {
         const buttons = confirmDialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
         if (!buttons?.length) return;
@@ -306,7 +294,7 @@ function AdminPanel() {
       window.removeEventListener("keydown", onKeyDown);
       if (previousFocus instanceof HTMLElement) previousFocus.focus();
     };
-  }, [pendingUnpublish]);
+  }, [pendingVisibility]);
   // These photo controls save immediately; the vehicle's text fields still use "Salvar veículo".
   async function setCoverPicture(photo: VehiclePhoto) {
     if (working || photo.is_cover) return;
@@ -523,12 +511,16 @@ function AdminPanel() {
                       <small>{v.is_published ? (remoteMode ? "Publicado no site" : "Marcado como publicado (local)") : "Rascunho"}</small>
                     </div>
                     <div className="ska-actions">
-                      <button type="button" disabled={working} onClick={() => void changePublish(v)} title={v.is_published ? "Despublicar veículo" : "Publicar veículo"}>
-                        {v.is_published ? "Despublicar" : remoteMode ? "Publicar" : "Marcar publicado"}
-                      </button>
-                      <button type="button" onClick={() => editItem(v)} title="Editar" aria-label={"Editar "+v.model}><Edit3 size={18}/></button>
-                      <button type="button" disabled={working} onClick={() => void removeVehicle(v)}
-                        title="Excluir veículo" aria-label={"Excluir "+v.brand+" "+v.model}><Trash2 size={18}/></button>
+                      <button type="button" className="ska-publish-action" disabled={working || v.is_published}
+                        onClick={() => confirmVisibility(v, true)}
+                        title={v.is_published ? "Este veículo já está publicado" : "Publicar veículo"}
+                        aria-label={"Publicar "+v.brand+" "+v.model}>Publicar</button>
+                      <button type="button" className="ska-unpublish-action" disabled={working || !v.is_published}
+                        onClick={() => confirmVisibility(v, false)}
+                        title={!v.is_published ? "Este veículo já está despublicado" : "Despublicar sem excluir"}
+                        aria-label={"Despublicar "+v.brand+" "+v.model}>Despublicar</button>
+                      <button type="button" disabled={working} onClick={() => editItem(v)}
+                        title="Editar veículo" aria-label={"Editar "+v.brand+" "+v.model}><Edit3 size={18}/></button>
                     </div>
                   </div>;
                 }) : <div className="ska-empty"><CarFront size={33}/><h3>{search ? "Nenhum resultado" : "Seu estoque começa aqui"}</h3><p>{search ? "Experimente outra busca." : "Adicione o primeiro veículo para começar a utilizar o painel."}</p>{!search && <button className="ska-button ska-button--red" type="button" onClick={createNew}><Plus size={17}/> Cadastrar veículo</button>}</div>
@@ -672,25 +664,36 @@ function AdminPanel() {
         imageUrl={displayPhotoUrl(editingPhoto)}
         onClose={() => setEditingPhoto(null)}
         onSave={edits => savePhotoEdits(editingPhoto, edits)}/>}
-      {pendingUnpublish && <div className="ska-confirm-overlay"
-        onMouseDown={event => { if (event.target === event.currentTarget) setPendingUnpublish(null); }}>
+      {pendingVisibility && <div className="ska-confirm-overlay"
+        onMouseDown={event => { if (event.target === event.currentTarget) setPendingVisibility(null); }}>
         <div className="ska-confirm-dialog" ref={confirmDialogRef} role="alertdialog" aria-modal="true"
-          aria-labelledby="ska-unpublish-title" aria-describedby="ska-unpublish-description">
+          aria-labelledby="ska-visibility-title" aria-describedby="ska-visibility-description">
           <button type="button" className="ska-confirm-close" aria-label="Fechar aviso"
-            onClick={() => setPendingUnpublish(null)}><X size={19}/></button>
+            onClick={() => setPendingVisibility(null)}><X size={19}/></button>
           <span className="ska-confirm-icon"><AlertTriangle size={25} aria-hidden="true"/></span>
           <span className="ska-eyebrow">CONFIRMAR ALTERAÇÃO</span>
-          <h2 id="ska-unpublish-title">Despublicar veículo?</h2>
-          <p id="ska-unpublish-description">O veículo <strong>{pendingUnpublish.brand} {pendingUnpublish.model}</strong> {remoteMode ? "deixará de aparecer no catálogo público." : "deixará de estar marcado neste navegador; nada muda no site público."}</p>
+          <h2 id="ska-visibility-title">{pendingVisibility.publish ? "Publicar veículo?" : "Despublicar veículo?"}</h2>
+          <p id="ska-visibility-description">
+            O veículo <strong>{pendingVisibility.vehicle.brand} {pendingVisibility.vehicle.model}</strong>{" "}
+            {pendingVisibility.publish
+              ? (remoteMode
+                ? (pendingVisibility.vehicle.is_demo
+                  ? "aparecerá na vitrine como EXEMPLO DO SITE. Confira se os dados e as fotografias ilustrativas estão corretos."
+                  : "ficará visível no catálogo público, incluindo preço, descrição e fotografias.")
+                : "será marcado como publicado somente neste navegador. Nada será enviado ao Neon.")
+              : (remoteMode
+                ? "deixará de aparecer na vitrine pública, mas continuará no painel com todas as informações e fotografias. Você poderá republicá-lo depois."
+                : "deixará de estar marcado neste navegador, sem excluir informações ou fotografias. Nada muda no Neon.")}
+          </p>
           <div className="ska-confirm-actions">
             <button type="button" ref={confirmCancelRef} className="ska-button ska-button--outline"
-              onClick={() => setPendingUnpublish(null)}>Manter publicado</button>
-            <button type="button" className="ska-button ska-button--red"
+              onClick={() => setPendingVisibility(null)}>Cancelar</button>
+            <button type="button" className={pendingVisibility.publish ? "ska-button ska-button--outline" : "ska-button ska-button--red"}
               onClick={() => {
-                const item = pendingUnpublish;
-                setPendingUnpublish(null);
-                void applyPublication(item);
-              }}><Check size={17}/> Sim, despublicar</button>
+                const { vehicle, publish } = pendingVisibility;
+                setPendingVisibility(null);
+                void applyPublication(vehicle, publish);
+              }}><Check size={17}/>{pendingVisibility.publish ? "Sim, publicar" : "Sim, despublicar"}</button>
           </div>
         </div>
       </div>}
