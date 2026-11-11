@@ -61,7 +61,9 @@ export const publicCatalog = createServerFn({ method:"GET" }).inputValidator(z.o
               count(*) FILTER (WHERE ${DEMO_WHERE}) AS demos FROM vehicles`))[0];
     const hasReal = Number(availability?.real) > 0;
     const hasDemo = Number(availability?.demos) > 0;
-    if (!hasReal && !hasDemo) return { fallback:true, vehicles:[], total:0, hasMore:false };
+    // Once connected, the database is authoritative: deleting all records must
+    // not silently resurrect the six hard-coded example cards.
+    if (!hasReal && !hasDemo) return { fallback:false, vehicles:[], total:0, hasMore:false };
     return { fallback:false, ...await repo.catalog(data.filters,data.page,base,!hasReal) };
   } catch (error) {
     console.error("Catalog request failed", error);
