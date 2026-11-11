@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   AlertTriangle, ArrowLeft, ArrowRight, Camera, CarFront, Check, ChevronDown, CircleAlert,
-  ClipboardList, Crop, Edit3, HardDrive, ImagePlus, Menu, Plus,
+  ClipboardList, Crop, Edit3, HardDrive, ImagePlus, Menu, Plus, UsersRound,
   RefreshCw, RotateCcw, Save, Search, Sun, Moon, Trash2, WandSparkles, X,
   Eye, EyeOff, LockKeyhole, LogOut, UserRound,
 } from "lucide-react";
@@ -18,6 +18,7 @@ import { getInventoryMode, loginInventory, logoutInventory } from "../lib/skinao
 import { useServerFn } from "@tanstack/react-start";
 import { PhotoEditor } from "../components/admin/PhotoEditor";
 import { PhotoCropper } from "../components/admin/PhotoCropper";
+import { TeamAccess } from "../components/admin/TeamAccess";
 import { adjustedImageStyle, DEFAULT_PHOTO_ADJUSTMENTS, type PhotoAdjustments } from "../lib/skinaoPhotoAdjust";
 
 export const Route = createFileRoute("/admin")({
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/admin")({
     { property:"og:description",content:"Administração de veículos e fotografias Skinão." },
     { property:"og:type",content:"website" },{ name:"twitter:card",content:"summary" }] }),
 });
-type View = "inventory" | "form" | "storage";
+type View = "inventory" | "form" | "team";
 type Status = { text: string; error?: boolean };
 type AdminTheme = "dark" | "light";
 const THEME_STORAGE_KEY = "skinao-admin-theme";
@@ -169,6 +170,7 @@ function AdminPanel() {
     try { window.localStorage.setItem(THEME_STORAGE_KEY, next); } catch { /* Theme still works for this visit. */ }
   }
   const [remoteMode, setRemoteMode] = useState(false);
+  const [adminIdentity, setAdminIdentity] = useState<{username:string;role:"owner"|"staff"}|null>(null);
   const [modeReady, setModeReady] = useState(false);
   const [accessIssue, setAccessIssue] = useState<"restricted" | "unavailable" | null>(null);
   // The catalog is already linked to the Neon database on the server.
@@ -180,11 +182,13 @@ function AdminPanel() {
       if (!active) return;
       setRemoteInventory(mode.unlocked);
       setRemoteMode(mode.unlocked);
+      setAdminIdentity(mode.account ?? null);
       setAccessIssue(mode.unlocked ? null : mode.configured ? "restricted" : "unavailable");
     }).catch(() => {
       if (!active) return;
       setRemoteInventory(false);
       setRemoteMode(false);
+      setAdminIdentity(null);
       setAccessIssue("unavailable");
     }).finally(() => { if (active) setModeReady(true); });
     return () => { active = false; };
@@ -198,6 +202,7 @@ function AdminPanel() {
       await signOut();
       setRemoteInventory(false);
       setRemoteMode(false);
+      setAdminIdentity(null);
       setAccessIssue(null);
       setVehicles([]);
       setPhotos([]);
@@ -246,7 +251,7 @@ function AdminPanel() {
       "Você tem alterações não salvas neste veículo. Deseja sair e descartar essas alterações?"
     );
   }
-  function leaveForm(next: "inventory" | "storage") {
+  function leaveForm(next: "inventory" | "team") {
     if (!confirmLeaveForm()) return;
     setView(next); setMenuOpen(false);
   }
@@ -604,6 +609,7 @@ function AdminPanel() {
         if (!mode.unlocked) throw new Error("Não foi possível confirmar a sessão.");
         setRemoteInventory(true);
         setRemoteMode(true);
+        setAdminIdentity(mode.account ?? null);
         setAccessIssue(null);
         setAdminPage(0);
       }}/>;
@@ -620,7 +626,7 @@ function AdminPanel() {
         <nav className="ska-nav" aria-label="Navegação administrativa">
           <button className={view === "inventory" ? "is-active" : ""} onClick={() => leaveForm("inventory")}><ClipboardList size={19}/> Estoque</button>
           <button className={view === "form" ? "is-active" : ""} onClick={createNew}><Plus size={19}/> Novo veículo</button>
-          <button className={view === "storage" ? "is-active" : ""} onClick={() => leaveForm("storage")}><HardDrive size={19}/> Armazenamento</button>
+          <button className={view === "team" ? "is-active" : ""} onClick={() => leaveForm("team")}><UsersRound size={19}/> Equipe e acessos</button>
         </nav>
         <div className="ska-sidebar-footer">
           <a href="/" target="_blank" rel="noopener noreferrer"><ArrowLeft size={18}/> Visualizar site</a>
@@ -690,9 +696,9 @@ function AdminPanel() {
                         aria-label={"Despublicar "+v.brand+" "+v.model}>Despublicar</button>
                       <button type="button" disabled={working} onClick={() => editItem(v)}
                         title="Editar veículo" aria-label={"Editar "+v.brand+" "+v.model}><Edit3 size={18}/></button>
-                      <button type="button" className="ska-delete-action" disabled={working}
+                      {adminIdentity?.role === "owner" && <button type="button" className="ska-delete-action" disabled={working}
                         onClick={() => requestDeletion(v)} title="Excluir definitivamente"
-                        aria-label={"Excluir definitivamente "+v.brand+" "+v.model}><Trash2 size={18}/></button>
+                        aria-label={"Excluir definitivamente "+v.brand+" "+v.model}><Trash2 size={18}/></button>}
                     </div>
                   </div>;
                 }) : <div className="ska-empty"><CarFront size={33}/><h3>{search ? "Nenhum resultado" : "Seu estoque começa aqui"}</h3><p>{search ? "Experimente outra busca." : "Adicione o primeiro veículo para começar a utilizar o painel."}</p>{!search && <button className="ska-button ska-button--red" type="button" onClick={createNew}><Plus size={17}/> Cadastrar veículo</button>}</div>
@@ -811,21 +817,8 @@ function AdminPanel() {
                 <button type="submit" disabled={working} className="ska-button ska-button--red"><Save size={18}/>{working?"Salvando...":"Salvar veículo"}</button></div>
             </form>
           </>}
-          {view === "storage" && <>
-            <div className="ska-section-header"><div>
-              <span className="ska-eyebrow">DADOS DO PAINEL</span>
-              <h1>ARMAZENAMENTO <em>ONLINE.</em></h1>
-              <p>Os veículos gerenciados aqui são sincronizados com o catálogo do site.</p>
-            </div></div>
-            <div className="ska-info">
-              <h3>Estoque sincronizado</h3>
-              <p>Os veículos são armazenados no sistema da loja. Fotos, imagens de capa e
-                recortes são salvos no armazenamento de imagens da loja. Alterações realizadas
-                aqui aparecem no catálogo público de acordo com o estado Publicado/Despublicado.</p>
-              <p>Despublicar preserva o veículo e as fotografias. Excluir definitivamente
-                remove o cadastro após confirmação explícita.</p>
-            </div>
-          </>}
+          {view === "team" && adminIdentity && <TeamAccess currentUser={adminIdentity}/>}
+
         </main>
       </div>
       {croppingPhoto && <PhotoCropper key={croppingPhoto.id} photo={croppingPhoto}
