@@ -38,6 +38,8 @@ type Vehicle = {
 const image = (id: string, width = 900) =>
   "https://images.unsplash.com/" + id + "?auto=format&fit=crop&w=" + width + "&q=82";
 
+// Until a public inventory backend is connected, the website shows clearly labeled examples.
+const REMOTE_CATALOG_ENABLED = false;
 const demoVehicles: Vehicle[] = [
   {
     id: 1, brand: "Volkswagen", model: "Polo", version: "1.0 TSI Comfortline",
@@ -416,6 +418,10 @@ function Home() {
   // The site never downloads the entire stock or every photo to the browser.
   // Refresh only the current page when the tab is visible.
   useEffect(() => {
+    if (!REMOTE_CATALOG_ENABLED) {
+      setCatalogLoading(false);
+      return;
+    }
     let mounted = true;
     let fetching = false;
     const refreshCatalog = async () => {
@@ -525,8 +531,24 @@ function Home() {
   useEffect(() => { document.body.classList.toggle("menu-open", menuOpen); return () => document.body.classList.remove("menu-open"); }, [menuOpen]);
   const openDetails = (vehicle: Vehicle) => setSelected(vehicle);
   const closeDetails = () => setSelected(null);
-  const matches = vehicles;
-  const totalPages = Math.max(1, Math.ceil(catalogTotal / CATALOG_PAGE_SIZE));
+  // Keep search, filters, sorting and the total functional without Supabase.
+  const demoMatches = liveVehicles === null
+    ? demoVehicles.filter(v =>
+        (!debouncedQuery.trim() || [v.brand, v.model, v.version]
+          .some(text => text.toLocaleLowerCase("pt-BR").includes(debouncedQuery.trim().toLocaleLowerCase("pt-BR")))) &&
+        (!brand || v.brand === brand) &&
+        (!type || v.type === type) &&
+        (!transmission || v.transmission === transmission) &&
+        (!maxPrice || v.price <= Number(maxPrice)))
+      .sort((a, b) => order === "low" ? a.price - b.price :
+        order === "high" ? b.price - a.price :
+        order === "featured" ? Number(Boolean(b.badge)) - Number(Boolean(a.badge)) : Number(b.id) - Number(a.id))
+    : [];
+  const effectiveTotal = liveVehicles === null ? demoMatches.length : catalogTotal;
+  const matches = liveVehicles === null
+    ? demoMatches.slice(page * CATALOG_PAGE_SIZE, (page + 1) * CATALOG_PAGE_SIZE)
+    : vehicles;
+  const totalPages = Math.max(1, Math.ceil(effectiveTotal / CATALOG_PAGE_SIZE));
   const selectFilter = (setValue: (value: string) => void, value: string) => {
     setPage(0);
     setValue(value);
@@ -585,7 +607,7 @@ function Home() {
               <label className="select-field"><span className="sr-only">Câmbio</span><select aria-label="Filtrar por câmbio" value={transmission} onChange={event=>selectFilter(setTransmission,event.target.value)}><option value="">Qualquer câmbio</option>{(facets?.transmissions ?? ["Automático","Manual"]).map(t=><option key={t} value={t}>{t}</option>)}</select></label>
               <label className="select-field"><span className="sr-only">Preço máximo</span><select aria-label="Filtrar por preço máximo" value={maxPrice} onChange={event=>selectFilter(setMaxPrice,event.target.value)}><option value="">Qualquer preço</option><option value="80000">Até R$ 80 mil</option><option value="100000">Até R$ 100 mil</option><option value="120000">Até R$ 120 mil</option><option value="160000">Até R$ 160 mil</option></select></label>
             </div>
-            <div className="results-bar"><span><strong>{catalogTotal.toLocaleString("pt-BR")}</strong> {isDemoCatalog ? "MODELOS DE EXEMPLO" : "VEÍCULOS DISPONÍVEIS"}</span>
+            <div className="results-bar"><span><strong>{effectiveTotal.toLocaleString("pt-BR")}</strong> {isDemoCatalog ? "MODELOS DE EXEMPLO" : "VEÍCULOS DISPONÍVEIS"}</span>
               <div className="results-actions"><button type="button" onClick={resetFilters} className="clear-filters">LIMPAR FILTROS</button>
                 <select aria-label="Ordenar veículos" value={order} onChange={event=>selectFilter(setOrder,event.target.value)}><option value="featured">Ordenar: destaques</option><option value="low">Menor preço</option><option value="high">Maior preço</option><option value="new">Mais recentes</option></select></div>
             </div>
@@ -593,7 +615,7 @@ function Home() {
             {catalogLoading ? <div className="stock-catalog-loading" role="status">Carregando veículos do catálogo...</div> :
               matches.length>0 ? <div className="stock-grid">{matches.map(vehicle=><VehicleCard key={vehicle.id} vehicle={vehicle} onDetails={openDetails}/>)}</div> :
               <div className="empty-results"><Search size={30}/><h3>Nenhum veículo encontrado</h3><p>Tente ajustar os filtros para encontrar outras opções.</p><button type="button" className="btn btn-outline" onClick={resetFilters}>LIMPAR FILTROS</button></div>}
-            {!catalogLoading && catalogTotal > CATALOG_PAGE_SIZE && <nav className="stock-pagination" aria-label="Páginas do catálogo">
+            {!catalogLoading && effectiveTotal > CATALOG_PAGE_SIZE && <nav className="stock-pagination" aria-label="Páginas do catálogo">
               <button type="button" disabled={page === 0} onClick={() => navigateCatalog(Math.max(0,page-1))}>
                 <ChevronLeft size={18}/> Anterior
               </button>
