@@ -30,27 +30,26 @@ quilometragem, cor, preço, descrição, opcionais, status, destaque e publicaç
 upload de até 8 MB por foto, galeria, imagem de capa, edição do enquadramento,
 recorte com arquivo derivado, restauração do original e organização das fotos.
 
-**Painel sem chave ou convite na interface.** O catálogo público e o estoque
-administrativo já usam o mesmo PostgreSQL Neon em produção. O painel **não apresenta
-mais campo de chave, controles de bloquear/desbloquear, convites nem modo local**.
+**Painel administrativo com login:** o endereço `/admin` abre uma tela
+de autenticação para visitantes sem sessão. Ela possui somente **Usuário**, **Senha**
+e botão de **mostrar/ocultar senha**, sem cadastro público, recuperação de conta
+ou informações sobre o provedor do banco.
 
-Em navegadores que já possuem a sessão assinada de administração, o estoque abre
-diretamente e todas as operações de escrita continuam autorizadas pelo servidor.
-A sessão HttpOnly existente permanece válida por até **365 dias**, renovada a cada
-visita autorizada. A chave secreta do servidor **não é enviada ao navegador**.
+A única conta administrativa é configurada no servidor:
+- Usuário: `SKINAO_ADMIN_USERNAME` (produção: `admin`).
+- Senha: `SKINAO_ADMIN_ACCESS_KEY` (existente na Vercel; nunca versionar).
+- Sessões: `SKINAO_SESSION_SECRET`, rotacionado na implantação do login para
+  invalidar autorizações anteriores; cookie HttpOnly, Secure, SameSite=Strict.
+- Duração da sessão: **7 dias**, renovada em visitas autorizadas.
+- Botão **Sair**: revoga a sessão deste navegador.
+- Limite de tentativas: 10 por janela de 15 minutos e impressão digital
+  de IP anonimizada em `skinao_admin_login_limits` no PostgreSQL.
+- Mensagens genéricas quando usuário ou senha estão incorretos.
 
-**Limitação de segurança importante:** nenhum aplicativo público consegue liberar
-edição de estoque para **qualquer navegador anônimo**, sem qualquer identificação,
-e simultaneamente impedir alterações feitas por visitantes. Por isso, dispositivos
-sem sessão previamente autorizada exibem apenas **Acesso restrito**, sem chave,
-login ou convite dentro do painel; eles **não podem alterar o estoque**. Para
-autorizar novos dispositivos, seria necessário adotar alguma proteção fora do
-painel, como autenticação da hospedagem ou acesso de rede controlado. Não deixe
-escrita pública anônima habilitada.
-
-As APIs antigas de convite e entrada de chave foram removidas do código. A tabela
-histórica de convites no banco permanece inativa; nenhuma rota gera ou aceita
-convites.
+As funções administrativas verificam a sessão no servidor antes de qualquer
+alteração. A página pública de veículos permanece acessível sem login.
+O painel não fornece chave fixa embutida no frontend, acesso público a escrita,
+convite, criação de conta ou modo local.
 
 ### Banco de dados já provisionado
 
@@ -122,16 +121,21 @@ Sem credenciais de storage, upload de fotografias reais não funciona. Não publ
 como concluído sem validar cadastro, upload, recorte, capa, edição, despublicação e
 acesso negado sem autorização no domínio definitivo.
 
-### Verificações em produção
+### Login e testes da publicação
 
-1. Execute `bun install --frozen-lockfile`, `bun run build` e `bun test` (quando aplicável).
-2. Abra `https://skinaoveiculos.vercel.app/admin` em navegador anteriormente autorizado:
-   o estoque Neon abre sem solicitar qualquer código ou convite.
-3. Se o navegador não tiver sessão válida, aparece **Acesso restrito**, sem acesso
-   às operações de publicação/edição/exclusão.
-4. Teste cadastro de veículo, upload de fotos, recorte, destaque, publicação,
-   despublicação e exclusão com confirmação.
-5. Confira a atualização correspondente em `https://skinaoveiculos.vercel.app`.
+1. Acesse `https://skinaoveiculos.vercel.app/admin` num navegador privado:
+   a tela de login deve aparecer antes do inventário.
+2. Entre com o usuário `admin` e a senha de administração já armazenada no
+   ambiente seguro da Vercel. O navegador recebe uma sessão assinada.
+3. Confira a abertura do estoque e o funcionamento das fotos e dos anúncios.
+4. Clique em **Sair** e confirme que o painel volta ao login; URLs de
+   administração não permitem gravação sem sessão.
+5. Verifique que tentativas com senha errada não criam sessão e que há
+   bloqueio temporário após 10 tentativas em 15 minutos.
+
+Nenhuma senha é armazenada no código ou exposta ao navegador. A validação do
+usuário, senha e limite de tentativas ocorre no servidor. A publicação não
+depende da Lovable.
 
 ### Avisos e prevenção de perda acidental
 
@@ -146,5 +150,5 @@ acesso negado sem autorização no domínio definitivo.
 - **Excluir fotografia**: alerta que a remoção da foto é permanente; se a última
   for excluída, o veículo é automaticamente despublicado, mas permanece salvo.
 
-O catálogo público consulta o Neon diretamente. Edições pelo painel exigem uma
-sessão administrativa válida no servidor, mesmo sem campos de chave na interface.
+O catálogo público consulta o banco diretamente. Edições pelo painel exigem
+login e uma sessão administrativa válida, sem convites ou criação de contas.
