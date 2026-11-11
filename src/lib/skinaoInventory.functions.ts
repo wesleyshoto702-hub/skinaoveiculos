@@ -1,7 +1,8 @@
+import { createHash } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
-import { setResponseHeader } from "@tanstack/react-start/server";
+import { getRequest, setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { authRevision, requireAdmin } from "./skinaoAuth.server";
+import { adminSession, authRevision, passwordMatches, requireAdmin } from "./skinaoAuth.server";
 import { neonTransport, neonTransportReady } from "./skinaoNeonTransport.server";
 import { repository } from "./skinaoRepository.server";
 import { storage } from "./skinaoStorage.server";
@@ -36,6 +37,66 @@ export const getInventoryMode = createServerFn({ method:"GET" }).handler(async (
   return { configured, unlocked:configured && unlocked,
     storageConfigured:Boolean(process.env['AWS_ENDPOINT_URL_S3'] && process.env['AWS_REGION'] && process.env['AWS_ACCESS_KEY_ID'] && process.env['AWS_SECRET_ACCESS_KEY']) };
 });
+/** Single administrator sign-in. Password stays server-side, never in the JS bundle.
+ * Login attempt throttling is persisted in PostgreSQL across serverless invocations.
+ */
+const signInSchema = z.object({
+  username: z.string().trim().min(1).max(100),
+  password: z.string().min(1).max(1024),
+});
+export const loginInventory = createServerFn({ method:"POST" }).inputValidator(signInSchema)
+  .handler(async ({ data }) => {
+    setResponseHeader("Cache-Control", "no-store");
+    const expectedUser = process.env["SKINAO_ADMIN_USERNAME"] || "admin";
+    const expectedPassword = process.env["SKINAO_ADMIN_ACCESS_KEY"];
+    const secret = process.env["SKINAO_SESSION_SECRET"];
+    if (!expectedPassword || !secret || !process.env["DATABASE_URL"])
+      return { ok:false, reason:"unavailable" as const };
+
+    // Use the trusted reverse-proxy IP if present. Never store IPs or passwords.
+    const headers = getRequest().headers;
+    const source = (headers.get("x-vercel-forwarded-for")
+      || headers.get("x-real-ip")
+      || headers.get("x-forwarded-for")
+      || "unknown").split(",")[0].trim().slice(0,128);
+    const fingerprint = createHash("sha256").update(secret + ":" + source).digest("hex");
+    try {
+      const repo = repository(neonTransport);
+      const recent = await repo.rows<{ attempt_count:number }>(
+        `INSERT INTO skinao_admin_login_limits (fingerprint,attempt_count,window_started)
+           VALUES ($1,1,now())
+         ON CONFLICT (fingerprint) DO UPDATE
+           SET attempt_count = CASE
+             WHEN skinao_admin_login_limits.window_started < now() - interval '15 minutes' THEN 1
+             ELSE skinao_admin_login_limits.attempt_count + 1 END,
+             window_started = CASE
+             WHEN skinao_admin_login_limits.window_started < now() - interval '15 minutes' THEN now()
+             ELSE skinao_admin_login_limits.window_started END
+         RETURNING attempt_count`,
+        [fingerprint], true
+      );
+      const blocked = Number(recent[0]?.attempt_count ?? 99) > 10;
+      // Evaluate both comparisons even if one fails, to avoid leaking the username.
+      const userValid = passwordMatches(data.username, expectedUser);
+      const passwordValid = passwordMatches(data.password, expectedPassword);
+      if (blocked || !userValid || !passwordValid) return { ok:false, reason:"invalid" as const };
+      const session = await adminSession(secret);
+      await session.update({ unlocked:true, revision:authRevision(expectedPassword) });
+      await repo.rows("DELETE FROM skinao_admin_login_limits WHERE fingerprint=$1", [fingerprint], true);
+      return { ok:true, reason:"success" as const };
+    } catch (error) {
+      console.error("Admin login unavailable", error);
+      return { ok:false, reason:"unavailable" as const };
+    }
+  });
+
+export const logoutInventory = createServerFn({ method:"POST" }).handler(async () => {
+  const secret = process.env["SKINAO_SESSION_SECRET"];
+  if (secret) await (await adminSession(secret)).clear();
+  setResponseHeader("Cache-Control","no-store");
+  return { ok:true };
+});
+
 export const publicCatalog = createServerFn({ method:"GET" }).inputValidator(z.object({ filters, page })).handler(async ({ data }) => {
   if (!neonTransportReady || !process.env['DATABASE_URL']) return { fallback:true, vehicles:[], total:0, hasMore:false };
   try {
