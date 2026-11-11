@@ -160,13 +160,13 @@ export function TeamAccess({ currentUser }: { currentUser:Identity }) {
     <section className="ska-team-owner" aria-labelledby="ska-owner-title">
       <div className="ska-team-owner-icon"><ShieldCheck size={27} aria-hidden="true"/></div>
       <div className="ska-team-owner-info">
-        <span className="ska-team-kicker">RESPONSÁVEL PELO PAINEL</span>
-        <h2 id="ska-owner-title">Administrador principal</h2>
+        <span className="ska-team-kicker">{isOwner?"RESPONSÁVEL PELO PAINEL":"PERFIL DO FUNCIONÁRIO"}</span>
+        <h2 id="ska-owner-title">{isOwner?"Administrador principal":"Minha conta"}</h2>
         <p><Mail size={15} aria-hidden="true"/>{isOwner ? accountName : currentUser.username}</p>
         <small>{isOwner ? "Acesso total: estoque, funcionários e configurações de acesso." :
           "Você tem acesso ao estoque. A gestão da equipe é exclusiva do administrador principal."}</small>
       </div>
-      <span className="ska-team-owner-badge"><ShieldCheck size={14}/> {isOwner ? "Proprietário" : "Sua conta"}</span>
+      <span className="ska-team-owner-badge"><ShieldCheck size={14}/> {isOwner ? "Proprietário" : "Funcionário"}</span>
     </section>
 
     {!isOwner ? <section className="ska-team-info">
