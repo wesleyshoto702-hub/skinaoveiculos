@@ -1,8 +1,7 @@
-import { createHash, randomBytes } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { adminSession, authRevision, passwordMatches, requireAdmin } from "./skinaoAuth.server";
+import { authRevision, requireAdmin } from "./skinaoAuth.server";
 import { neonTransport, neonTransportReady } from "./skinaoNeonTransport.server";
 import { repository } from "./skinaoRepository.server";
 import { storage } from "./skinaoStorage.server";
@@ -34,61 +33,9 @@ export const getInventoryMode = createServerFn({ method:"GET" }).handler(async (
     } catch { /* locked or cookies unavailable */ }
   }
   setResponseHeader("Cache-Control","no-store");
-  return { configured, unlocked:configured && unlocked, canUnlock:configured && Boolean(key && secret),
+  return { configured, unlocked:configured && unlocked,
     storageConfigured:Boolean(process.env['AWS_ENDPOINT_URL_S3'] && process.env['AWS_REGION'] && process.env['AWS_ACCESS_KEY_ID'] && process.env['AWS_SECRET_ACCESS_KEY']) };
 });
-export const unlockInventory = createServerFn({ method:"POST" }).inputValidator(z.object({ password:z.string().min(1).max(1024) })).handler(async ({ data }) => {
-  const key = process.env['SKINAO_ADMIN_ACCESS_KEY']; const secret = process.env['SKINAO_SESSION_SECRET'];
-  if (!key || !secret || !passwordMatches(data.password,key)) return { ok:false };
-  const session = await adminSession(secret);
-  await session.update({ unlocked:true, revision:authRevision(key) });
-  return { ok:true };
-});
-export const lockInventory = createServerFn({ method:"POST" }).handler(async () => {
-  const secret = process.env['SKINAO_SESSION_SECRET'];
-  if (secret) await (await adminSession(secret)).clear();
-  return { ok:true };
-});
-/**
- * A one-time invite lets the shop owner onboard another browser without
- * revealing the permanent admin key or permitting unauthenticated writes.
- * Links expire after 24 hours and can be redeemed exactly once.
- */
-export const createAdminInvite = createServerFn({ method:"POST" }).handler(async () => {
-  await requireAdmin(process.env["SKINAO_ADMIN_ACCESS_KEY"], process.env["SKINAO_SESSION_SECRET"]);
-  const repo = repository(neonTransport);
-  const recent = await repo.rows<{ total:string }>(
-    "SELECT count(*) AS total FROM skinao_admin_invites WHERE created_at > now() - interval '1 hour'"
-  );
-  if (Number(recent[0]?.total) >= 8)
-    throw new Error("Limite de convites atingido. Tente novamente em uma hora.");
-  const token = randomBytes(32).toString("hex");
-  const hash = createHash("sha256").update(token).digest("hex");
-  await repo.rows(
-    "INSERT INTO skinao_admin_invites(token_hash,expires_at) VALUES ($1,now() + interval '24 hours') RETURNING id",
-    [hash], true
-  );
-  return { token, expiresInHours:24 };
-});
-
-export const redeemAdminInvite = createServerFn({ method:"POST" })
-  .inputValidator(z.object({ token:z.string().regex(/^[a-f0-9]{64}$/) }))
-  .handler(async ({ data }) => {
-    const key = process.env["SKINAO_ADMIN_ACCESS_KEY"];
-    const secret = process.env["SKINAO_SESSION_SECRET"];
-    if (!key || !secret || !process.env["DATABASE_URL"]) return { ok:false };
-    const hash = createHash("sha256").update(data.token).digest("hex");
-    // This UPDATE is atomic, so even concurrent requests cannot redeem twice.
-    const consumed = await repository(neonTransport).rows<{ id:string }>(
-      "UPDATE skinao_admin_invites SET used_at=now() WHERE token_hash=$1 AND used_at IS NULL AND expires_at > now() RETURNING id",
-      [hash], true
-    );
-    if (!consumed.length) return { ok:false };
-    const session = await adminSession(secret);
-    await session.update({ unlocked:true, revision:authRevision(key) });
-    return { ok:true };
-  });
-
 export const publicCatalog = createServerFn({ method:"GET" }).inputValidator(z.object({ filters, page })).handler(async ({ data }) => {
   if (!neonTransportReady || !process.env['DATABASE_URL']) return { fallback:true, vehicles:[], total:0, hasMore:false };
   try {
