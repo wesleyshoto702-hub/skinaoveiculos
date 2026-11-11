@@ -66,7 +66,8 @@ export const loginInventory = createServerFn({ method:"POST" }).inputValidator(s
       || headers.get("x-real-ip")
       || headers.get("x-forwarded-for")
       || "unknown").split(",")[0].trim().slice(0,128);
-    const fingerprint = createHash("sha256").update(secret + ":" + source).digest("hex");
+    const fingerprint = createHash("sha256")
+      .update(secret + ":" + source + ":" + data.username.trim().toLowerCase()).digest("hex");
     try {
       const repo = repository(neonTransport);
       const recent = await repo.rows<{ attempt_count:number }>(
