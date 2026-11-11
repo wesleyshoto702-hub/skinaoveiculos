@@ -548,40 +548,24 @@ function AdminPanel() {
           </div>
         </header>
         <main className="ska-content">
-          <div className="ska-local-notice" role="note">
-            <HardDrive size={19} aria-hidden="true"/>
-            <span>{remoteMode ? <><strong>Edição autorizada.</strong> Cadastros e fotografias são enviados ao estoque real; anúncios publicados aparecem no site.</> : <><strong>Modo local: não publica.</strong> Dados e fotos ficam neste navegador. O estoque local não é transferido automaticamente ao Neon.</>}</span>
-          </div>
-          <section className="ska-connection-panel" aria-label="Acesso ao estoque online Neon">
+          {modeReady && !remoteMode && <section className="ska-connection-panel" aria-label="Autorizar este navegador">
             <div className="ska-connection-copy">
-              <strong>{remoteMode ? "Estoque Neon desbloqueado" : "Gerenciar veículos no estoque online"}</strong>
-              <p>{remoteMode
-                ? "Acesso salvo neste navegador (até 12 meses, renovado nas visitas). Suas edições são salvas no Neon e os exemplos ilustrativos também são atualizados na vitrine."
-                : "Para cadastrar e publicar veículos no site, desbloqueie a edição usando a chave administrativa."}</p>
+              <strong>Primeiro acesso neste dispositivo</strong>
+              <p>Quem recebeu um convite deve abrir o link enviado pela loja: a autorização será automática e ficará salva neste navegador. Sem convite, use a chave administrativa somente nesta primeira autorização.</p>
+              {!canUnlock && <p>O acesso online ainda não está configurado. Os dados locais deste navegador não são publicados no site.</p>}
             </div>
-            {remoteMode ?
-              <button type="button" className="ska-button ska-button--outline ska-connection-action"
-                disabled={working} onClick={() => void lockAccess()}>Bloquear edição</button> :
-              <button type="button" className="ska-button ska-button--red ska-connection-action"
-                disabled={!modeReady || working}
-                aria-expanded={unlockOpen} aria-controls="ska-unlock-form"
-                onClick={() => setUnlockOpen(v => !v)}>
-                Desbloquear edição
-              </button>}
-          </section>
-          {unlockOpen && !remoteMode && <form id="ska-unlock-form" className="ska-connection-form" onSubmit={changeAccess}>
-            {canUnlock ? <>
-              <label htmlFor="ska-access-key">Chave de administração</label>
+            {canUnlock && <form id="ska-unlock-form" className="ska-connection-form ska-connection-form--inline" onSubmit={changeAccess}>
+              <label htmlFor="ska-access-key">Chave administrativa</label>
               <div className="ska-connection-form-row">
                 <input id="ska-access-key" type="password" autoComplete="off" required
-                  value={accessKey} maxLength={1024} onChange={e=>setAccessKey(e.target.value)}
-                  placeholder="Digite sua chave de administração"/>
+                  value={accessKey} maxLength={1024} onChange={event=>setAccessKey(event.target.value)}
+                  placeholder="Informe uma vez neste dispositivo"/>
                 <button type="submit" className="ska-button ska-button--red" disabled={working}>
-                  {working ? "Verificando..." : "Entrar no estoque"}
+                  {working ? "Autorizando..." : "Autorizar dispositivo"}
                 </button>
               </div>
-            </> : <p>A conexão ou a autorização do servidor ainda não está configurada. O modo local continua disponível.</p>}
-          </form>}
+            </form>}
+          </section>}
           {feedback && <div className={"ska-feedback" + (feedback.error ? " ska-feedback--error" : "")} role="status">
             {feedback.error ? <CircleAlert size={19}/> : <Check size={19}/>} {feedback.text}
             <button type="button" onClick={() => setFeedback(null)} aria-label="Fechar aviso"><X size={16}/></button>
@@ -630,6 +614,9 @@ function AdminPanel() {
                         aria-label={"Despublicar "+v.brand+" "+v.model}>Despublicar</button>
                       <button type="button" disabled={working} onClick={() => editItem(v)}
                         title="Editar veículo" aria-label={"Editar "+v.brand+" "+v.model}><Edit3 size={18}/></button>
+                      <button type="button" className="ska-delete-action" disabled={working}
+                        onClick={() => requestDeletion(v)} title="Excluir definitivamente"
+                        aria-label={"Excluir definitivamente "+v.brand+" "+v.model}><Trash2 size={18}/></button>
                     </div>
                   </div>;
                 }) : <div className="ska-empty"><CarFront size={33}/><h3>{search ? "Nenhum resultado" : "Seu estoque começa aqui"}</h3><p>{search ? "Experimente outra busca." : "Adicione o primeiro veículo para começar a utilizar o painel."}</p>{!search && <button className="ska-button ska-button--red" type="button" onClick={createNew}><Plus size={17}/> Cadastrar veículo</button>}</div>
