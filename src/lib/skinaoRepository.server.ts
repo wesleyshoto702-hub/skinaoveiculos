@@ -16,7 +16,9 @@ export function catalogStatement(f: CatalogFilters, page: number, size = 12, isD
   for (const col of ["brand","type","transmission"] as const) if (f[col]) conditions.push(`${col} = ${bind(f[col])}`);
   if (Number(f.maxPrice) > 0) conditions.push(`price <= ${bind(Number(f.maxPrice))}`);
   const where = conditions.join(" AND ");
-  const order = ({ low:"price ASC,id ASC", high:"price DESC,id ASC", new:"created_at DESC,id DESC" } as Record<string,string>)[f.order] || "is_featured DESC,created_at DESC,id DESC";
+  const order = ({ low:"price ASC,id ASC", high:"price DESC,id ASC", new:"created_at DESC,id DESC" } as Record<string,string>)[f.order]
+    || (isDemo ? "CASE WHEN badge IS NULL THEN 1 ELSE 0 END ASC, demo_source_id ASC, id ASC"
+      : "is_featured DESC,created_at DESC,id DESC");
   const count: Statement = { query: `SELECT count(*) AS total FROM vehicles WHERE ${where}`, params: [...params] };
   return [count, { query: `SELECT ${VEHICLE_COLUMNS} FROM vehicles WHERE ${where} ORDER BY ${order} LIMIT ${bind(size)} OFFSET ${bind(page*size)}`, params }];
 }
