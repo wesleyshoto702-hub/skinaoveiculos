@@ -652,3 +652,86 @@
   margin:0 0 13px; font-size:12px; line-height:1.5; color:var(--ska-muted);
 }
 .ska .ska-stock-hint svg { flex-shrink:0; color:var(--ska-red); }
+
+
+/* Trusted browsers see the inventory directly, without an unlock banner. */
+.ska .ska-connection-panel .ska-connection-form--inline {
+  flex:0 1 400px;
+  min-width:min(100%,320px);
+  margin:0; padding:0; border:0; background:transparent; border-radius:0;
+}
+.ska .ska-connection-panel .ska-connection-form--inline .ska-connection-form-row {
+  display:flex; flex-direction:column; gap:9px;
+}
+.ska .ska-connection-panel .ska-connection-form--inline .ska-connection-form-row input {
+  width:100%; flex-basis:auto;
+}
+.ska .ska-connection-panel .ska-connection-form--inline .ska-connection-form-row button {
+  justify-content:center;
+}
+.ska .ska-actions button.ska-delete-action {
+  color:#d8dce4;
+}
+.ska .ska-actions button.ska-delete-action:not(:disabled):hover {
+  color:#fff; background:#9f2037; border-color:#e44b67;
+}
+.ska[data-ska-theme="light"] .ska-actions button.ska-delete-action:not(:disabled):hover {
+  color:#fff; background:#9f2037; border-color:#e44b67;
+}
+/* Destructive action cannot be triggered until the user types EXCLUIR. */
+.ska .ska-delete-confirm-label {
+  display:block; font-size:12px; font-weight:700; margin-top:22px; margin-bottom:9px;
+  color:var(--ska-text);
+}
+.ska .ska-delete-confirm-input {
+  width:100%; padding:12px 14px; border:1px solid var(--ska-border);
+  border-radius:10px; color:var(--ska-text); background:var(--ska-panel-2);
+  font-size:14px; font-weight:700; letter-spacing:.04em;
+}
+.ska .ska-delete-confirm-input:focus-visible {
+  outline:2px solid var(--ska-red); outline-offset:2px;
+}
+.ska .ska-confirm-dialog--delete .ska-confirm-icon {
+  background:rgba(229,50,77,.17);
+}
+.ska .ska-confirm-dialog--delete .ska-confirm-actions .ska-button:disabled {
+  opacity:.45; cursor:not-allowed;
+}
+/* A one-time invitation is revealed only on authorized admin devices. */
+.ska .ska-device-sharing {
+  margin-top:18px;
+}
+.ska .ska-device-sharing .ska-button {
+  margin-top:12px;
+}
+.ska .ska-invite-result {
+  margin-top:16px; padding:16px;
+  border:1px solid var(--ska-border); border-radius:12px;
+  background:var(--ska-panel-2);
+}
+.ska .ska-invite-result label {
+  display:block; margin-bottom:10px; font-size:12px; font-weight:750;
+  color:var(--ska-text);
+}
+.ska .ska-invite-result small {
+  display:block; margin-top:10px; color:var(--ska-muted); font-size:11px;
+}
+.ska .ska-invite-row {
+  display:flex; gap:10px; flex-wrap:wrap;
+}
+.ska .ska-invite-row input {
+  flex:1 1 250px; width:100%; min-width:0; border:1px solid var(--ska-border);
+  border-radius:9px; padding:11px 12px;
+  background:var(--ska-panel); color:var(--ska-text); font-size:12px;
+}
+.ska .ska-invite-row button {
+  flex-shrink:0; margin-top:0;
+}
+@media (max-width:940px) {
+  .ska .ska-connection-panel .ska-connection-form--inline {
+    min-width:0; width:100%;
+  }
+}
+@media (max-width:600px) {
+  .ska .ska-invite-row button { width:100%; justify-content:center; }
+}
