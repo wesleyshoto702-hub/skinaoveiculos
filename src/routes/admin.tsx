@@ -855,6 +855,42 @@ function AdminPanel() {
           </div>
         </div>
       </div>}
+      {pendingDelete && <div className="ska-confirm-overlay"
+        onMouseDown={event => {
+          if (event.target === event.currentTarget) { setPendingDelete(null); setDeleteConfirmation(""); }
+        }}>
+        <div className="ska-confirm-dialog ska-confirm-dialog--delete" ref={confirmDialogRef}
+          role="alertdialog" aria-modal="true"
+          aria-labelledby="ska-delete-title" aria-describedby="ska-delete-description">
+          <button type="button" className="ska-confirm-close" aria-label="Fechar aviso"
+            onClick={() => { setPendingDelete(null); setDeleteConfirmation(""); }}><X size={19}/></button>
+          <span className="ska-confirm-icon"><AlertTriangle size={25} aria-hidden="true"/></span>
+          <span className="ska-eyebrow">EXCLUSÃO DEFINITIVA</span>
+          <h2 id="ska-delete-title">Excluir veículo?</h2>
+          <p id="ska-delete-description">
+            <strong>{pendingDelete.brand} {pendingDelete.model}</strong> será removido
+            {remoteMode ? " do banco Neon e do catálogo público" : " do armazenamento deste navegador"}.
+            O cadastro e suas fotografias serão apagados. <strong>Essa ação não pode ser desfeita.</strong>
+            Se você pretende apenas ocultá-lo, cancele e use o botão vermelho Despublicar.
+          </p>
+          <label className="ska-delete-confirm-label" htmlFor="ska-delete-confirm-input">
+            Para confirmar a exclusão permanente, digite <strong>EXCLUIR</strong>:
+          </label>
+          <input id="ska-delete-confirm-input" className="ska-delete-confirm-input"
+            type="text" autoComplete="off" spellCheck={false}
+            value={deleteConfirmation} onChange={event=>setDeleteConfirmation(event.target.value)}
+            placeholder="EXCLUIR" maxLength={30}/>
+          <div className="ska-confirm-actions">
+            <button type="button" ref={confirmCancelRef} className="ska-button ska-button--outline"
+              onClick={() => { setPendingDelete(null); setDeleteConfirmation(""); }}>Cancelar</button>
+            <button type="button" className="ska-button ska-button--red"
+              disabled={working || deleteConfirmation.trim().toUpperCase() !== "EXCLUIR"}
+              onClick={() => { if (pendingDelete) void deleteConfirmed(pendingDelete); }}>
+              <Trash2 size={17}/> Excluir definitivamente
+            </button>
+          </div>
+        </div>
+      </div>}
     </div>
   );
 }
