@@ -6,7 +6,7 @@ import {
   RefreshCw, RotateCcw, Save, Search, Sun, Moon, Trash2, WandSparkles, X,
 } from "lucide-react";
 import {
-  setRemoteInventory, ADMIN_PAGE_SIZE, addPhoto, deletePhoto, getAdminStats,
+  setRemoteInventory, ADMIN_PAGE_SIZE, addPhoto, deletePhoto, deleteVehicle, getAdminStats,
   listPhotosForVehicles, listVehiclePage,
   photoUrl, displayPhotoUrl, removeStoredPhotos, saveVehicle, setCoverPhoto, updatePhoto, uploadPhoto,
   type AdminStats, type Vehicle, type VehicleDraft, type VehiclePhoto,
@@ -14,7 +14,7 @@ import {
 } from "../lib/skinaoAdminApi";
 import "../admin.css";
 import { useServerFn } from "@tanstack/react-start";
-import { getInventoryMode, unlockInventory, lockInventory } from "../lib/skinaoInventory.functions";
+import { getInventoryMode, unlockInventory, lockInventory, createAdminInvite, redeemAdminInvite } from "../lib/skinaoInventory.functions";
 import { Button } from "../components/ui/button";
 import { PhotoEditor } from "../components/admin/PhotoEditor";
 import { PhotoCropper } from "../components/admin/PhotoCropper";
@@ -81,16 +81,44 @@ function AdminPanel() {
   const [modeReady, setModeReady] = useState(false);
   const [canUnlock, setCanUnlock] = useState(false);
   const [accessKey, setAccessKey] = useState("");
-  const [unlockOpen, setUnlockOpen] = useState(false);
+  const [inviteLink, setInviteLink] = useState("");
+  const [inviteBusy, setInviteBusy] = useState(false);
   const unlock = useServerFn(unlockInventory);
   const lock = useServerFn(lockInventory);
+  const generateInvite = useServerFn(createAdminInvite);
+  const redeemInvite = useServerFn(redeemAdminInvite);
   useEffect(() => {
     let active = true;
-    void getInventoryMode().then(mode => {
+    async function restoreAccess() {
+      // The invitation token lives in the URL fragment: it is never sent
+      // to hosting logs or external sites as part of a normal GET request.
+      const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const token = params.get("convite");
+      if (token) {
+        window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+        try {
+          const response = await redeemInvite({ data: { token } });
+          if (active && !response.ok) setFeedback({
+            text: "Este convite expirou ou já foi utilizado. Solicite outro convite à loja.", error: true,
+          });
+        } catch {
+          if (active) setFeedback({ text: "Não foi possível validar o convite. Solicite um novo link.", error: true });
+        }
+      }
+      const mode = await getInventoryMode();
       if (!active) return;
-      setRemoteInventory(mode.unlocked); setRemoteMode(mode.unlocked); setCanUnlock(mode.canUnlock);
-    }).catch(() => { setRemoteInventory(false); }).finally(() => { if(active) setModeReady(true); });
+      setRemoteInventory(mode.unlocked);
+      setRemoteMode(mode.unlocked);
+      setCanUnlock(mode.canUnlock);
+    }
+    void restoreAccess().catch(() => {
+      if (active) {
+        setRemoteInventory(false);
+        setFeedback({ text:"Não foi possível verificar o acesso ao estoque. Recarregue a página.",error:true });
+      }
+    }).finally(() => { if(active) setModeReady(true); });
     return () => { active=false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   async function changeAccess(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (working) return;
@@ -101,13 +129,44 @@ function AdminPanel() {
       if (!result.ok) { setFeedback({ text:"Chave inválida ou administração não configurada.",error:true }); return; }
       const mode = await getInventoryMode();
       if (!mode.unlocked) throw new Error("Conecte o banco Neon antes de editar o estoque real.");
-      setRemoteInventory(true); setRemoteMode(true); setUnlockOpen(false); setEditingId(null); setView("inventory"); setAdminPage(0);
+      setRemoteInventory(true); setRemoteMode(true); setEditingId(null); setView("inventory"); setAdminPage(0);
     } catch(error) { setAccessKey(""); setFeedback({ text:error instanceof Error ? error.message : "Não foi possível desbloquear.",error:true }); }
     finally { setWorking(false); }
   }
   async function lockAccess() {
-    if (working) return;
-    await lock(); setRemoteInventory(false); setRemoteMode(false); setView("inventory"); setEditingId(null); setAdminPage(0);
+    if (working || !window.confirm(
+      "Encerrar a autorização deste navegador? Para voltar a editar, será necessário usar a chave administrativa ou um novo convite."
+    )) return;
+    try {
+      await lock();
+      setRemoteInventory(false); setRemoteMode(false);
+      setView("inventory"); setEditingId(null); setAdminPage(0); setInviteLink("");
+    } catch {
+      setFeedback({ text:"Não foi possível encerrar o acesso. Tente novamente.",error:true });
+    }
+  }
+  async function createInviteLink() {
+    if (!remoteMode || inviteBusy) return;
+    setInviteBusy(true);
+    try {
+      const invite = await generateInvite();
+      const link = window.location.origin + "/admin#convite=" + invite.token;
+      setInviteLink(link);
+      setFeedback({ text:"Convite de uso único criado. Envie apenas ao responsável pelo estoque. Válido por 24 horas." });
+    } catch (error) {
+      setFeedback({ text:error instanceof Error ? error.message : "Não foi possível gerar o convite.",error:true });
+    } finally {
+      setInviteBusy(false);
+    }
+  }
+  async function copyInviteLink() {
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setFeedback({ text:"Link do convite copiado. Ele funciona uma vez e expira em 24 horas." });
+    } catch {
+      setFeedback({ text:"Não foi possível copiar automaticamente. Selecione e copie o link abaixo.",error:true });
+    }
   }
   const [view, setView] = useState<View>("inventory");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -125,6 +184,8 @@ function AdminPanel() {
   const [working, setWorking] = useState(false);
   const [feedback, setFeedback] = useState<Status | null>(null);
   const [pendingVisibility, setPendingVisibility] = useState<{ vehicle: Vehicle; publish: boolean } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Vehicle | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const confirmCancelRef = useRef<HTMLButtonElement | null>(null);
   const confirmDialogRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState("");
