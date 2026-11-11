@@ -40,7 +40,12 @@ export function publicVehicle(vehicle: Vehicle, photos: VehiclePhoto[], base: st
       return p.external_url!;
     return imageUrl(p.storage_path, base);
   });
-  const galleryEdits = ordered.map(p => normalizeAdjustments(p));
+  // PostgreSQL numeric fields are returned as strings by the Neon driver.
+  // Convert them before applying image transforms so saved cropping remains visible.
+  const galleryEdits = ordered.map(p => normalizeAdjustments({
+    crop_x: Number(p.crop_x), crop_y: Number(p.crop_y),
+    crop_zoom: Number(p.crop_zoom), crop_rotation: Number(p.crop_rotation),
+  }));
   return { id: vehicle.id, brand: vehicle.brand, model: vehicle.model, version: vehicle.version,
     year: String(vehicle.year), km: Number(vehicle.km), price: Number(vehicle.price),
     transmission: vehicle.transmission, fuel: vehicle.fuel, type: vehicle.type, color: vehicle.color,
