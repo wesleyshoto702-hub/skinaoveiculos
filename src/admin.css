@@ -735,3 +735,53 @@
 @media (max-width:600px) {
   .ska .ska-invite-row button { width:100%; justify-content:center; }
 }
+
+
+/* Dedicated administrator sign-in. No signup or backend-provider branding. */
+.ska .ska-login-brand {
+  font:800 24px/1 "Barlow Condensed",sans-serif;
+  letter-spacing:.07em; text-align:center; margin:-3px 0 24px;
+}
+.ska .ska-login-brand strong { color:var(--ska-red); }
+.ska .ska-login-card { text-align:left; }
+.ska .ska-login-card .ska-eyebrow { display:block; text-align:center; }
+.ska .ska-login-card h1 { text-align:center; margin:10px 0 12px; }
+.ska .ska-login-card > p { text-align:center; line-height:1.55; }
+.ska .ska-login-input { position:relative; display:block; width:100%; }
+.ska .ska-login-input > svg {
+  position:absolute; top:50%; left:14px; transform:translateY(-50%);
+  color:#969dac; pointer-events:none; z-index:1;
+}
+.ska .ska-login-input > input {
+  display:block; padding-left:45px; min-height:50px;
+}
+.ska .ska-login-input .ska-password-visibility { right:8px; left:auto; z-index:2; }
+.ska .ska-login-submit { width:100%; margin-top:4px; min-height:50px; }
+.ska .ska-login-error {
+  display:flex; align-items:center; gap:10px; padding:12px 13px; margin-bottom:19px;
+  border:1px solid rgba(229,50,77,.5); border-radius:10px;
+  background:rgba(229,50,77,.09); color:#f5a8b5;
+  font-size:12px; line-height:1.5;
+}
+.ska .ska-login-error svg { flex-shrink:0; }
+.ska[data-ska-theme="light"] .ska-login-error {
+  color:#99243a; background:#fff1f3; border-color:#e4a7b4;
+}
+.ska .ska-login-loading { display:grid; place-items:center; }
+.ska .ska-login-loading-inner { display:flex; flex-direction:column; align-items:center; gap:15px; color:var(--ska-muted); }
+.ska .ska-signout-button {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:40px; padding:8px 12px; border:1px solid var(--ska-border);
+  border-radius:10px; background:var(--ska-panel-2); color:var(--ska-text);
+  font-size:12px; font-weight:700;
+}
+.ska .ska-signout-button:hover {
+  border-color:var(--ska-red); background:rgba(229,50,77,.1);
+}
+.ska .ska-signout-button:focus-visible { outline:2px solid var(--ska-red); outline-offset:2px; }
+@media (max-width:560px) {
+  .ska .ska-login-page { padding:90px 17px 44px; }
+  .ska .ska-login-card { padding:29px 22px; }
+  .ska .ska-topbar-actions { gap:8px; }
+  .ska .ska-signout-button { padding:9px 11px; }
+}
