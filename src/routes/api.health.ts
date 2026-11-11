@@ -9,7 +9,7 @@ export const Route = createFileRoute("/api/health")({
         let database = false;
         let storage = false;
         const authSteps: Record<string,boolean> = {
-          requestContext:false, userRead:false, passwordFunction:false, rateWrite:false, rateConflict:false, passwordLookup:false, sessionRead:false, sessionWrite:false,
+          requestContext:false, userRead:false, passwordFunction:false, rateWrite:false, rateConflict:false, passwordLookup:false, sessionRead:false, sessionWrite:false, profileUpdate:false, typedSessionWrite:false,
         };
         try {
           const { getRequest } = await import("@tanstack/react-start/server");
@@ -65,6 +65,16 @@ export const Route = createFileRoute("/api/health")({
               try {
                 await session.update({});
                 authSteps.sessionWrite=true;
+                const updated=await neonTransport([{
+                  query:"UPDATE skinao_admin_users SET last_login_at=last_login_at WHERE username=$1 RETURNING id",
+                  params:["adsestudos11@gmail.com"],
+                }],true);
+                authSteps.profileUpdate=Boolean(updated[0]?.rows[0]?.id);
+                await session.update({
+                  adminId:"00000000-0000-0000-0000-000000000000",
+                  credentialVersion:1,
+                });
+                authSteps.typedSessionWrite=true;
               } catch(error) {
                 console.error("Temporary empty-session write failed",error);
               }
