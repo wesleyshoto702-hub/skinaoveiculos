@@ -64,11 +64,10 @@ const orderPhotos = (photos: VehiclePhoto[], vehicleId: string) =>
   photos.filter(p => p.vehicle_id === vehicleId).sort((a, b) =>
     Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order);
 
-function AdminLogin({ theme, onThemeToggle, onAuthenticated, unavailable }: {
+function AdminLogin({ theme, onThemeToggle, onAuthenticated }: {
   theme: AdminTheme;
   onThemeToggle: () => void;
-  onAuthenticated: () => Promise<void>;
-  unavailable: boolean;
+  onAuthenticated: (account: { username:string; role:"owner"|"staff" }) => Promise<void>;
 }) {
   const signIn = useServerFn(loginInventory);
   const [username, setUsername] = useState("");
@@ -92,7 +91,11 @@ function AdminLogin({ theme, onThemeToggle, onAuthenticated, unavailable }: {
         return;
       }
       setPassword("");
-      await onAuthenticated();
+      if (!response.account || (response.account.role !== "owner" && response.account.role !== "staff")) {
+        setErrorMessage("Não foi possível confirmar seu perfil. Tente novamente.");
+        return;
+      }
+      await onAuthenticated(response.account);
     } catch {
       setErrorMessage("Não foi possível concluir o login. Tente novamente.");
       setPassword("");
@@ -112,9 +115,6 @@ function AdminLogin({ theme, onThemeToggle, onAuthenticated, unavailable }: {
       <p>Entre com suas credenciais para gerenciar os veículos da loja.</p>
       {errorMessage && <div className="ska-login-error" role="alert">
         <CircleAlert size={18} aria-hidden="true"/>{errorMessage}
-      </div>}
-      {unavailable && !errorMessage && <div className="ska-login-error" role="status">
-        <CircleAlert size={18} aria-hidden="true"/> O acesso está temporariamente indisponível.
       </div>}
       <form className="ska-form" onSubmit={handleLogin} autoComplete="on">
         <label htmlFor="ska-login-username">
@@ -146,7 +146,7 @@ function AdminLogin({ theme, onThemeToggle, onAuthenticated, unavailable }: {
             </button>
           </span>
         </label>
-        <button className="ska-button ska-button--red ska-login-submit" type="submit" disabled={submitting || unavailable}>
+        <button className="ska-button ska-button--red ska-login-submit" type="submit" disabled={submitting}>
           {submitting ? <><span className="ska-spinner" aria-hidden="true"/> Entrando...</> :
             <>Entrar no painel <ArrowRight size={18} aria-hidden="true"/></>}
         </button>
@@ -603,13 +603,13 @@ function AdminPanel() {
   }
   if (!remoteMode) {
     return <AdminLogin theme={adminTheme} onThemeToggle={toggleAdminTheme}
-      unavailable={accessIssue === "unavailable"}
-      onAuthenticated={async () => {
-        const mode = await getInventoryMode();
-        if (!mode.unlocked) throw new Error("Não foi possível confirmar a sessão.");
+      onAuthenticated={async account => {
+        // The login server function has already verified the password and
+        // committed the signed cookie. A separate session-status request
+        // must never block an otherwise successful sign-in.
         setRemoteInventory(true);
         setRemoteMode(true);
-        setAdminIdentity(mode.account ?? null);
+        setAdminIdentity(account);
         setAccessIssue(null);
         setAdminPage(0);
       }}/>;
