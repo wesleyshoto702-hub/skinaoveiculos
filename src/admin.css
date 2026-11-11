@@ -620,3 +620,29 @@
   .ska .ska-connection-form-row input { flex-basis:auto; width:100%; }
   .ska .ska-connection-form-row button { width:100%; }
 }
+
+/* Reversible inventory visibility: no vehicle deletion from stock list. */
+.ska .ska-actions button.ska-publish-action {
+  min-width:72px; padding-inline:13px; font-weight:800;
+}
+.ska .ska-actions button.ska-unpublish-action {
+  min-width:94px; padding-inline:12px;
+  color:#fff; background:#b51e35; border-color:#d83751; font-weight:800;
+}
+.ska .ska-actions button.ska-unpublish-action:not(:disabled):hover {
+  background:#d22947; color:#fff; border-color:#ec647a;
+}
+.ska .ska-actions button:disabled {
+  cursor:not-allowed; opacity:.42;
+}
+.ska[data-ska-theme="light"] .ska-actions button.ska-unpublish-action {
+  color:#fff; background:#b51e35; border-color:#cb2946;
+}
+.ska[data-ska-theme="light"] .ska-actions button.ska-unpublish-action:not(:disabled):hover {
+  color:#fff; background:#d22947; border-color:#e24c68;
+}
+@media (max-width:570px) {
+  .ska .ska-actions { justify-content:flex-start; }
+  .ska .ska-actions button.ska-publish-action { min-width:72px; }
+  .ska .ska-actions button.ska-unpublish-action { min-width:94px; }
+}
