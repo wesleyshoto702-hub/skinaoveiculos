@@ -15,11 +15,15 @@ export const draftSchema = z.object({
 });
 export const PUBLIC_WHERE = "is_published = true AND status IN ('available','reserved') AND is_demo = false";
 /** Demonstrative inventory remains visibly labelled and never requires real publication. */
-export const DEMO_WHERE = "is_demo = true AND status IN ('available','reserved')";
+export const DEMO_WHERE = "is_demo = true AND is_published = true AND status IN ('available','reserved')";
 export function assertPublication(vehicle: Pick<Vehicle, "is_published" | "is_demo" | "status">, photos: VehiclePhoto[]) {
   if (!vehicle.is_published) return;
-  if (vehicle.is_demo || vehicle.status === "sold") throw new Error("Exemplos e veículos vendidos não podem ser publicados.");
-  if (!photos.length || photos.some(p => p.external_url)) throw new Error("Inclua fotografias reais antes de publicar.");
+  if (vehicle.status === "sold") throw new Error("Veículos vendidos não podem ser publicados.");
+  if (!photos.length) throw new Error("Inclua ao menos uma fotografia antes de publicar.");
+  // Exemplos podem aparecer na vitrine com etiqueta de demonstração,
+  // mas fotos ilustrativas nunca podem publicar um anúncio como real.
+  if (!vehicle.is_demo && photos.some(p => p.external_url))
+    throw new Error("Inclua fotografias reais antes de publicar um anúncio da loja.");
 }
 export function safeStoragePath(path: string, vehicleId?: string) {
   const match = /^vehicles\/([0-9a-f-]{36})\/[0-9a-f-]{36}\.(jpg|png|webp|avif)$/.exec(path);
