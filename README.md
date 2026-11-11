@@ -53,11 +53,23 @@ são independentes, não sincronizam automaticamente e não aparecem no estoque 
 Em 11/11/2026 foram importados **6 veículos demonstrativos e 13 referências de
 imagens** diretamente da vitrine existente: Polo, Onix, Compass, Strada, Corolla
 e Ranger. Marca, versão, ano, KM, preço, opcionais e fotos foram preservados.
-Os registros usam `is_demo=true`, `is_published=false`, `demo_source_id=1..6`.
-O catálogo lê essas entradas do Neon quando não há veículos reais publicados:
-**editar um exemplo no painel atualiza a vitrine ilustrativa**. Quando existem
-veículos reais publicados, eles substituem a vitrine de demonstração. Um exemplo
-não pode virar anúncio real sem trocar as imagens ilustrativas por fotos reais.
+Os registros usam `is_demo=true` e `demo_source_id=1..6`. O Jeep Compass,
+excluído durante um teste, foi recuperado em 11/11/2026 com as duas fotos e
+informações originais, sem afetar os outros registros.
+Os seis exemplos foram marcados como publicados para refletir a vitrine que
+já aparecia no site. No painel, **Publicar** e **Despublicar** são ações
+independentes com confirmação. Despublicar define `is_published=false`, mantém
+dados/fotos no Neon e oculta o veículo no catálogo; Publicar define
+`is_published=true` e restaura sua visibilidade. A listagem de veículos
+não possui mais lixeira e o endpoint de exclusão definitiva de veículos foi
+removido. A exclusão de uma foto individual continua disponível com aviso,
+pois essa ação remove a fotografia da galeria.
+
+O catálogo só lê os exemplos `is_demo=true AND is_published=true` quando
+não há veículos reais publicados: **editar um exemplo visível no painel atualiza
+a vitrine ilustrativa**. Quando existem veículos reais publicados, eles
+substituem a vitrine de demonstração. Um exemplo não pode virar anúncio real
+sem trocar as imagens ilustrativas por fotografias reais.
 
 As imagens de exemplo são referências às URLs originais do Unsplash, **não
 cópias físicas no bucket**. Ao cadastrar fotos reais ou salvar recortes, os
@@ -106,3 +118,17 @@ acesso negado sem autorização no domínio definitivo.
 
 O estoque local não migra automaticamente para o Neon. A rota `/admin`
 continua visível, mas operações reais são protegidas pela sessão do servidor.
+
+### Avisos e prevenção de perda acidental
+
+- **Publicar**: pede confirmação e mostra se o veículo é um exemplo ilustrativo.
+- **Despublicar**: botão vermelho ao lado de Publicar; pede confirmação,
+  explica que fotos e dados permanecem salvos e permite republicar depois.
+- **Editar a publicação no formulário**: pede confirmação se o estado mudar.
+- **Sair de uma edição não salva**: avisa antes de descartar dados e ao fechar a aba.
+- **Converter exemplo em anúncio real**: exige fotos reais e confirmação.
+- **Excluir fotografia**: alerta que a remoção da foto é permanente; se a última
+  for excluída, o veículo é automaticamente despublicado, mas permanece salvo.
+
+O catálogo só reflete veículos do banco Neon se o painel estiver desbloqueado no
+modo **NEON**. O modo local do navegador não publica alterações.
