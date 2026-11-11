@@ -506,7 +506,7 @@ function AdminPanel() {
         </nav>
         <div className="ska-sidebar-footer">
           <a href="/" target="_blank" rel="noopener noreferrer"><ArrowLeft size={18}/> Visualizar site</a>
-          <span className="ska-local-mode"><HardDrive size={17}/> Painel sem login</span>
+          <span className="ska-local-mode"><HardDrive size={17}/> Estoque online</span>
         </div>
       </aside>
       {menuOpen && <button type="button" className="ska-menu-backdrop" aria-label="Fechar menu" onClick={() => setMenuOpen(false)}/>}
@@ -516,28 +516,10 @@ function AdminPanel() {
           <span>SKINÃO <strong>ADMIN</strong></span>
           <div className="ska-topbar-actions">
             <ThemeToggle theme={adminTheme} onToggle={toggleAdminTheme}/>
-            <div className="ska-session-badge"><span className="ska-online-dot"/><span>{remoteMode ? "Estoque da loja" : "Este navegador"}</span><b>{remoteMode ? "NEON" : "MODO LOCAL"}</b></div>
+            <div className="ska-session-badge"><span className="ska-online-dot"/><span>Estoque da loja</span><b>ONLINE</b></div>
           </div>
         </header>
         <main className="ska-content">
-          {modeReady && !remoteMode && <section className="ska-connection-panel" aria-label="Autorizar este navegador">
-            <div className="ska-connection-copy">
-              <strong>Primeiro acesso neste dispositivo</strong>
-              <p>Quem recebeu um convite deve abrir o link enviado pela loja: a autorização será automática e ficará salva neste navegador. Sem convite, use a chave administrativa somente nesta primeira autorização.</p>
-              {!canUnlock && <p>O acesso online ainda não está configurado. Os dados locais deste navegador não são publicados no site.</p>}
-            </div>
-            {canUnlock && <form id="ska-unlock-form" className="ska-connection-form ska-connection-form--inline" onSubmit={changeAccess}>
-              <label htmlFor="ska-access-key">Chave administrativa</label>
-              <div className="ska-connection-form-row">
-                <input id="ska-access-key" type="password" autoComplete="off" required
-                  value={accessKey} maxLength={1024} onChange={event=>setAccessKey(event.target.value)}
-                  placeholder="Informe uma vez neste dispositivo"/>
-                <button type="submit" className="ska-button ska-button--red" disabled={working}>
-                  {working ? "Autorizando..." : "Autorizar dispositivo"}
-                </button>
-              </div>
-            </form>}
-          </section>}
           {feedback && <div className={"ska-feedback" + (feedback.error ? " ska-feedback--error" : "")} role="status">
             {feedback.error ? <CircleAlert size={19}/> : <Check size={19}/>} {feedback.text}
             <button type="button" onClick={() => setFeedback(null)} aria-label="Fechar aviso"><X size={16}/></button>
@@ -545,7 +527,7 @@ function AdminPanel() {
           {view === "inventory" && <>
             <div className="ska-section-header">
               <div><span className="ska-eyebrow">VISÃO GERAL</span><h1>GESTÃO DE <em>ESTOQUE.</em></h1>
-                <p>{remoteMode ? "Gerencie o estoque real e suas publicações." : "Organize veículos neste navegador; não publica."} {demoCount ? demoCount + " modelos ilustrativos importados do site." : ""}</p></div>
+                <p>Gerencie os veículos e as publicações do site. {demoCount ? demoCount + " modelos ilustrativos importados do site." : ""}</p></div>
               <button className="ska-button ska-button--red" type="button" onClick={createNew}><Plus size={18}/> Adicionar veículo</button>
             </div>
             <div className="ska-stats">
@@ -573,7 +555,7 @@ function AdminPanel() {
                       {v.is_demo && <span className="ska-status ska-status--demo">EXEMPLO DO SITE</span>}
                     </div>
                     <div className="ska-vehicle-state"><span className={"ska-status ska-status--"+v.status}>{statusLabel[v.status]}</span>
-                      <small>{v.is_published ? (remoteMode ? "Publicado no site" : "Marcado publicado (local)") : (remoteMode ? "Despublicado • preservado" : "Não publicado (local)")}</small>
+                      <small>{v.is_published ? "Publicado no site" : "Despublicado • preservado"}</small>
                     </div>
                     <div className="ska-actions">
                       <button type="button" className="ska-publish-action" disabled={working || v.is_published}
@@ -608,7 +590,7 @@ function AdminPanel() {
             <div className="ska-section-header"><div>
               <span className="ska-eyebrow">GERENCIAR ANÚNCIO</span>
               <h1>{editingId ? "EDITAR" : "NOVO"} <em>VEÍCULO.</em></h1>
-              <p>{remoteMode ? "Alterações são salvas no estoque da loja." : "Cadastro local: não aparece no site público."}</p>
+              <p>Alterações são salvas no estoque da loja.</p>
             </div><button type="button" className="ska-button ska-button--outline" onClick={() => setView("inventory")}><ArrowLeft size={17}/> Voltar</button></div>
             <form onSubmit={save} className="ska-edit-form">
               <h2>Informações do veículo</h2>
@@ -695,11 +677,9 @@ function AdminPanel() {
               )}
               <label className="ska-toggle"><input type="checkbox" checked={draft.is_published}
                 onChange={e => setDraft(d => ({ ...d, is_published:e.target.checked }))}/>
-                <span>{remoteMode ? "Publicar no catálogo" : "Marcar como publicado (apenas local)"}</span><small>{remoteMode
-                    ? (draft.is_demo
-                      ? "Exemplos aparecerão identificados como ilustrativos. Para despublicar, os dados e fotos ficam salvos."
-                      : "Veículos reais precisam estar disponíveis ou reservados e ter fotos reais.")
-                    : "Esta opção não publica no site público."}</small>
+                <span>Publicar no catálogo</span><small>{draft.is_demo
+                    ? "Exemplos aparecerão identificados como ilustrativos. Para despublicar, os dados e fotos ficam salvos."
+                    : "Veículos reais precisam estar disponíveis ou reservados e ter fotos reais."}</small>
               </label>
               <label className="ska-toggle"><input type="checkbox" checked={draft.is_featured}
                 onChange={e => setDraft(d => ({ ...d, is_featured:e.target.checked }))}/>
@@ -710,51 +690,19 @@ function AdminPanel() {
             </form>
           </>}
           {view === "storage" && <>
-            <div className="ska-section-header"><div><span className="ska-eyebrow">DADOS DO PAINEL</span>
-              <h1>ARMAZENAMENTO <em>{remoteMode ? "NEON." : "LOCAL."}</em></h1>
-              <p>{remoteMode ? "Banco de dados conectado e acesso autorizado neste navegador." :
-                "Cadastros locais não são enviados ao site. Para usar o estoque Neon, autorize este dispositivo."}</p></div></div>
-            {remoteMode ? <>
-              <div className="ska-info">
-                <h3>Estoque sincronizado</h3>
-                <p>Os veículos ficam no Neon e as fotos reais no armazenamento vehicle-images.
-                  Este navegador permanece autorizado nas visitas futuras, enquanto a sessão e a chave administrativa forem válidas.</p>
-              </div>
-              <div className="ska-info ska-device-sharing">
-                <h3>Entregar acesso a outra pessoa</h3>
-                <p>Gere um convite para o navegador de quem administrará a loja. A pessoa
-                  abre o link uma única vez e poderá gerenciar o estoque sem digitar a chave.
-                  O link expira em 24 horas e só pode ser usado uma vez.</p>
-                <p><strong>Atenção:</strong> qualquer pessoa que usar o convite poderá publicar,
-                  editar e excluir veículos. Envie exclusivamente ao responsável pela loja.</p>
-                <button type="button" className="ska-button ska-button--red"
-                  disabled={inviteBusy || working} onClick={() => void createInviteLink()}>
-                  {inviteBusy ? "Gerando convite..." : "Gerar convite de acesso"}
-                </button>
-                {inviteLink && <div className="ska-invite-result">
-                  <label htmlFor="ska-invite-url">Link de convite (válido por 24 horas)</label>
-                  <div className="ska-invite-row">
-                    <input id="ska-invite-url" type="text" readOnly value={inviteLink}
-                      onFocus={event => event.currentTarget.select()} autoComplete="off"/>
-                    <button type="button" className="ska-button ska-button--outline"
-                      onClick={() => void copyInviteLink()}>Copiar link</button>
-                  </div>
-                  <small>O link será descartado desta tela ao atualizar a página. Se necessário, gere outro.</small>
-                </div>}
-              </div>
-              <div className="ska-info">
-                <h3>Segurança do dispositivo</h3>
-                <p>Se este computador deixar de ser utilizado pela loja, encerre a autorização
-                  aqui. Essa ação não remove veículos nem fotografias.</p>
-                <button type="button" className="ska-button ska-button--outline"
-                  disabled={working} onClick={() => void lockAccess()}>Encerrar acesso neste dispositivo</button>
-              </div>
-            </> : <div className="ska-info">
-              <h3>Armazenamento deste navegador</h3>
-              <p>Os veículos e as fotografias locais ficam no IndexedDB e não aparecem no site público.
-                O estoque verdadeiro precisa de um convite ou da autorização inicial deste navegador.</p>
-              <p>Limpar os dados do navegador pode apagar cadastros locais. Eles não são transferidos automaticamente ao Neon.</p>
-            </div>}
+            <div className="ska-section-header"><div>
+              <span className="ska-eyebrow">DADOS DO PAINEL</span>
+              <h1>ARMAZENAMENTO <em>ONLINE.</em></h1>
+              <p>O estoque e o site estão conectados ao mesmo banco Neon.</p>
+            </div></div>
+            <div className="ska-info">
+              <h3>Estoque sincronizado</h3>
+              <p>Os veículos são armazenados no PostgreSQL Neon. Fotos, imagens de capa e
+                recortes são salvos no armazenamento de imagens da loja. Alterações realizadas
+                aqui aparecem no catálogo público de acordo com o estado Publicado/Despublicado.</p>
+              <p>Despublicar preserva o veículo e as fotografias. Excluir definitivamente
+                remove o cadastro após confirmação explícita.</p>
+            </div>
           </>}
         </main>
       </div>
