@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest, setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { adminSession, authRevision, passwordMatches, requireAdmin } from "./skinaoAuth.server";
+import { adminSession, requireAdmin } from "./skinaoAuth.server";
 import { neonTransport, neonTransportReady } from "./skinaoNeonTransport.server";
 import { repository } from "./skinaoRepository.server";
 import { storage } from "./skinaoStorage.server";
@@ -20,21 +20,22 @@ const changesSchema = z.object({ sort_order:z.number().int().min(0).max(1000).op
   cropped_storage_path:z.string().max(300).nullable().optional() });
 
 export const getInventoryMode = createServerFn({ method:"GET" }).handler(async () => {
-  const key = process.env['SKINAO_ADMIN_ACCESS_KEY'];
-  const secret = process.env['SKINAO_SESSION_SECRET'];
-  const configured = neonTransportReady && Boolean(process.env['DATABASE_URL']);
+  const secret = process.env["SKINAO_SESSION_SECRET"];
+  const configured = neonTransportReady && Boolean(process.env["DATABASE_URL"]);
   let unlocked = false;
-  if (key && secret) {
+  if (secret && configured) {
     try {
-      const session = await requireAdmin(key, secret);
+      const session = await requireAdmin(secret);
       unlocked = true;
-      // Reissue the signed HttpOnly cookie so an active trusted browser stays unlocked.
-      // Clearing cookies, revoking the key or using "Bloquear edição" still ends access.
-      await session.update({ unlocked: true, revision: authRevision(key) });
-    } catch { /* locked or cookies unavailable */ }
+      // Revocable database identity is checked before renewing the secure cookie.
+      await session.update({
+        adminId:session.data.adminId,
+        credentialVersion:session.data.credentialVersion,
+      });
+    } catch { /* no valid session: show the login screen */ }
   }
   setResponseHeader("Cache-Control","no-store");
-  return { configured, unlocked:configured && unlocked,
+  return { configured, unlocked,
     storageConfigured:Boolean(process.env['AWS_ENDPOINT_URL_S3'] && process.env['AWS_REGION'] && process.env['AWS_ACCESS_KEY_ID'] && process.env['AWS_SECRET_ACCESS_KEY']) };
 });
 /** Single administrator sign-in. Password stays server-side, never in the JS bundle.
@@ -47,10 +48,8 @@ const signInSchema = z.object({
 export const loginInventory = createServerFn({ method:"POST" }).inputValidator(signInSchema)
   .handler(async ({ data }) => {
     setResponseHeader("Cache-Control", "no-store");
-    const expectedUser = process.env["SKINAO_ADMIN_USERNAME"] || "admin";
-    const expectedPassword = process.env["SKINAO_ADMIN_ACCESS_KEY"];
     const secret = process.env["SKINAO_SESSION_SECRET"];
-    if (!expectedPassword || !secret || !process.env["DATABASE_URL"])
+    if (!secret || !process.env["DATABASE_URL"])
       return { ok:false, reason:"unavailable" as const };
 
     // Use the trusted reverse-proxy IP if present. Never store IPs or passwords.
@@ -76,13 +75,22 @@ export const loginInventory = createServerFn({ method:"POST" }).inputValidator(s
         [fingerprint], true
       );
       const blocked = Number(recent[0]?.attempt_count ?? 99) > 10;
-      // Evaluate both comparisons even if one fails, to avoid leaking the username.
-      const userValid = passwordMatches(data.username, expectedUser);
-      const passwordValid = passwordMatches(data.password, expectedPassword);
-      if (blocked || !userValid || !passwordValid) return { ok:false, reason:"invalid" as const };
+      // Passwords are bcrypt hashes in Neon (pgcrypto); only server-side
+      // parameterized queries can perform this verification.
+      // The response never includes the stored hash or account ID.
+      const accounts = await repo.rows<{ id:string; credential_version:number; valid:boolean }>(
+        `SELECT id,credential_version, (password_hash=crypt($2,password_hash)) AS valid
+          FROM skinao_admin_users WHERE username=$1 AND is_active=true LIMIT 1`,
+        [data.username.trim().toLowerCase(), data.password]
+      );
+      const account = accounts[0];
+      if (blocked || !account?.valid) return { ok:false, reason:"invalid" as const };
       await repo.rows("DELETE FROM skinao_admin_login_limits WHERE fingerprint=$1", [fingerprint], true);
       const session = await adminSession(secret);
-      await session.update({ unlocked:true, revision:authRevision(expectedPassword) });
+      await session.update({
+        adminId:account.id,
+        credentialVersion:Number(account.credential_version),
+      });
       return { ok:true, reason:"success" as const };
     } catch (error) {
       console.error("Admin login unavailable", error);
@@ -148,7 +156,7 @@ const requestSchema = z.discriminatedUnion("action",[
   z.object({ action:z.literal("removeStored"), paths:z.array(z.string().max(300)).max(100) }),
 ]);
 export const inventoryRequest = createServerFn({ method:"POST" }).inputValidator(requestSchema).handler(async ({ data }) => {
-  await requireAdmin(process.env['SKINAO_ADMIN_ACCESS_KEY'],process.env['SKINAO_SESSION_SECRET']);
+  await requireAdmin(process.env["SKINAO_SESSION_SECRET"]);
   const repo = repository(neonTransport);
   const s3 = () => storage({ endpoint:process.env['AWS_ENDPOINT_URL_S3'] ?? "", region:process.env['AWS_REGION'] ?? "",
     accessKeyId:process.env['AWS_ACCESS_KEY_ID'] ?? "", secretAccessKey:process.env['AWS_SECRET_ACCESS_KEY'] ?? "" });
@@ -270,7 +278,7 @@ export const inventoryRequest = createServerFn({ method:"POST" }).inputValidator
 export const uploadInventoryPhoto = createServerFn({ method:"POST" }).inputValidator((v: unknown) => {
   if (!(v instanceof FormData)) throw new Error("Arquivo inválido."); return v;
 }).handler(async ({ data }) => {
-  await requireAdmin(process.env['SKINAO_ADMIN_ACCESS_KEY'],process.env['SKINAO_SESSION_SECRET']);
+  await requireAdmin(process.env["SKINAO_SESSION_SECRET"]);
   const vehicleId = uuid.parse(data.get("vehicleId"));
   await repository(neonTransport).getVehicle(vehicleId);
   const file = data.get("file");
