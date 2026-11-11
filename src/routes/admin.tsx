@@ -13,9 +13,7 @@ import {
   type VehicleStatus,
 } from "../lib/skinaoAdminApi";
 import "../admin.css";
-import { useServerFn } from "@tanstack/react-start";
-import { getInventoryMode, unlockInventory, lockInventory, createAdminInvite, redeemAdminInvite } from "../lib/skinaoInventory.functions";
-import { Button } from "../components/ui/button";
+import { getInventoryMode } from "../lib/skinaoInventory.functions";
 import { PhotoEditor } from "../components/admin/PhotoEditor";
 import { PhotoCropper } from "../components/admin/PhotoCropper";
 import { adjustedImageStyle, DEFAULT_PHOTO_ADJUSTMENTS, type PhotoAdjustments } from "../lib/skinaoPhotoAdjust";
@@ -79,95 +77,25 @@ function AdminPanel() {
   }
   const [remoteMode, setRemoteMode] = useState(false);
   const [modeReady, setModeReady] = useState(false);
-  const [canUnlock, setCanUnlock] = useState(false);
-  const [accessKey, setAccessKey] = useState("");
-  const [inviteLink, setInviteLink] = useState("");
-  const [inviteBusy, setInviteBusy] = useState(false);
-  const unlock = useServerFn(unlockInventory);
-  const lock = useServerFn(lockInventory);
-  const generateInvite = useServerFn(createAdminInvite);
-  const redeemInvite = useServerFn(redeemAdminInvite);
+  const [accessIssue, setAccessIssue] = useState<"restricted" | "unavailable" | null>(null);
+  // The catalog is already linked to the Neon database on the server.
+  // There is no local fallback, password field or invite flow in the admin UI.
+  // A previously authorized session is still verified server-side before writes.
   useEffect(() => {
     let active = true;
-    async function restoreAccess() {
-      // The invitation token lives in the URL fragment: it is never sent
-      // to hosting logs or external sites as part of a normal GET request.
-      const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      const token = params.get("convite");
-      if (token) {
-        window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
-        try {
-          const response = await redeemInvite({ data: { token } });
-          if (active && !response.ok) setFeedback({
-            text: "Este convite expirou ou já foi utilizado. Solicite outro convite à loja.", error: true,
-          });
-        } catch {
-          if (active) setFeedback({ text: "Não foi possível validar o convite. Solicite um novo link.", error: true });
-        }
-      }
-      const mode = await getInventoryMode();
+    void getInventoryMode().then(mode => {
       if (!active) return;
       setRemoteInventory(mode.unlocked);
       setRemoteMode(mode.unlocked);
-      setCanUnlock(mode.canUnlock);
-    }
-    void restoreAccess().catch(() => {
-      if (active) {
-        setRemoteInventory(false);
-        setFeedback({ text:"Não foi possível verificar o acesso ao estoque. Recarregue a página.",error:true });
-      }
-    }).finally(() => { if(active) setModeReady(true); });
-    return () => { active=false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      setAccessIssue(mode.unlocked ? null : mode.configured ? "restricted" : "unavailable");
+    }).catch(() => {
+      if (!active) return;
+      setRemoteInventory(false);
+      setRemoteMode(false);
+      setAccessIssue("unavailable");
+    }).finally(() => { if (active) setModeReady(true); });
+    return () => { active = false; };
   }, []);
-  async function changeAccess(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (working) return;
-    setWorking(true);
-    try {
-      const result = await unlock({ data:{ password:accessKey } });
-      setAccessKey("");
-      if (!result.ok) { setFeedback({ text:"Chave inválida ou administração não configurada.",error:true }); return; }
-      const mode = await getInventoryMode();
-      if (!mode.unlocked) throw new Error("Conecte o banco Neon antes de editar o estoque real.");
-      setRemoteInventory(true); setRemoteMode(true); setEditingId(null); setView("inventory"); setAdminPage(0);
-    } catch(error) { setAccessKey(""); setFeedback({ text:error instanceof Error ? error.message : "Não foi possível desbloquear.",error:true }); }
-    finally { setWorking(false); }
-  }
-  async function lockAccess() {
-    if (working || !window.confirm(
-      "Encerrar a autorização deste navegador? Para voltar a editar, será necessário usar a chave administrativa ou um novo convite."
-    )) return;
-    try {
-      await lock();
-      setRemoteInventory(false); setRemoteMode(false);
-      setView("inventory"); setEditingId(null); setAdminPage(0); setInviteLink("");
-    } catch {
-      setFeedback({ text:"Não foi possível encerrar o acesso. Tente novamente.",error:true });
-    }
-  }
-  async function createInviteLink() {
-    if (!remoteMode || inviteBusy) return;
-    setInviteBusy(true);
-    try {
-      const invite = await generateInvite();
-      const link = window.location.origin + "/admin#convite=" + invite.token;
-      setInviteLink(link);
-      setFeedback({ text:"Convite de uso único criado. Envie apenas ao responsável pelo estoque. Válido por 24 horas." });
-    } catch (error) {
-      setFeedback({ text:error instanceof Error ? error.message : "Não foi possível gerar o convite.",error:true });
-    } finally {
-      setInviteBusy(false);
-    }
-  }
-  async function copyInviteLink() {
-    if (!inviteLink) return;
-    try {
-      await navigator.clipboard.writeText(inviteLink);
-      setFeedback({ text:"Link do convite copiado. Ele funciona uma vez e expira em 24 horas." });
-    } catch {
-      setFeedback({ text:"Não foi possível copiar automaticamente. Selecione e copie o link abaixo.",error:true });
-    }
-  }
   const [view, setView] = useState<View>("inventory");
   const [menuOpen, setMenuOpen] = useState(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -225,7 +153,7 @@ function AdminPanel() {
     return () => window.clearTimeout(timer);
   }, [search]);
   useEffect(() => {
-    if (modeReady) void refresh();
+    if (modeReady && remoteMode) void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminPage, debouncedSearch, modeReady, remoteMode]);
 
@@ -546,6 +474,22 @@ function AdminPanel() {
   const demoCount = stats.demos;
   const editingPhotos = editingId ? orderPhotos(photos, editingId) : [];
   const searched = vehicles;
+
+  if (!modeReady || !remoteMode) {
+    return <div className="ska ska-dashboard" data-ska-theme={adminTheme}>
+      <main className="ska-access-state">
+        <span className="ska-brand">SKINÃO <strong>VEÍCULOS</strong></span>
+        <span className="ska-eyebrow">PAINEL ADMINISTRATIVO</span>
+        <h1>{!modeReady ? "Abrindo estoque..." :
+          accessIssue === "unavailable" ? "Estoque indisponível." : "Acesso restrito."}</h1>
+        <p>{!modeReady ? "Verificando a conexão segura com o estoque do site." :
+          accessIssue === "unavailable"
+            ? "Não foi possível acessar a configuração do estoque online. O catálogo público continua disponível."
+            : "Este navegador não possui uma sessão de administração válida. O sistema não libera alterações de veículos a visitantes não autorizados."}</p>
+        <a className="ska-button ska-button--outline" href="/">Voltar ao site</a>
+      </main>
+    </div>;
+  }
 
   return (
     <div className="ska ska-dashboard" data-ska-theme={adminTheme}>
