@@ -1,8 +1,6 @@
-import { createHash } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest, setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { adminSession, requireAdmin, requireOwner } from "./skinaoAuth.server";
+import { requireAdmin, requireOwner } from "./skinaoAuth.server";
 import { neonTransport, neonTransportReady } from "./skinaoNeonTransport.server";
 import { repository } from "./skinaoRepository.server";
 import { storage } from "./skinaoStorage.server";
@@ -18,103 +16,6 @@ const changesSchema = z.object({ sort_order:z.number().int().min(0).max(1000).op
   crop_y:z.number().min(0).max(100).optional(), crop_zoom:z.number().min(100).max(250).optional(),
   crop_rotation:z.union([z.literal(0),z.literal(90),z.literal(180),z.literal(270)]).optional(),
   cropped_storage_path:z.string().max(300).nullable().optional() });
-
-export const getInventoryMode = createServerFn({ method:"POST" }).handler(async () => {
-  const secret = process.env["SKINAO_SESSION_SECRET"];
-  const configured = neonTransportReady && Boolean(process.env["DATABASE_URL"]);
-  let unlocked = false;
-  let account: { username:string; role:"owner"|"staff" } | null = null;
-  if (secret && configured) {
-    try {
-      const session = await requireAdmin(secret);
-      const records = await neonTransport([{
-        query:"SELECT username,role FROM skinao_admin_users WHERE id=$1 AND is_active=true",
-        params:[session.data.adminId],
-      }],false);
-      const row = records[0]?.rows[0];
-      if (!row || (row.role !== "owner" && row.role !== "staff")) throw new Error("Usuário não autorizado.");
-      account = {username:String(row.username),role:row.role};
-      unlocked = true;
-      // Revocable database identity is checked before renewing the secure cookie.
-      await session.update({
-        adminId:session.data.adminId,
-        credentialVersion:session.data.credentialVersion,
-      });
-    } catch { /* no valid session: show the login screen */ }
-  }
-  setResponseHeader("Cache-Control","no-store");
-  return { configured, unlocked, account,
-    storageConfigured:Boolean(process.env['AWS_ENDPOINT_URL_S3'] && process.env['AWS_REGION'] && process.env['AWS_ACCESS_KEY_ID'] && process.env['AWS_SECRET_ACCESS_KEY']) };
-});
-/** Single administrator sign-in. Password stays server-side, never in the JS bundle.
- * Login attempt throttling is persisted in PostgreSQL across serverless invocations.
- */
-const signInSchema = z.object({
-  username: z.string().trim().min(1).max(100),
-  password: z.string().min(1).max(1024),
-});
-export const loginInventory = createServerFn({ method:"POST" }).inputValidator(signInSchema)
-  .handler(async ({ data }) => {
-    setResponseHeader("Cache-Control", "no-store");
-    const secret = process.env["SKINAO_SESSION_SECRET"];
-    if (!secret || !process.env["DATABASE_URL"])
-      return { ok:false, reason:"unavailable" as const };
-
-    // Use the trusted reverse-proxy IP if present. Never store IPs or passwords.
-    const headers = getRequest().headers;
-    const source = (headers.get("x-vercel-forwarded-for")
-      || headers.get("x-real-ip")
-      || headers.get("x-forwarded-for")
-      || "unknown").split(",")[0].trim().slice(0,128);
-    const fingerprint = createHash("sha256")
-      .update(secret + ":" + source + ":" + data.username.trim().toLowerCase()).digest("hex");
-    try {
-      const repo = repository(neonTransport);
-      const recent = await repo.rows<{ attempt_count:number }>(
-        `INSERT INTO skinao_admin_login_limits (fingerprint,attempt_count,window_started)
-           VALUES ($1,1,now())
-         ON CONFLICT (fingerprint) DO UPDATE
-           SET attempt_count = CASE
-             WHEN skinao_admin_login_limits.window_started < now() - interval '15 minutes' THEN 1
-             ELSE skinao_admin_login_limits.attempt_count + 1 END,
-             window_started = CASE
-             WHEN skinao_admin_login_limits.window_started < now() - interval '15 minutes' THEN now()
-             ELSE skinao_admin_login_limits.window_started END
-         RETURNING attempt_count`,
-        [fingerprint], true
-      );
-      const blocked = Number(recent[0]?.attempt_count ?? 99) > 10;
-      // Passwords are bcrypt hashes in Neon (pgcrypto); only server-side
-      // parameterized queries can perform this verification.
-      // The response never includes the stored hash or account ID.
-      const accounts = await repo.rows<{ id:string; username:string; role:"owner"|"staff"; credential_version:number; valid:boolean }>(
-        `SELECT id,username,role,credential_version, (password_hash=crypt($2,password_hash)) AS valid
-          FROM skinao_admin_users WHERE username=$1 AND is_active=true LIMIT 1`,
-        [data.username.trim().toLowerCase(), data.password]
-      );
-      const account = accounts[0];
-      if (blocked || !account?.valid) return { ok:false, reason:"invalid" as const };
-      await repo.rows("UPDATE skinao_admin_users SET last_login_at=now() WHERE id=$1", [account.id], true);
-      await repo.rows("DELETE FROM skinao_admin_login_limits WHERE fingerprint=$1", [fingerprint], true);
-      const session = await adminSession(secret);
-      await session.update({
-        adminId:account.id,
-        credentialVersion:Number(account.credential_version),
-      });
-      return { ok:true, reason:"success" as const,
-        account:{ username:account.username, role:account.role } };
-    } catch (error) {
-      console.error("Admin login unavailable", error);
-      return { ok:false, reason:"unavailable" as const };
-    }
-  });
-
-export const logoutInventory = createServerFn({ method:"POST" }).handler(async () => {
-  const secret = process.env["SKINAO_SESSION_SECRET"];
-  if (secret) await (await adminSession(secret)).clear();
-  setResponseHeader("Cache-Control","no-store");
-  return { ok:true };
-});
 
 export const publicCatalog = createServerFn({ method:"GET" }).inputValidator(z.object({ filters, page })).handler(async ({ data }) => {
   if (!neonTransportReady || !process.env['DATABASE_URL']) return { fallback:true, vehicles:[], total:0, hasMore:false };
