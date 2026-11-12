@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { adminSession, requireAdmin } from "../lib/skinaoAuth.server";
+import { createAdminSession, revokeAdminSession, requireAdmin } from "../lib/skinaoAuth.server";
 import { neonTransport } from "../lib/skinaoNeonTransport.server";
 
 type Identity = { username:string; role:"owner"|"staff" };
@@ -27,7 +27,7 @@ export const Route=createFileRoute("/api/admin-auth")({
         const configured=Boolean(secret && process.env["DATABASE_URL"]);
         if (!configured) return json({configured:false,unlocked:false,account:null});
         try {
-          const session=await requireAdmin(secret);
+          const session=await requireAdmin();
           const result=await neonTransport([{
             query:"SELECT username,role FROM skinao_admin_users WHERE id=$1 AND is_active=true",
             params:[session.data.adminId],
@@ -35,10 +35,6 @@ export const Route=createFileRoute("/api/admin-auth")({
           const account=result[0]?.rows[0];
           if (!account || (account.role!=="owner" && account.role!=="staff"))
             return json({configured:true,unlocked:false,account:null});
-          await session.update({
-            adminId:session.data.adminId,
-            credentialVersion:session.data.credentialVersion,
-          });
           return json({configured:true,unlocked:true,
             account:{username:String(account.username),role:account.role as Identity["role"]}});
         } catch {
@@ -113,11 +109,7 @@ export const Route=createFileRoute("/api/admin-auth")({
           } catch { /* do not expose account credentials in logs */ }
 
           stage="session";
-          const session=await adminSession(secret);
-          await session.update({
-            adminId:String(account.id),
-            credentialVersion:Number(account.credential_version),
-          });
+          await createAdminSession(String(account.id),Number(account.credential_version));
           return json({ok:true,account:{
             username:String(account.username),role:account.role as Identity["role"],
           }});
@@ -131,12 +123,12 @@ export const Route=createFileRoute("/api/admin-auth")({
       },
       DELETE:async ({request}) => {
         if (!originAllowed(request)) return json({ok:false},403);
-        const secret=process.env["SKINAO_SESSION_SECRET"];
-        if (secret) {
-          try { await (await adminSession(secret)).clear(); }
-          catch { return json({ok:false},503); }
+        try {
+          await revokeAdminSession();
+          return json({ok:true});
+        } catch {
+          return json({ok:false},503);
         }
-        return json({ok:true});
       },
     },
   },
